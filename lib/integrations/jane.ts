@@ -107,7 +107,7 @@ export interface ProductSearchParams {
  * but here are Jeeter pre-rolls").
  */
 export interface RelaxedFilter {
-  field: 'brand' | 'category' | 'effects';
+  field: 'brand' | 'category' | 'effects' | 'query';
   value: string;
 }
 
@@ -387,6 +387,25 @@ export async function searchProducts(
     attempts.push({ params: rest, dropped });
   }
 
+  // Tier 4: drop the TEXT QUERY but keep facets (store_id, channel filter,
+  // category if still present). Last-ditch resort for noisy chatbot utterances
+  // where the conversational text is killing relevance even after our filler
+  // strip + Algolia's removeWordsIfNoResults:'allOptional' degradation. With
+  // facets in place this is "give me anything in stock matching {category}",
+  // which is a sensible answer for any structured-intent query.
+  // Production sweep 2026-04-30 caught "i want the high thc product reccomend
+  // for vapes?" returning 0 across tier 0+2 because the noisy text dragged
+  // relevance below threshold. This tier guarantees a result whenever the
+  // store has matching inventory.
+  if (params.query && (params.category || params.brand || params.effects?.length)) {
+    const { query: _q, ...rest } = params;
+    void _q;
+    attempts.push({
+      params: { ...rest, query: '' },
+      dropped: [{ field: 'query', value: params.query }],
+    });
+  }
+
   let lastError: unknown = null;
   for (let tier = 0; tier < attempts.length; tier++) {
     const attempt = attempts[tier];
@@ -537,15 +556,27 @@ async function searchViaAlgolia(
     query = params.brand;
   } else {
     query = params.query || '';
-    if (params.category) query = query.replace(new RegExp(params.category, 'gi'), '').trim();
-    // Strip common filler words that hurt Algolia relevance
+    // Word-boundary category strip — old `replace(/vape/gi, '')` left "s" behind
+    // when the user wrote "vapes", polluting the relevance score.
+    if (params.category) {
+      const cat = params.category.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query = query.replace(new RegExp(`\\b${cat}\\w*`, 'gi'), '').trim();
+    }
+    // Strip common filler words that hurt Algolia relevance.
+    // Production sweep 2026-04-30 caught "i want the high thc product - what do
+    // you reccomend for vapes?" returning 0 hits because the noisy conversational
+    // remainder ("the high thc product reccomend for") killed Algolia relevance.
+    // Expanded the list to handle sentence-glue + question-shape words.
     query = query
       .replace(
-        /\b(what|which|do you have|any|are|in stock|available|show me|find|best|recommend|looking for|i want|i need|get me|under|below|less than|over|above|more than|please|thanks?|pls)\b/gi,
+        /\b(what|which|do you have|any|are|in stock|available|show me|find|best|recommend|reccomend|looking for|i want|i need|get me|under|below|less than|over|above|more than|please|thanks?|pls|the|a|an|some|me|you|your|our|their|product|products|item|items|option|options|stuff|things?|carry|sell|stock|got|have|here|there|currently|right now|today|tonight)\b/gi,
         '',
       )
       // Strip dollar amounts ("under $40", "below $25") that aren't product names
       .replace(/\$\s*\d+(?:\.\d+)?/g, '')
+      // Strip lone hyphens / punctuation runs left over after token removal
+      .replace(/[-–—]+/g, ' ')
+      .replace(/\s+/g, ' ')
       .trim();
     // When effects were captured as filters, strip the effect keywords from
     // the text query so Algolia doesn't additionally require "pain"/"relief"/
@@ -600,6 +631,14 @@ async function searchViaAlgolia(
       minWordSizefor2Typos: 7,
       ignorePlurals: true,
       removeStopWords: true,
+      // Graceful query degradation — when the noisy chatbot utterance has too
+      // many irrelevant words (e.g. "i want the high thc product reccomend for
+      // vapes"), Algolia would otherwise return 0 hits even though facets have
+      // matches. 'allOptional' makes every query word optional so any subset of
+      // word matches is acceptable. Filter facets (store_id, root_types, etc.)
+      // still gate the result set, so this can't pollute results — it only
+      // RELAXES the text-relevance constraint.
+      removeWordsIfNoResults: 'allOptional',
       attributesToRetrieve: [
         'product_id', 'name', 'brand', 'kind', 'root_types', 'root_subtype',
         'custom_product_type', 'category', 'percent_thc', 'percent_cbd',
@@ -928,6 +967,10 @@ export function describeFallback(
 ): string | null {
   if (tier === 0 || relaxed.length === 0) return null;
   const droppedFields = relaxed.map((r) => r.field);
+  // Query-only drop is a SILENT recovery — the user's structured intent
+  // (category/brand/effects) still matched via facets, we just dropped the
+  // noisy chatbot utterance from the relevance score. No need to apologize.
+  if (droppedFields.length === 1 && droppedFields[0] === 'query') return null;
   if (droppedFields.includes('brand') && droppedFields.includes('category')) {
     return `No "${originalBrand} ${originalCategory}" products in stock. Showing the closest alternatives — acknowledge the miss and offer the best substitute.`;
   }

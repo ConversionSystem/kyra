@@ -326,7 +326,7 @@ describe('searchProducts — round 2 Algolia payload', () => {
     expect(body.filters).toMatch(/bucket_price <= 40/);
   });
 
-  it('strips emoji from query text before sending to Algolia', async () => {
+  it('strips emoji and filler words from query text before sending to Algolia', async () => {
     let body: Record<string, unknown> = {};
     vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
       body = init?.body ? JSON.parse(String(init.body)) : {};
@@ -334,8 +334,11 @@ describe('searchProducts — round 2 Algolia payload', () => {
         json: async () => ({ hits: [{ product_id: 1, name: 'X' }], nbHits: 1 }) } as unknown as Response;
     }));
     await searchProducts(baseConfig, { query: '\u{1F634} Products for sleep' });
+    // No emoji should reach Algolia.
     expect(body.query).not.toMatch(/\p{Emoji_Presentation}/u);
-    expect(body.query).toMatch(/Products/);
+    // Filler word "Products" (added in 2026-04-30 sweep fix) is now stripped —
+    // it adds noise without intent value. The substantive token "sleep" survives.
+    expect(body.query).toMatch(/sleep/);
   });
 
   it('blanks out noise-only queries ("anything cheap") so filters do the work', async () => {
@@ -347,6 +350,108 @@ describe('searchProducts — round 2 Algolia payload', () => {
     }));
     await searchProducts(baseConfig, { query: 'anything cheap', sortBy: 'price_asc' });
     expect(body.query).toBe('');
+  });
+
+  // ── 2026-04-30 production sweep regression: noisy chatbot utterance ─────
+  // "i want the high thc product - what do you reccomend for vapes?" returned
+  // 0 hits because the conversational filler killed Algolia relevance.
+  it('strips conversational filler ("i want the high thc product reccomend for vapes")', async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      body = init?.body ? JSON.parse(String(init.body)) : {};
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits: [{ product_id: 1, name: 'X' }], nbHits: 1 }) } as unknown as Response;
+    }));
+    await searchProducts(baseConfig, {
+      query: 'i want the high thc product - what do you reccomend for vapes?',
+      category: 'vape',
+    });
+    const q = String(body.query || '');
+    // None of these conversational fillers should survive in the query.
+    for (const filler of ['i want', 'what do you', 'reccomend', 'recommend', 'product']) {
+      expect(q.toLowerCase()).not.toContain(filler);
+    }
+    // Substantive intent tokens survive.
+    expect(q.toLowerCase()).toContain('high');
+    expect(q.toLowerCase()).toContain('thc');
+    // Category strip uses word boundary — no leftover "s" from "vapes".
+    expect(q).not.toMatch(/\bs\b/);
+  });
+
+  it('strips multi-word category with word boundary ("vapes" → no leftover "s")', async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      body = init?.body ? JSON.parse(String(init.body)) : {};
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits: [{ product_id: 1, name: 'X' }], nbHits: 1 }) } as unknown as Response;
+    }));
+    await searchProducts(baseConfig, { query: 'show me vapes please', category: 'vape' });
+    expect(body.query).not.toContain('s');  // no orphan from "vapes"
+  });
+
+  it('passes removeWordsIfNoResults=allOptional so Algolia gracefully degrades on noisy queries', async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      body = init?.body ? JSON.parse(String(init.body)) : {};
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits: [{ product_id: 1, name: 'X' }], nbHits: 1 }) } as unknown as Response;
+    }));
+    await searchProducts(baseConfig, { query: 'whatever', category: 'flower' });
+    expect(body.removeWordsIfNoResults).toBe('allOptional');
+  });
+});
+
+describe('searchProducts — Tier 4 query-drop fallback (regression 2026-04-30)', () => {
+  beforeEach(() => { vi.stubGlobal('fetch', vi.fn()); });
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+  const baseConfig: JaneConfig = {
+    algoliaAppId: 'T', algoliaSearchKey: 'k', algoliaIndex: 'i',
+    defaultStore: 'sj',
+    stores: { sj: { algoliaStoreId: 1, baseUrl: 'https://x.com' } },
+  };
+
+  it('drops the text query at the final tier when category-bound query yields 0 across normal tiers', async () => {
+    const queriesSeen: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+      queriesSeen.push(String(body.query));
+      // Tier 0 (with category): 0 hits.
+      // Tier 2 (drop category): 0 hits.
+      // Tier 4 (drop query, keep category): hits!
+      const hasCategory = String(body.filters || '').includes('root_types:vape');
+      const isQueryEmpty = !body.query;
+      if (hasCategory && isQueryEmpty) {
+        return { ok: true, status: 200, text: async () => '',
+          json: async () => ({ hits: [{ product_id: 1, name: 'Vape A' }], nbHits: 1 }) } as unknown as Response;
+      }
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits: [], nbHits: 0 }) } as unknown as Response;
+    }));
+
+    const result = await searchProducts(baseConfig, {
+      query: 'i want the high thc product - what do you reccomend for vapes?',
+      category: 'vape',
+    });
+    expect(result.products.length).toBeGreaterThan(0);
+    expect(result.relaxedFilters.some((rf) => rf.field === 'query')).toBe(true);
+  });
+
+  it('does NOT add the query-drop tier when no structured intent exists (pure text search)', async () => {
+    let calls = 0;
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      calls++;
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits: [], nbHits: 0 }) } as unknown as Response;
+    }));
+    await searchProducts(baseConfig, { query: 'random untagged search' });
+    // Pure text search has only tier 0 (no effects/category/brand to drop, no
+    // structured fallback either). Exactly 1 attempt fired.
+    expect(calls).toBe(1);
+  });
+
+  it('describeFallback returns null when only the query was dropped (silent recovery)', () => {
+    expect(describeFallback(1, [{ field: 'query', value: 'noisy' }])).toBeNull();
   });
 });
 
