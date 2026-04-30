@@ -756,6 +756,22 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
             .join('\n');
 
           productContext = `\n\nLIVE ${results.storeId.toUpperCase()} INVENTORY — ${totalCount} products matched${intent.brand ? ' from ' + intent.brand : ''}${intent.category ? ' in ' + intent.category : ''}${intent.maxPrice ? ' under $' + intent.maxPrice : ''}. Top ${shownCount} are already rendered as cards BELOW your reply:${fallbackPreface}${prefPreface}\n${namesOnly}\n\nNarrate 2-3 sentences: call out 1-2 by name with WHY they fit, mention the total count (${totalCount}), and invite the customer to tap a card. Do NOT paste URLs, do NOT list every product, do NOT use markdown bullets or numbered lists — the cards handle structure.`;
+        } else {
+          // ZERO HITS — the user asked about products but Algolia (and Firecrawl
+          // fallback if configured) found nothing matching their constraints.
+          // Without explicit guidance the LLM falls back to its training prior
+          // and writes "the cards below show what's available" — but cards is
+          // empty, so the customer sees a phantom-product UX bug.
+          //
+          // The most common cause in production is orderType=delivery + a
+          // category/brand the store only stocks for pickup. So we point that
+          // out as the most likely pivot and let the LLM phrase it naturally.
+          const pivotHint = orderType === 'delivery'
+            ? `The customer's order type is set to DELIVERY. Many products are pickup-only — suggest they try switching to pickup if they're flexible.`
+            : orderType === 'pickup'
+              ? `The customer's order type is set to PICKUP. Suggest they try delivery, or browse a different category.`
+              : `Suggest a related category or invite them to ask about something else.`;
+          productContext = `\n\nNO PRODUCT MATCHES FOUND — searched ${results?.storeId?.toUpperCase() ?? 'the store'} for "${searchInput.slice(0, 80)}" and got zero in-stock hits${intent.brand ? ' from ' + intent.brand : ''}${intent.category ? ' in ' + intent.category : ''}${intent.maxPrice ? ' under $' + intent.maxPrice : ''}.\n\nIMPORTANT: NO cards will render below your reply. Do NOT say "here are some options", "the cards below", "tap a card", or anything that implies products are about to appear. ${pivotHint}\n\nReply in 1-2 sentences: acknowledge the miss kindly, then offer one specific pivot.`;
         }
       }
     } catch (e) {
