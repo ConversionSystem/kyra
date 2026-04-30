@@ -1095,12 +1095,27 @@ export function parseProductIntent(
     }
   }
 
-  // Category detection
+  // Category detection — store the CANONICAL root_type (flower / pre-roll /
+  // edible / vape / extract / tincture / topical), not the user's spelling.
+  //
+  // Regression 2026-04-30: previously did `.replace(/s$/, '')` blindly, which
+  // turned "gummies" into "gummie" — not a valid CATEGORY_TO_ROOT_TYPE key.
+  // The downstream root-type lookup would silently fail and the search would
+  // run with no category facet (browse-more URL fell back to /shop/all).
+  // Same bug for "cartridges" → "cartridge" (works) but "concentrates" →
+  // "concentrate" (works), so the failure mode was specific to "gummies".
+  // Looking up the matched word against the canonical map directly avoids the
+  // blind-strip class of bug entirely.
   const categoryWords = lower.match(
     /\b(pre.?roll|preroll|joint|blunt|flower|bud|nug|weed|edible|gummy|gummies|gumm\w*|chocolate|vape|cart|cartridge|extract|concentrate|dab|wax|shatter|rosin|tincture|topical|cream|balm|drink|beverage)\w*/i,
   );
   if (categoryWords) {
-    params.category = categoryWords[1].toLowerCase().replace(/s$/, '');
+    const raw = categoryWords[1].toLowerCase();
+    // Try the matched word as-is first (handles "gummies", "vapes", etc),
+    // then fall back to stripping trailing 's' for words like "edibles" that
+    // aren't keys themselves.
+    const rootType = CATEGORY_TO_ROOT_TYPE[raw] || CATEGORY_TO_ROOT_TYPE[raw.replace(/s$/, '')];
+    if (rootType) params.category = rootType;
   }
 
   // Sort detection
