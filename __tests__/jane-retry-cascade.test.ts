@@ -275,6 +275,34 @@ describe('isProductQuery — round 2 pattern expansion', () => {
     expect(isProductQuery('sounds good', [])).toBe(false);
     expect(isProductQuery('got it', [])).toBe(false);
   });
+
+  // ── 2026-04-30 production sweep regression ─────────────────────────────
+  // "I need help with sleep" was misclassified as NOT a product query, so
+  // the search block was skipped and the LLM hallucinated product names
+  // ("Granddaddy Purple") from training data without inventory backing.
+  it('matches "I need help with sleep" (help-with-effect)', () => {
+    expect(isProductQuery('I need help with sleep', [])).toBe(true);
+  });
+
+  it('matches the help-with-effect phrasing variants', () => {
+    expect(isProductQuery('help me with stress', [])).toBe(true);
+    expect(isProductQuery('help with anxiety', [])).toBe(true);
+    expect(isProductQuery('help me sleep', [])).toBe(true);
+    expect(isProductQuery('help me relax', [])).toBe(true);
+    expect(isProductQuery('help for pain', [])).toBe(true);
+  });
+
+  it('matches "looking for sleep" and "for relaxation"', () => {
+    expect(isProductQuery('looking for sleep', [])).toBe(true);
+    expect(isProductQuery('I need something for relaxation', [])).toBe(true);
+    expect(isProductQuery('any options for anxiety', [])).toBe(true);
+  });
+
+  it('does NOT overmatch "help" alone or unrelated "for X" phrases', () => {
+    expect(isProductQuery('help', [])).toBe(false);
+    expect(isProductQuery('for the win', [])).toBe(false);
+    expect(isProductQuery('help me out', [])).toBe(false);
+  });
 });
 
 describe('searchProducts — round 2 Algolia payload', () => {
