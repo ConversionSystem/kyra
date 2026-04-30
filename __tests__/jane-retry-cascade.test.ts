@@ -621,3 +621,55 @@ describe('buildJaneConfigFromContainerConfig — cart deeplink flag', () => {
     expect(cfg?.cartDeeplinkParam).toBeUndefined();
   });
 });
+
+// ── Bug regression: 2026-04-30 ─────────────────────────────────────────────
+// Sweep against production found that card URLs containing multi-word weight
+// values ("eighth ounce", "half ounce") were emitted with literal spaces:
+//   https://plpcsanjose.com/product/2737468/3-bros-ghost-truffle?weight=eighth ounce
+// Browsers accept this, but link previewers, schema.org validators, and any
+// curl-based tooling fail (HEAD returned 000). Fix: encodeURIComponent.
+describe('algoliaHitToProduct — URL encoding (regression 2026-04-30)', () => {
+  beforeEach(() => { vi.stubGlobal('fetch', vi.fn()); });
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+  it('URL-encodes weight values containing spaces', async () => {
+    vi.stubGlobal('fetch', mockFetchSequence([
+      { hits: [{
+        product_id: 2737468,
+        name: '3 Bros Ghost Truffle',
+        url_slug: '3-bros-ghost-truffle',
+        brand: '3 Bros',
+        available_weights: ['eighth ounce'],
+      }] },
+    ]));
+
+    const result = await searchProducts(baseConfig, { category: 'flower' });
+    expect(result.products).toHaveLength(1);
+    const url = result.products[0].url;
+    // No raw space in the query string — "eighth%20ounce", not "eighth ounce".
+    expect(url).not.toMatch(/weight=[^&\s]*\s/);
+    expect(url).toContain('weight=eighth%20ounce');
+  });
+
+  it('leaves single-word weights untouched', async () => {
+    vi.stubGlobal('fetch', mockFetchSequence([
+      { hits: [{
+        product_id: 1,
+        name: 'X',
+        url_slug: 'x',
+        brand: 'Y',
+        available_weights: ['gram'],
+      }] },
+    ]));
+    const result = await searchProducts(baseConfig, { category: 'flower' });
+    expect(result.products[0].url).toContain('weight=gram');
+  });
+
+  it('falls back to "each" when no available_weights', async () => {
+    vi.stubGlobal('fetch', mockFetchSequence([
+      { hits: [{ product_id: 1, name: 'X', url_slug: 'x', brand: 'Y' }] },
+    ]));
+    const result = await searchProducts(baseConfig, { category: 'flower' });
+    expect(result.products[0].url).toContain('weight=each');
+  });
+});

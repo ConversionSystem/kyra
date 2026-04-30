@@ -557,17 +557,21 @@ function algoliaHitToProduct(
   // Lineage comes from the "category" field (indica/sativa/hybrid/cbd)
   const strainType = hit.category || undefined;
 
-  // Build product URL — Jane PDP with preselected weight
+  // Build product URL — Jane PDP with preselected weight.
+  // weight values like "eighth ounce" / "half ounce" contain spaces; URL-encode
+  // them so the resulting link is well-formed in every parser (browsers
+  // tolerate unencoded spaces in query strings, but link previewers, schema.org
+  // validators, message-bus serializers, and curl-based tooling do not).
   const slug = hit.url_slug || hit.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const weight = hit.available_weights?.[0] || 'each';
-  const url = `${baseUrl}/product/${hit.product_id}/${slug}?weight=${weight}`;
+  const url = `${baseUrl}/product/${hit.product_id}/${slug}?weight=${encodeURIComponent(weight)}`;
 
   // Add-to-cart deeplink — ONLY populated if the dispensary has wired up a handler
   // that consumes the query param. Jane's standard Roots build ignores these params,
   // so without the config flag we leave cartUrl undefined and the widget falls back
   // to the standard "View →" CTA on the PDP. Ships when Matt's eng team is ready.
   const cartUrl = cartDeeplinkParam
-    ? `${url}&${cartDeeplinkParam}=${hit.product_id}`
+    ? `${url}&${cartDeeplinkParam}=${encodeURIComponent(hit.product_id)}`
     : undefined;
 
   // Merge feelings + activities into effects for the AI
