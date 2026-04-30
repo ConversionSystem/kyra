@@ -1096,6 +1096,13 @@ export function isProductQuery(message: string, knownBrands: string[] = []): boo
     // "something for X" / "something relaxing" / "need something"
     /\b(?:something|anything)\s+(?:for|to|that|under|around)/i,
     /\b(?:need|want|get|pick|find)\s+(?:something|anything)\b/i,
+    // "help with sleep" / "help me with stress" / "help for anxiety" — common
+    // phrasing for effect-based queries that the earlier patterns missed.
+    // Production sweep 2026-04-30: "I need help with sleep" returned 0 cards
+    // and the LLM hallucinated product names because isProductQuery=false.
+    /\bhelp\s+(?:me\s+)?(?:with|for)?\s*(?:sleep|sleeping|insomnia|relax|relaxation|pain|stress|anxiety|focus|chill|unwind|recovery|energy|creative|creativity|euphoria|uplift|nausea|appetite)\b/i,
+    // "looking for sleep" / "for relaxation" / "for pain relief"
+    /\bfor\s+(?:sleep|sleeping|insomnia|relaxation|pain\s*relief|stress|anxiety|energy|focus|creativity|recovery|nausea)\b/i,
     // Plain "products" alone (quick-reply button suffix)
     /^\s*products?\b/i,
   ];
