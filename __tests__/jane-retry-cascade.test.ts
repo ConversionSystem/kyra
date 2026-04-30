@@ -447,9 +447,34 @@ describe('parseProductIntent — longest-match brand detection', () => {
     const intent = parseProductIntent('Do you have CBX Cannabiotix flowers?', ['CBX', 'CBX Cannabiotix']);
     expect(intent.brand).toBe('CBX Cannabiotix');
   });
-  it('falls back to short match when only short is present in message', () => {
+  // Canonicalization (regression 2026-04-30): when the user types the short
+  // form ("CBX") and a longer canonical brand ("CBX Cannabiotix") is also in
+  // knownBrands, promote to the canonical name. The short form in config is
+  // usually stale residue, and Algolia stores the canonical name — without
+  // this promotion, the brand-facet search returns 0 hits, the retry cascade
+  // drops the brand, and the user sees random non-brand products.
+  it('canonicalizes "CBX please" to "CBX Cannabiotix" when both are in knownBrands', () => {
     const intent = parseProductIntent('CBX please', ['CBX', 'CBX Cannabiotix']);
+    expect(intent.brand).toBe('CBX Cannabiotix');
+  });
+  it('keeps "CBX" when only short form is in knownBrands', () => {
+    const intent = parseProductIntent('CBX please', ['CBX']);
     expect(intent.brand).toBe('CBX');
+  });
+  it('canonicalization respects word-boundary in the longer prefix (no false promotion)', () => {
+    // "CBXR" should NOT count as a canonical version of "CBX" — it's a
+    // different brand entirely. Promotion only fires when the longer name
+    // continues with " " or "-" after the matched prefix.
+    const intent = parseProductIntent('CBX please', ['CBX', 'CBXR']);
+    expect(intent.brand).toBe('CBX');
+  });
+  it('promotes with hyphen separator too ("Foo" + "Foo-Bar")', () => {
+    const intent = parseProductIntent('Foo please', ['Foo', 'Foo-Bar']);
+    expect(intent.brand).toBe('Foo-Bar');
+  });
+  it('picks the longest canonical when multiple longer prefixes exist', () => {
+    const intent = parseProductIntent('CBX please', ['CBX', 'CBX Co', 'CBX Cannabiotix Holdings Inc']);
+    expect(intent.brand).toBe('CBX Cannabiotix Holdings Inc');
   });
   it('prefers "Heavy Hitters" over "Hitter" if both were known', () => {
     const intent = parseProductIntent('Heavy Hitters carts', ['Hitter', 'Heavy Hitters']);
@@ -557,6 +582,48 @@ describe('brand facet + getBrandCatalog', () => {
     expect(Object.keys(catalog.groups).sort()).toEqual(['hybrid', 'indica']);
     expect(catalog.groups['hybrid']).toHaveLength(2);
     expect(catalog.groups['indica']).toHaveLength(1);
+  });
+
+  // Regression 2026-04-30: getBrandCatalog must NOT return non-brand products
+  // when the retry cascade had to drop the brand filter to find anything.
+  // Production sweep caught "do you carry CBX" returning 50 #Hashtag-branded
+  // products labeled as if they were CBX, plus a /brands/cbx URL (404).
+  it('returns empty when retry cascade dropped the brand filter', async () => {
+    let call = 0;
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      call++;
+      // Tier 0 (brand:"CBX") — 0 hits.
+      // Tier 3 (drop brand) — 50 random products from a different brand.
+      const hits = call === 1 ? [] : [
+        { product_id: 1, name: 'Berry Runtz', brand: '#Hashtag' },
+        { product_id: 2, name: 'Black Jack', brand: '#Hashtag' },
+        { product_id: 3, name: 'Frozen Biscotti', brand: '#Hashtag' },
+      ];
+      return {
+        ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits, nbHits: hits.length }),
+      } as unknown as Response;
+    }));
+
+    const catalog = await getBrandCatalog(baseConfig, 'CBX');
+    // Must NOT return the dropped-brand wrong-brand products.
+    expect(catalog.products).toEqual([]);
+    expect(catalog.groups).toEqual({});
+    expect(catalog.resolvedBrand).toBeUndefined();
+  });
+
+  it('still returns products when tier 0 brand-facet hits succeed', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true, status: 200, text: async () => '',
+      json: async () => ({
+        hits: [{ product_id: 1, name: 'Slurricane', brand: 'CBX Cannabiotix', category: 'indica' }],
+        nbHits: 1,
+      }),
+    } as unknown as Response)));
+    const catalog = await getBrandCatalog(baseConfig, 'CBX Cannabiotix');
+    // Tier 0 succeeded — brand was NOT dropped, return the products.
+    expect(catalog.products).toHaveLength(1);
+    expect(catalog.products[0].brand).toBe('CBX Cannabiotix');
   });
 });
 
