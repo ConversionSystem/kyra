@@ -723,7 +723,13 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
           const storeBaseUrl = activeStore?.baseUrl || (cfg.website_url as string) || '';
           const totalCount = results.totalFound;
           const shownCount = results.products.length;
-          browseMore = buildBrowseMore(storeBaseUrl, intent, totalCount, results.resolvedBrand);
+          // If the retry cascade had to drop the brand to find anything,
+          // don't send the user to /brands/{slug} — the cards aren't from
+          // that brand. Strip the brand from the intent we pass to the URL
+          // builder so it falls back to a category/lineage/price URL.
+          const brandWasDropped = results.relaxedFilters.some((rf) => rf.field === 'brand');
+          const intentForBrowse = brandWasDropped ? { ...intent, brand: undefined } : intent;
+          browseMore = buildBrowseMore(storeBaseUrl, intentForBrowse, totalCount, results.resolvedBrand);
 
           // Fallback notice — set when searchProducts had to relax filters to return anything
           fallbackNotice = describeFallback(

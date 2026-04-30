@@ -1006,6 +1006,38 @@ export function parseProductIntent(
       }
     }
   }
+  // Brand canonicalization (regression 2026-04-30):
+  //
+  // Dispensary configs sometimes carry STALE short-form brand entries
+  // ("CBX") while Algolia stores the canonical name ("CBX Cannabiotix").
+  // The longest-match loop above picks "CBX" because that's the longest
+  // brand string actually appearing in the user's message — but a Algolia
+  // facet search for `brand:"CBX"` then returns 0 hits, the retry cascade
+  // drops the brand filter, and the user sees random non-brand products
+  // labeled as if they were CBX. Plus the browse-more URL points at
+  // /brands/cbx (404 on the storefront) instead of /brands/cbx-cannabiotix.
+  //
+  // Fix: when the matched brand is a strict prefix of another known brand
+  // (separated by space/hyphen), promote to the longer canonical name.
+  // Safeguard: only promote if the longer name CONTAINS the matched word
+  // followed by a separator — never to an unrelated brand.
+  if (params.brand) {
+    const matched = params.brand.toLowerCase();
+    let canonical = params.brand;
+    let canonicalLen = matched.length;
+    for (const b of knownBrands) {
+      if (!b) continue;
+      const lb = b.toLowerCase();
+      if (lb === matched) continue;  // same brand, skip
+      if (lb.length <= canonicalLen) continue;
+      if (lb.startsWith(matched + ' ') || lb.startsWith(matched + '-')) {
+        canonical = b;
+        canonicalLen = lb.length;
+      }
+    }
+    params.brand = canonical;
+  }
+
   // Freeform: "what [brand] products/strains/flavors do you have"
   if (!params.brand && knownBrands.length > 0) {
     const brandPattern = lower.match(
@@ -1197,6 +1229,31 @@ export async function getBrandCatalog(
     limit: opts.limit ?? 50,
     useBrandFacet: true,
   });
+
+  // CRITICAL — only return products that actually came from the brand facet.
+  // searchProducts has a retry cascade: if `brand:"X"` returns 0 hits at
+  // tier 0, it eventually drops the brand and falls back to a relevance-only
+  // search that surfaces 50 RANDOM products. Those aren't from this brand,
+  // even though the caller asked for the brand catalog.
+  //
+  // Production sweep (2026-04-30) caught this: "do you carry CBX" produced
+  // cards branded #Hashtag because tier 0 (`brand:"CBX"`) was empty (the
+  // canonical name in Algolia is "CBX Cannabiotix"), tier 3 dropped the
+  // brand, and the route happily rendered the cards + a /brands/cbx URL.
+  //
+  // Fail-empty when the brand was dropped — let the caller fall through to
+  // the regular search path where describeFallback can explain the substitution
+  // honestly ("we don't carry CBX, but here are some alternatives").
+  const brandWasDropped = result.relaxedFilters.some((rf) => rf.field === 'brand');
+  if (brandWasDropped) {
+    return {
+      brand,
+      resolvedBrand: undefined,
+      products: [],
+      groups: {},
+      storeId: result.storeId,
+    };
+  }
 
   // Group by lineage (strainType: indica/sativa/hybrid/cbd) — "strains" in the
   // customer's mental model. Falls back to product-kind (category) if lineage
