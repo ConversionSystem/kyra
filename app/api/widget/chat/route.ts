@@ -565,6 +565,16 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
   // UI regardless of whether a product search happened. This guarantees "how to
   // order" always gets a link, rather than depending on the LLM generating one.
   let supportLinksOut: Array<{ label: string; url: string; topic: string }> = [];
+  // Auto-pivot action — populated when the orderType-filtered search returned 0
+  // hits but the OPPOSITE channel has matches. The widget renders a CTA chip
+  // ("Switch to Pickup") that, on tap, locks the chat session into the new
+  // channel for follow-up questions. See route block ~line 760 for population.
+  let pivotAction: {
+    fromChannel: 'pickup' | 'delivery';
+    toChannel: 'pickup' | 'delivery';
+    label: string;
+    alternativeCount: number;
+  } | null = null;
   if (janeActive && janeConfig) {
     try {
       const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI, describeFallback, getBrandCatalog, resolveSupportLinks } =
@@ -757,21 +767,83 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
 
           productContext = `\n\nLIVE ${results.storeId.toUpperCase()} INVENTORY — ${totalCount} products matched${intent.brand ? ' from ' + intent.brand : ''}${intent.category ? ' in ' + intent.category : ''}${intent.maxPrice ? ' under $' + intent.maxPrice : ''}. Top ${shownCount} are already rendered as cards BELOW your reply:${fallbackPreface}${prefPreface}\n${namesOnly}\n\nNarrate 2-3 sentences: call out 1-2 by name with WHY they fit, mention the total count (${totalCount}), and invite the customer to tap a card. Do NOT paste URLs, do NOT list every product, do NOT use markdown bullets or numbered lists — the cards handle structure.`;
         } else {
-          // ZERO HITS — the user asked about products but Algolia (and Firecrawl
-          // fallback if configured) found nothing matching their constraints.
-          // Without explicit guidance the LLM falls back to its training prior
-          // and writes "the cards below show what's available" — but cards is
-          // empty, so the customer sees a phantom-product UX bug.
+          // ZERO HITS in the user's selected channel — try AUTO-PIVOT before
+          // falling back to a pure no-cards message.
           //
-          // The most common cause in production is orderType=delivery + a
-          // category/brand the store only stocks for pickup. So we point that
-          // out as the most likely pivot and let the LLM phrase it naturally.
-          const pivotHint = orderType === 'delivery'
-            ? `The customer's order type is set to DELIVERY. Many products are pickup-only — suggest they try switching to pickup if they're flexible.`
-            : orderType === 'pickup'
-              ? `The customer's order type is set to PICKUP. Suggest they try delivery, or browse a different category.`
-              : `Suggest a related category or invite them to ask about something else.`;
-          productContext = `\n\nNO PRODUCT MATCHES FOUND — searched ${results?.storeId?.toUpperCase() ?? 'the store'} for "${searchInput.slice(0, 80)}" and got zero in-stock hits${intent.brand ? ' from ' + intent.brand : ''}${intent.category ? ' in ' + intent.category : ''}${intent.maxPrice ? ' under $' + intent.maxPrice : ''}.\n\nIMPORTANT: NO cards will render below your reply. Do NOT say "here are some options", "the cards below", "tap a card", or anything that implies products are about to appear. ${pivotHint}\n\nReply in 1-2 sentences: acknowledge the miss kindly, then offer one specific pivot.`;
+          // The most common cause is orderType=delivery + a category the store
+          // only stocks for pickup. Re-run the same search with the opposite
+          // channel; if THAT has cards, render them as pivot results plus a
+          // pivotAction chip so the widget can offer "Switch to Pickup" with
+          // one tap. Saves the user from typing "do you have it for pickup".
+          let pivotResults: typeof results = null;
+          if (orderType && intent.storeId) {
+            const oppositeChannel: 'pickup' | 'delivery' =
+              orderType === 'delivery' ? 'pickup' : 'delivery';
+            const pivotIntent = { ...intent, availabilityChannel: oppositeChannel };
+            try {
+              pivotResults = await searchProducts(janeConfig, pivotIntent, firecrawlKey || undefined);
+            } catch (err) {
+              console.error(
+                `[widget/chat] auto-pivot search threw for ${clientId}:`,
+                err instanceof Error ? err.message : String(err),
+              );
+            }
+            console.log(
+              `[widget/chat] auto-pivot ${clientId} from=${orderType} to=${oppositeChannel} ` +
+              `pivotProducts=${pivotResults?.products.length ?? 'null'}`,
+            );
+          }
+
+          if (pivotResults && pivotResults.products.length > 0 && orderType) {
+            // PIVOT HIT — surface alternative-channel cards + a switch CTA.
+            const oppositeChannel: 'pickup' | 'delivery' =
+              orderType === 'delivery' ? 'pickup' : 'delivery';
+            productCards = pivotResults.products.slice(0, 4).map((p) => ({
+              id: p.id, name: p.name, brand: p.brand, category: p.category,
+              strainType: p.strainType, thc: p.thc, cbd: p.cbd, price: p.price,
+              weight: p.weight, imageUrl: p.imageUrl, url: p.url, cartUrl: p.cartUrl,
+              rating: p.rating, reviewCount: p.reviewCount,
+            }));
+            // Verify against Jane Menu API V1 — pass the PIVOT channel so the
+            // freshness check matches what the user is actually browsing.
+            const pivotStore = janeConfig.stores[intent.storeId || janeConfig.defaultStore];
+            await stampOutOfStockFlags(productCards, clientId, pivotStore?.algoliaStoreId, oppositeChannel);
+
+            const totalCount = pivotResults.totalFound;
+            const fromLabel = orderType.toUpperCase();
+            const toLabel = oppositeChannel.charAt(0).toUpperCase() + oppositeChannel.slice(1);
+            // Reuse the existing fallbackNotice amber banner — widget already
+            // renders this above cards. No widget change needed for the banner.
+            fallbackNotice = `Out of ${orderType} stock for this query — showing ${oppositeChannel}-only options instead.`;
+            // Structured pivotAction — widget renders a CTA chip "Switch to Pickup".
+            pivotAction = {
+              fromChannel: orderType,
+              toChannel: oppositeChannel,
+              label: `Switch to ${toLabel}`,
+              alternativeCount: totalCount,
+            };
+            // Browse-more URL points at the alternative-channel filtered page.
+            const activeStore = janeConfig.stores[intent.storeId || janeConfig.defaultStore];
+            const storeBaseUrl = activeStore?.baseUrl || (cfg.website_url as string) || '';
+            if (storeBaseUrl && intent.category) {
+              const catSlug = intent.category.replace(/\s+/g, '-');
+              browseMore = {
+                url: `${storeBaseUrl}/shop/${catSlug}`,
+                label: `${catSlug.charAt(0).toUpperCase() + catSlug.slice(1)} Menu`,
+                totalCount,
+              };
+            }
+
+            productContext = `\n\nAUTO-PIVOT — the customer asked for ${fromLabel} but we have 0 in stock for that channel. We FOUND ${totalCount} ${toLabel}-only options matching their query and rendered the top ${productCards.length} as cards below your reply. The widget is also showing a "Switch to ${toLabel}" CTA chip.\n\nNarrate in 2 sentences: (1) acknowledge the ${fromLabel} miss, (2) point out that ${toLabel} has options + invite them to tap the switch chip OR a card. Do NOT paste URLs, do NOT list every product — the cards + chip handle the action.`;
+          } else {
+            // No pivot available either — pure no-matches case.
+            const pivotHint = orderType === 'delivery'
+              ? `The customer's order type is set to DELIVERY and PICKUP also has zero matches. Suggest a different category or related strain.`
+              : orderType === 'pickup'
+                ? `The customer's order type is set to PICKUP and DELIVERY also has zero matches. Suggest a different category or related strain.`
+                : `Suggest a related category or invite them to ask about something else.`;
+            productContext = `\n\nNO PRODUCT MATCHES FOUND — searched ${results?.storeId?.toUpperCase() ?? 'the store'} for "${searchInput.slice(0, 80)}" and got zero in-stock hits${intent.brand ? ' from ' + intent.brand : ''}${intent.category ? ' in ' + intent.category : ''}${intent.maxPrice ? ' under $' + intent.maxPrice : ''}.\n\nIMPORTANT: NO cards will render below your reply. Do NOT say "here are some options", "the cards below", "tap a card", or anything that implies products are about to appear. ${pivotHint}\n\nReply in 1-2 sentences: acknowledge the miss kindly, then offer one specific pivot.`;
+          }
         }
       }
     } catch (e) {
@@ -931,6 +1003,11 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
       // them. If the user asked "how do I order?" the widget always shows the
       // How-to-Order chip, regardless of what the LLM decided to say.
       supportLinks: supportLinksOut,
+      // Auto-pivot CTA — non-null when the orderType-filtered search hit zero
+      // and we found alternative-channel options. Widget renders a "Switch to
+      // {channel}" chip that locks subsequent messages into the new channel
+      // for the rest of this chat session.
+      pivotAction,
     },
     { headers: CORS },
   );
