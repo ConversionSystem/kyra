@@ -235,6 +235,47 @@ describe('parseProductIntent — round 2 natural-language fixes', () => {
     expect(intent.maxPrice).toBe(40);
     expect(intent.minPrice).toBeUndefined();
   });
+
+  // ── Category canonicalization regression (2026-04-30 production sweep) ──
+  // "show me indica gummies" produced intent.category="gummie" (blind 's' strip)
+  // which isn't a valid CATEGORY_TO_ROOT_TYPE key — downstream lookups silently
+  // failed and the browse-more URL fell back to /shop/all. Now the parser stores
+  // the canonical root_type directly.
+  it('stores canonical root_type "edible" for "gummies"', () => {
+    const intent = parseProductIntent('show me indica gummies', brands);
+    expect(intent.category).toBe('edible');
+  });
+
+  it('stores canonical root_type "vape" for "cartridges"', () => {
+    const intent = parseProductIntent('do you have cartridges', brands);
+    expect(intent.category).toBe('vape');
+  });
+
+  it('stores canonical root_type "extract" for "concentrates"', () => {
+    const intent = parseProductIntent('show me concentrates', brands);
+    expect(intent.category).toBe('extract');
+  });
+
+  it('stores canonical root_type "pre-roll" for "prerolls" / "pre-rolls"', () => {
+    expect(parseProductIntent('any prerolls?', brands).category).toBe('pre-roll');
+    expect(parseProductIntent('any pre-rolls?', brands).category).toBe('pre-roll');
+  });
+
+  it('stores canonical root_type "edible" for "gummy" (singular form)', () => {
+    const intent = parseProductIntent('any indica gummy', brands);
+    expect(intent.category).toBe('edible');
+  });
+
+  it('stores canonical root_type "flower" for "flower" / "flowers" / "bud"', () => {
+    expect(parseProductIntent('show me flower', brands).category).toBe('flower');
+    expect(parseProductIntent('show me flowers', brands).category).toBe('flower');
+    expect(parseProductIntent('any bud', brands).category).toBe('flower');
+  });
+
+  it('stores canonical root_type "edible" for "drinks" / "beverages" (drinks→edible per Jane taxonomy)', () => {
+    expect(parseProductIntent('any drinks', brands).category).toBe('edible');
+    expect(parseProductIntent('cannabis beverages', brands).category).toBe('edible');
+  });
 });
 
 describe('isProductQuery — round 2 pattern expansion', () => {
