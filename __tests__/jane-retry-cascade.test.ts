@@ -276,6 +276,49 @@ describe('parseProductIntent — round 2 natural-language fixes', () => {
     expect(parseProductIntent('any drinks', brands).category).toBe('edible');
     expect(parseProductIntent('cannabis beverages', brands).category).toBe('edible');
   });
+
+  // ── Lineage extraction (2026-04-30 sanity sweep) ─────────────────────────
+  // "show me indica gummies" was producing /shop/edible (correct) but no
+  // ?lineage=indica filter — buildBrowseMore needs preferLineages to add it.
+  // Strain words mentioned directly should be captured as preferLineages.
+  it('captures explicit lineage "indica" from "show me indica gummies"', () => {
+    const intent = parseProductIntent('show me indica gummies', brands);
+    expect(intent.preferLineages).toContain('indica');
+    expect(intent.category).toBe('edible');
+  });
+
+  it('captures "sativa" as preferLineages', () => {
+    const intent = parseProductIntent('I want sativa flower', brands);
+    expect(intent.preferLineages).toContain('sativa');
+    expect(intent.category).toBe('flower');
+  });
+
+  it('captures "hybrid" as preferLineages', () => {
+    const intent = parseProductIntent('any hybrid prerolls?', brands);
+    expect(intent.preferLineages).toContain('hybrid');
+    expect(intent.category).toBe('pre-roll');
+  });
+
+  it('captures "cbd" as preferLineages', () => {
+    const intent = parseProductIntent('looking for cbd tincture', brands);
+    expect(intent.preferLineages).toContain('cbd');
+  });
+
+  it('does NOT match "indica" inside "indicate" (word boundary)', () => {
+    const intent = parseProductIntent('please indicate the price', brands);
+    expect(intent.preferLineages).toBeUndefined();
+  });
+
+  // ── Sort detection: "high thc" should also work, not just "highest thc" ──
+  it('sort detection — "high thc" sets sortBy=thc_desc', () => {
+    const intent = parseProductIntent('i want the high thc product for vapes', brands);
+    expect(intent.sortBy).toBe('thc_desc');
+  });
+
+  it('sort detection — "highest thc" still works (back-compat)', () => {
+    const intent = parseProductIntent('show me the highest thc strain', brands);
+    expect(intent.sortBy).toBe('thc_desc');
+  });
 });
 
 describe('isProductQuery — round 2 pattern expansion', () => {
