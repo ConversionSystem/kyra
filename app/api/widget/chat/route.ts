@@ -577,7 +577,7 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
   } | null = null;
   if (janeActive && janeConfig) {
     try {
-      const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI, describeFallback, getBrandCatalog, resolveSupportLinks } =
+      const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI, describeFallback, getBrandCatalog, resolveSupportLinks, buildBrowseMore } =
         await import('@/lib/integrations/jane');
 
       // IMPORTANT: intent parsing and product search MUST use the raw message
@@ -635,12 +635,9 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
             await stampOutOfStockFlags(productCards, clientId, brandStore?.algoliaStoreId, orderType);
             const activeStore = janeConfig.stores[intent.storeId || janeConfig.defaultStore];
             const storeBaseUrl = activeStore?.baseUrl || (cfg.website_url as string) || '';
-            const fullBrand = catalog.resolvedBrand || intent.brand;
-            const brandSlug = fullBrand.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            const brandUrl = storeBaseUrl ? `${storeBaseUrl}/brands/${brandSlug}` : '';
-            if (brandUrl) {
-              browseMore = { url: brandUrl, label: `${intent.brand} Products`, totalCount: catalog.products.length };
-            }
+            // Brand path → /brands/{slug} with the full catalog count, since
+            // the brand page on Jane shows exactly that brand's products.
+            browseMore = buildBrowseMore(storeBaseUrl, intent, catalog.products.length, catalog.resolvedBrand);
 
             // Build LLM context — groups (by lineage) + counts so the model can
             // narrate accurately: "We have 3 Alien Labs hybrids and 1 indica."
@@ -718,28 +715,15 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
           const searchStore = janeConfig.stores[intent.storeId || janeConfig.defaultStore];
           await stampOutOfStockFlags(productCards, clientId, searchStore?.algoliaStoreId, orderType);
 
-          // Build filtered browse URL so the AI links to pre-filtered pages, not /shop/all
-          // Prefer the active store's baseUrl (inventory lives there) over generic website_url
+          // Smart browse-more: per-intent filtered Jane URL + truthful label.
+          // Replaces the legacy ad-hoc builder that fell through to /shop/all
+          // for effect/lineage/price queries, producing the
+          // "Browse all 6 Full Menu →" misleading-link bug (2026-04-30).
           const activeStore = janeConfig.stores[intent.storeId || janeConfig.defaultStore];
           const storeBaseUrl = activeStore?.baseUrl || (cfg.website_url as string) || '';
-          let browseMoreUrl = storeBaseUrl ? `${storeBaseUrl}/shop/all` : '';
-          let browseMoreLabel = 'Full Menu';
-          if (storeBaseUrl && intent.brand) {
-            // Use full brand name from Algolia (e.g., "CBX Cannabiotix") for correct slug
-            // Jane's /brands/ pages require the full name: /brands/cbx-cannabiotix works, /brands/cbx shows 0 products
-            const fullBrand = results.resolvedBrand || intent.brand;
-            const brandSlug = fullBrand.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            browseMoreUrl = `${storeBaseUrl}/brands/${brandSlug}`;
-            browseMoreLabel = `${intent.brand} Products`;
-          } else if (storeBaseUrl && intent.category) {
-            const catSlug = intent.category.replace(/\s+/g, '-');
-            browseMoreUrl = `${storeBaseUrl}/shop/${catSlug}`;
-            browseMoreLabel = catSlug.charAt(0).toUpperCase() + catSlug.slice(1) + ' Menu';
-          }
           const totalCount = results.totalFound;
           const shownCount = results.products.length;
-          const hasMore = totalCount > 4;
-          if (browseMoreUrl) browseMore = { url: browseMoreUrl, label: browseMoreLabel, totalCount };
+          browseMore = buildBrowseMore(storeBaseUrl, intent, totalCount, results.resolvedBrand);
 
           // Fallback notice — set when searchProducts had to relax filters to return anything
           fallbackNotice = describeFallback(
@@ -822,17 +806,11 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
               label: `Switch to ${toLabel}`,
               alternativeCount: totalCount,
             };
-            // Browse-more URL points at the alternative-channel filtered page.
+            // Browse-more for the pivot results — same smart builder. Honors
+            // brand, category, lineage-from-effects, and maxPrice in the URL.
             const activeStore = janeConfig.stores[intent.storeId || janeConfig.defaultStore];
             const storeBaseUrl = activeStore?.baseUrl || (cfg.website_url as string) || '';
-            if (storeBaseUrl && intent.category) {
-              const catSlug = intent.category.replace(/\s+/g, '-');
-              browseMore = {
-                url: `${storeBaseUrl}/shop/${catSlug}`,
-                label: `${catSlug.charAt(0).toUpperCase() + catSlug.slice(1)} Menu`,
-                totalCount,
-              };
-            }
+            browseMore = buildBrowseMore(storeBaseUrl, intent, totalCount, pivotResults.resolvedBrand);
 
             productContext = `\n\nAUTO-PIVOT — the customer asked for ${fromLabel} but we have 0 in stock for that channel. We FOUND ${totalCount} ${toLabel}-only options matching their query and rendered the top ${productCards.length} as cards below your reply. The widget is also showing a "Switch to ${toLabel}" CTA chip.\n\nNarrate in 2 sentences: (1) acknowledge the ${fromLabel} miss, (2) point out that ${toLabel} has options + invite them to tap the switch chip OR a card. Do NOT paste URLs, do NOT list every product — the cards + chip handle the action.`;
           } else {

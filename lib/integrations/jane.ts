@@ -164,6 +164,121 @@ const EFFECT_LINEAGE_MAP: Record<string, string[]> = {
   pain: ['indica', 'hybrid'],
 };
 
+// ── Browse-more URL builder (smart filtered-page links) ────────────────────
+//
+// Jane storefronts (Roots build) accept `/shop/{category}` paths plus a small
+// set of query params for lineage/effects/price filtering. We probed
+// plpcsanjose.com on 2026-04-30 to enumerate the verified working paths.
+// Keep this map in sync with __tests__/jane-retry-cascade.test.ts (the
+// browseMore tests pin every key here).
+const ROOT_TYPE_TO_URL_PATH: Record<string, string> = {
+  flower: 'flower',
+  'pre-roll': 'preroll',  // Jane accepts both /preroll and /pre-roll; pick one canonical.
+  edible: 'edible',
+  vape: 'vape',
+  extract: 'extract',
+  tincture: 'tincture',
+  topical: 'topical',
+};
+
+/**
+ * Build a "Browse all" link that goes to a Jane storefront page actually
+ * matching the customer's query — not /shop/all.
+ *
+ * Priority:
+ *   1. Brand → `/brands/{slug}` (full brand catalog).
+ *   2. Category (mapped via CATEGORY_TO_ROOT_TYPE → ROOT_TYPE_TO_URL_PATH).
+ *   3. Lineage / max_price → query string on whichever path we landed on.
+ *
+ * Count semantics:
+ *   - For brand queries we KNOW the count is meaningful (brand page shows
+ *     exactly the brand's catalog). totalCount stays.
+ *   - For all other queries the count is ambiguous — Algolia's hit count
+ *     applies our in-stock + retry filters; the storefront URL doesn't
+ *     replicate them exactly. We drop the count (return undefined) so the
+ *     widget renders "Browse Sativa Menu →" instead of "Browse all 6".
+ *     This avoids the bug where the widget promised "all 6 Full Menu" and
+ *     the link took you to thousands of products.
+ *
+ * Returns null if storeBaseUrl is empty (caller leaves browseMore unset).
+ */
+export function buildBrowseMore(
+  storeBaseUrl: string,
+  intent: ProductSearchParams,
+  totalCount: number,
+  resolvedBrand?: string,
+): { url: string; label: string; totalCount: number } | null {
+  if (!storeBaseUrl) return null;
+  const base = storeBaseUrl.replace(/\/$/, '');
+
+  // 1. Brand path — full catalog page is canonical for brand queries.
+  if (intent.brand) {
+    const fullBrand = (resolvedBrand || intent.brand).trim();
+    const brandSlug = fullBrand.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return {
+      url: `${base}/brands/${brandSlug}`,
+      label: `${intent.brand} Products`,
+      totalCount,  // brand page count IS meaningful — surface it
+    };
+  }
+
+  // 2. Resolve a category path. Falls back to /shop/all when the user's
+  //    word doesn't map to a known-good Jane URL path.
+  const rootType = intent.category
+    ? CATEGORY_TO_ROOT_TYPE[intent.category.toLowerCase()]
+    : undefined;
+  const categoryPath = rootType && ROOT_TYPE_TO_URL_PATH[rootType]
+    ? `/shop/${ROOT_TYPE_TO_URL_PATH[rootType]}`
+    : '/shop/all';
+
+  // 3. Build query string. Jane supports lineage, effects, max_price.
+  const qs = new URLSearchParams();
+
+  // Lineage: derived from effects via EFFECT_LINEAGE_MAP. Single lineage
+  // → use ?lineage=. Multiple → skip (Jane storefront doesn't OR).
+  let lineageLabel = '';
+  if (intent.effects?.length) {
+    const lineages = [...new Set(intent.effects.flatMap((e) => EFFECT_LINEAGE_MAP[e] || []))];
+    if (lineages.length === 1) {
+      qs.set('lineage', lineages[0]);
+      lineageLabel = lineages[0].charAt(0).toUpperCase() + lineages[0].slice(1);
+    }
+  }
+  // Session-preference lineage as a secondary signal (when no effects mapped).
+  if (!qs.has('lineage') && intent.preferLineages?.length === 1) {
+    qs.set('lineage', intent.preferLineages[0]);
+    lineageLabel = intent.preferLineages[0].charAt(0).toUpperCase() + intent.preferLineages[0].slice(1);
+  }
+
+  if (typeof intent.maxPrice === 'number' && intent.maxPrice > 0) {
+    qs.set('max_price', String(intent.maxPrice));
+  }
+
+  const queryStr = qs.toString();
+  const url = queryStr ? `${base}${categoryPath}?${queryStr}` : `${base}${categoryPath}`;
+
+  // 4. Compose a human label.
+  const categoryLabel = rootType
+    ? rootType.split('-').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('-')  // "Flower", "Pre-roll", "Edible"
+    : '';
+
+  let label: string;
+  if (lineageLabel && categoryLabel) {
+    label = `${lineageLabel} ${categoryLabel}s Menu`;        // "Sativa Edibles Menu"
+  } else if (lineageLabel) {
+    label = `${lineageLabel} Menu`;                          // "Sativa Menu"
+  } else if (categoryLabel) {
+    label = `${categoryLabel} Menu`;                          // "Edible Menu"
+  } else {
+    label = 'Full Menu';
+  }
+  if (intent.maxPrice) label = `${label} under $${intent.maxPrice}`;
+
+  // 5. Drop the count for non-brand queries — see comment block above.
+  //    Widget treats totalCount=0 as "no count, just show the label".
+  return { url, label, totalCount: 0 };
+}
+
 const EFFECT_KEYWORDS: Record<string, string[]> = {
   sleep: [
     'sleep', 'sleepy', 'nighttime', 'insomnia', 'knock out', 'sedating', 'bed',
