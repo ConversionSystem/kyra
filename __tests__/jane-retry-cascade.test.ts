@@ -15,6 +15,7 @@ import {
   parseProductIntent,
   getBrandCatalog,
   resolveSupportLinks,
+  buildBrowseMore,
   type JaneConfig,
 } from '@/lib/integrations/jane';
 
@@ -717,5 +718,166 @@ describe('algoliaHitToProduct — URL encoding (regression 2026-04-30)', () => {
     ]));
     const result = await searchProducts(baseConfig, { category: 'flower' });
     expect(result.products[0].url).toContain('weight=each');
+  });
+});
+
+// ── buildBrowseMore — smart filtered-page URLs (regression 2026-04-30) ─────
+// Customer reported clicking "Browse all 6 Full Menu →" took them to
+// /shop/all (the entire catalog). The label promised 6 filtered products,
+// the URL delivered thousands. New builder honors brand/category/lineage/
+// price filters and drops the count when the URL can't precisely reproduce
+// the search.
+describe('buildBrowseMore — per-intent URL + label', () => {
+  const BASE = 'https://plpcsanjose.com';
+
+  it('returns null when storeBaseUrl is empty', () => {
+    expect(buildBrowseMore('', { query: 'x' }, 100)).toBeNull();
+  });
+
+  it('strips trailing slash from storeBaseUrl', () => {
+    const r = buildBrowseMore('https://x.com/', { query: 'flower' }, 0);
+    expect(r?.url).toMatch(/^https:\/\/x\.com\//);
+    expect(r?.url).not.toMatch(/^https:\/\/x\.com\/\//);
+  });
+
+  describe('brand queries', () => {
+    it('builds /brands/{slug} with full-brand slug + preserves count', () => {
+      const r = buildBrowseMore(BASE, { brand: 'Alien Labs' }, 12, 'Alien Labs');
+      expect(r?.url).toBe(`${BASE}/brands/alien-labs`);
+      expect(r?.label).toBe('Alien Labs Products');
+      expect(r?.totalCount).toBe(12);
+    });
+
+    it('uses resolvedBrand over intent.brand for the slug (CBX → CBX Cannabiotix)', () => {
+      const r = buildBrowseMore(BASE, { brand: 'CBX' }, 4, 'CBX Cannabiotix');
+      // Slug must use the FULL brand name — Jane's /brands/cbx returns 0
+      // products, /brands/cbx-cannabiotix returns 4. PR #409 fix.
+      expect(r?.url).toBe(`${BASE}/brands/cbx-cannabiotix`);
+      expect(r?.label).toBe('CBX Products');  // chip label uses the short name
+    });
+
+    it('handles brands with apostrophes / ampersands in the slug', () => {
+      const r = buildBrowseMore(BASE, { brand: 'Papa & Barkley' }, 5, 'Papa & Barkley');
+      expect(r?.url).toBe(`${BASE}/brands/papa-barkley`);
+    });
+  });
+
+  describe('category queries (no brand, no effects)', () => {
+    it('flower → /shop/flower + Flower Menu', () => {
+      const r = buildBrowseMore(BASE, { category: 'flower' }, 200);
+      expect(r?.url).toBe(`${BASE}/shop/flower`);
+      expect(r?.label).toBe('Flower Menu');
+      expect(r?.totalCount).toBe(0);  // count dropped for non-brand queries
+    });
+
+    it('gummy → /shop/edible (root_type mapping)', () => {
+      const r = buildBrowseMore(BASE, { category: 'gummy' }, 50);
+      expect(r?.url).toBe(`${BASE}/shop/edible`);
+      expect(r?.label).toBe('Edible Menu');
+    });
+
+    it('cartridge → /shop/vape (root_type mapping)', () => {
+      const r = buildBrowseMore(BASE, { category: 'cartridge' }, 30);
+      expect(r?.url).toBe(`${BASE}/shop/vape`);
+      expect(r?.label).toBe('Vape Menu');
+    });
+
+    it('concentrate → /shop/extract (Jane verified path 2026-04-30)', () => {
+      const r = buildBrowseMore(BASE, { category: 'concentrate' }, 20);
+      expect(r?.url).toBe(`${BASE}/shop/extract`);
+      expect(r?.label).toBe('Extract Menu');
+    });
+
+    it('preroll → /shop/preroll', () => {
+      const r = buildBrowseMore(BASE, { category: 'preroll' }, 40);
+      expect(r?.url).toBe(`${BASE}/shop/preroll`);
+      // Title-cased per hyphen segment ("Pre-Roll", not "Pre-roll").
+      expect(r?.label).toBe('Pre-Roll Menu');
+    });
+
+    it('unknown category → /shop/all + "Full Menu"', () => {
+      const r = buildBrowseMore(BASE, { category: 'flux-capacitor' }, 0);
+      expect(r?.url).toBe(`${BASE}/shop/all`);
+      expect(r?.label).toBe('Full Menu');
+    });
+  });
+
+  describe('effect / lineage queries (the bug from the screenshot)', () => {
+    it('"Energizing products" — effects=energy → /shop/all?lineage=sativa + "Sativa Menu"', () => {
+      // This is the EXACT scenario from the user-reported bug:
+      // user tapped "⚡ Energizing products" quick reply, got 6 results,
+      // and the link said "Browse all 6 Full Menu →" pointing at /shop/all.
+      const r = buildBrowseMore(BASE, { effects: ['energy'], query: 'energizing products' }, 6);
+      expect(r?.url).toBe(`${BASE}/shop/all?lineage=sativa`);
+      expect(r?.label).toBe('Sativa Menu');
+      // CRITICAL: count must NOT appear in the chip — Jane's filtered page
+      // shows ALL sativas (hundreds), not the 6 we narrowed to.
+      expect(r?.totalCount).toBe(0);
+    });
+
+    it('"sleep" → effects=sleep → /shop/all?lineage=indica + "Indica Menu"', () => {
+      const r = buildBrowseMore(BASE, { effects: ['sleep'] }, 0);
+      expect(r?.url).toBe(`${BASE}/shop/all?lineage=indica`);
+      expect(r?.label).toBe('Indica Menu');
+    });
+
+    it('multiple effects mapping to multiple lineages drops the lineage filter', () => {
+      // relax → [indica, hybrid] — Jane URL doesn't OR. Skip the lineage param.
+      const r = buildBrowseMore(BASE, { effects: ['relax'] }, 0);
+      expect(r?.url).toBe(`${BASE}/shop/all`);
+      expect(r?.label).toBe('Full Menu');
+    });
+
+    it('preferLineages from session memory acts as fallback lineage', () => {
+      const r = buildBrowseMore(BASE, { preferLineages: ['sativa'] }, 0);
+      expect(r?.url).toBe(`${BASE}/shop/all?lineage=sativa`);
+      expect(r?.label).toBe('Sativa Menu');
+    });
+
+    it('effect-derived lineage takes priority over preferLineages', () => {
+      const r = buildBrowseMore(BASE, { effects: ['sleep'], preferLineages: ['sativa'] }, 0);
+      expect(r?.url).toBe(`${BASE}/shop/all?lineage=indica`);  // sleep → indica wins
+    });
+  });
+
+  describe('combined queries — category + lineage + price', () => {
+    it('"sativa gummies under $30" → /shop/edible?lineage=sativa&max_price=30', () => {
+      const r = buildBrowseMore(
+        BASE,
+        { category: 'gummy', effects: ['energy'], maxPrice: 30 },
+        0,
+      );
+      expect(r?.url).toBe(`${BASE}/shop/edible?lineage=sativa&max_price=30`);
+      expect(r?.label).toBe('Sativa Edibles Menu under $30');
+    });
+
+    it('"flower under $40" → /shop/flower?max_price=40', () => {
+      const r = buildBrowseMore(BASE, { category: 'flower', maxPrice: 40 }, 0);
+      expect(r?.url).toBe(`${BASE}/shop/flower?max_price=40`);
+      expect(r?.label).toBe('Flower Menu under $40');
+    });
+
+    it('"indica vapes" → /shop/vape?lineage=indica', () => {
+      const r = buildBrowseMore(BASE, { category: 'vape', effects: ['sleep'] }, 0);
+      expect(r?.url).toBe(`${BASE}/shop/vape?lineage=indica`);
+      expect(r?.label).toBe('Indica Vapes Menu');
+    });
+  });
+
+  describe('count semantics', () => {
+    it('brand queries surface the count (storefront page is a faithful match)', () => {
+      const r = buildBrowseMore(BASE, { brand: 'X' }, 12, 'X');
+      expect(r?.totalCount).toBe(12);
+    });
+
+    it('non-brand queries always return totalCount=0 (widget hides the prefix)', () => {
+      // The previous bug shipped "Browse all 6 Full Menu →" because the
+      // widget renders count when truthy — and Algolia's filtered count
+      // doesn't match what Jane's filtered page would show.
+      expect(buildBrowseMore(BASE, { category: 'flower' }, 200)?.totalCount).toBe(0);
+      expect(buildBrowseMore(BASE, { effects: ['energy'] }, 6)?.totalCount).toBe(0);
+      expect(buildBrowseMore(BASE, { maxPrice: 30 }, 50)?.totalCount).toBe(0);
+      expect(buildBrowseMore(BASE, {}, 1000)?.totalCount).toBe(0);
+    });
   });
 });
