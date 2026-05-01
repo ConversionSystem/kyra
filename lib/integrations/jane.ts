@@ -231,27 +231,32 @@ export function buildBrowseMore(
     ? `/shop/${ROOT_TYPE_TO_URL_PATH[rootType]}`
     : '/shop/all';
 
-  // 3. Build query string. Jane supports lineage, effects, max_price.
+  // 3. Build query string. Jane Roots storefront filter param is `strain=`,
+  //    NOT `lineage=`. Probed plpcsanjose.com on 2026-05-01:
+  //      ?lineage=indica   → 268 products (filter ignored, baseline count)
+  //      ?strain=indica    → 57 products (filter applied)
+  //    Earlier PR #439 probe only checked HTTP 200, not whether the count
+  //    actually changed — the storefront silently 200s on unknown params.
+  //    Price params (?max_price=, ?price=, ?bucket_price=, ?max=) and THC
+  //    sort/min params are ALL silently ignored too. Only `strain=` works.
+  //    Keep maxPrice in the label for transparency, but don't put it in
+  //    the URL (would do nothing).
   const qs = new URLSearchParams();
 
-  // Lineage: derived from effects via EFFECT_LINEAGE_MAP. Single lineage
-  // → use ?lineage=. Multiple → skip (Jane storefront doesn't OR).
+  // Lineage filter — derived from effects via EFFECT_LINEAGE_MAP, or from
+  // direct strain mention via preferLineages. Multiple lineages → skip
+  // (Jane storefront doesn't OR strain values).
   let lineageLabel = '';
   if (intent.effects?.length) {
     const lineages = [...new Set(intent.effects.flatMap((e) => EFFECT_LINEAGE_MAP[e] || []))];
     if (lineages.length === 1) {
-      qs.set('lineage', lineages[0]);
+      qs.set('strain', lineages[0]);
       lineageLabel = lineages[0].charAt(0).toUpperCase() + lineages[0].slice(1);
     }
   }
-  // Session-preference lineage as a secondary signal (when no effects mapped).
-  if (!qs.has('lineage') && intent.preferLineages?.length === 1) {
-    qs.set('lineage', intent.preferLineages[0]);
+  if (!qs.has('strain') && intent.preferLineages?.length === 1) {
+    qs.set('strain', intent.preferLineages[0]);
     lineageLabel = intent.preferLineages[0].charAt(0).toUpperCase() + intent.preferLineages[0].slice(1);
-  }
-
-  if (typeof intent.maxPrice === 'number' && intent.maxPrice > 0) {
-    qs.set('max_price', String(intent.maxPrice));
   }
 
   const queryStr = qs.toString();
@@ -259,7 +264,7 @@ export function buildBrowseMore(
 
   // 4. Compose a human label.
   const categoryLabel = rootType
-    ? rootType.split('-').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('-')  // "Flower", "Pre-roll", "Edible"
+    ? rootType.split('-').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('-')  // "Flower", "Pre-Roll", "Edible"
     : '';
 
   let label: string;
@@ -272,6 +277,9 @@ export function buildBrowseMore(
   } else {
     label = 'Full Menu';
   }
+  // maxPrice is preserved in the label as helpful context for the customer
+  // even though Jane's storefront doesn't honor a URL price filter — the
+  // user will still see prices on the cards we already rendered.
   if (intent.maxPrice) label = `${label} under $${intent.maxPrice}`;
 
   // 5. Drop the count for non-brand queries — see comment block above.

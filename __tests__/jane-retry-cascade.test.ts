@@ -1087,64 +1087,79 @@ describe('buildBrowseMore — per-intent URL + label', () => {
   });
 
   describe('effect / lineage queries (the bug from the screenshot)', () => {
-    it('"Energizing products" — effects=energy → /shop/all?lineage=sativa + "Sativa Menu"', () => {
-      // This is the EXACT scenario from the user-reported bug:
-      // user tapped "⚡ Energizing products" quick reply, got 6 results,
-      // and the link said "Browse all 6 Full Menu →" pointing at /shop/all.
+    // Note: Jane Roots storefront filter param is `?strain=`, NOT `?lineage=`.
+    // PR #439's probe checked HTTP 200 only; subsequent probe (2026-05-01)
+    // showed `?lineage=indica` returns the SAME count as the unfiltered page
+    // (Jane silently ignores unknown params), while `?strain=indica` actually
+    // narrows the count from 268 → 57.
+    it('"Energizing products" — effects=energy → /shop/all?strain=sativa + "Sativa Menu"', () => {
       const r = buildBrowseMore(BASE, { effects: ['energy'], query: 'energizing products' }, 6);
-      expect(r?.url).toBe(`${BASE}/shop/all?lineage=sativa`);
+      expect(r?.url).toBe(`${BASE}/shop/all?strain=sativa`);
       expect(r?.label).toBe('Sativa Menu');
-      // CRITICAL: count must NOT appear in the chip — Jane's filtered page
-      // shows ALL sativas (hundreds), not the 6 we narrowed to.
       expect(r?.totalCount).toBe(0);
     });
 
-    it('"sleep" → effects=sleep → /shop/all?lineage=indica + "Indica Menu"', () => {
+    it('"sleep" → effects=sleep → /shop/all?strain=indica + "Indica Menu"', () => {
       const r = buildBrowseMore(BASE, { effects: ['sleep'] }, 0);
-      expect(r?.url).toBe(`${BASE}/shop/all?lineage=indica`);
+      expect(r?.url).toBe(`${BASE}/shop/all?strain=indica`);
       expect(r?.label).toBe('Indica Menu');
     });
 
-    it('multiple effects mapping to multiple lineages drops the lineage filter', () => {
-      // relax → [indica, hybrid] — Jane URL doesn't OR. Skip the lineage param.
+    it('multiple effects mapping to multiple lineages drops the strain filter', () => {
+      // relax → [indica, hybrid] — Jane URL doesn't OR. Skip the strain param.
       const r = buildBrowseMore(BASE, { effects: ['relax'] }, 0);
       expect(r?.url).toBe(`${BASE}/shop/all`);
       expect(r?.label).toBe('Full Menu');
     });
 
-    it('preferLineages from session memory acts as fallback lineage', () => {
+    it('preferLineages from session memory acts as fallback strain', () => {
       const r = buildBrowseMore(BASE, { preferLineages: ['sativa'] }, 0);
-      expect(r?.url).toBe(`${BASE}/shop/all?lineage=sativa`);
+      expect(r?.url).toBe(`${BASE}/shop/all?strain=sativa`);
       expect(r?.label).toBe('Sativa Menu');
     });
 
-    it('effect-derived lineage takes priority over preferLineages', () => {
+    it('effect-derived strain takes priority over preferLineages', () => {
       const r = buildBrowseMore(BASE, { effects: ['sleep'], preferLineages: ['sativa'] }, 0);
-      expect(r?.url).toBe(`${BASE}/shop/all?lineage=indica`);  // sleep → indica wins
+      expect(r?.url).toBe(`${BASE}/shop/all?strain=indica`);  // sleep → indica wins
     });
   });
 
-  describe('combined queries — category + lineage + price', () => {
-    it('"sativa gummies under $30" → /shop/edible?lineage=sativa&max_price=30', () => {
+  describe('combined queries — category + strain + price', () => {
+    // 2026-05-01 probe: Jane Roots storefront does NOT honor any URL price
+    // filter (max_price, price_max, max, price=lo-hi, bucket_price all
+    // ignored) so we don't put it in the URL. We DO keep "under $N" in the
+    // label as transparent context for the customer — they'll still see
+    // prices on the cards we already rendered.
+    it('"sativa gummies under $30" → /shop/edible?strain=sativa (price omitted from URL, kept in label)', () => {
       const r = buildBrowseMore(
         BASE,
         { category: 'gummy', effects: ['energy'], maxPrice: 30 },
         0,
       );
-      expect(r?.url).toBe(`${BASE}/shop/edible?lineage=sativa&max_price=30`);
+      expect(r?.url).toBe(`${BASE}/shop/edible?strain=sativa`);
       expect(r?.label).toBe('Sativa Edibles Menu under $30');
     });
 
-    it('"flower under $40" → /shop/flower?max_price=40', () => {
+    it('"flower under $40" → /shop/flower (price label only, no URL param)', () => {
       const r = buildBrowseMore(BASE, { category: 'flower', maxPrice: 40 }, 0);
-      expect(r?.url).toBe(`${BASE}/shop/flower?max_price=40`);
+      expect(r?.url).toBe(`${BASE}/shop/flower`);
       expect(r?.label).toBe('Flower Menu under $40');
     });
 
-    it('"indica vapes" → /shop/vape?lineage=indica', () => {
+    it('"indica vapes" → /shop/vape?strain=indica', () => {
       const r = buildBrowseMore(BASE, { category: 'vape', effects: ['sleep'] }, 0);
-      expect(r?.url).toBe(`${BASE}/shop/vape?lineage=indica`);
+      expect(r?.url).toBe(`${BASE}/shop/vape?strain=indica`);
       expect(r?.label).toBe('Indica Vapes Menu');
+    });
+
+    // Lockfile: pin every strain value Jane honors. If this test breaks the
+    // probe needs to be re-run against the live site to confirm Jane changed
+    // their schema. As of 2026-05-01: only indica/sativa/hybrid/cbd work.
+    it('lockfile: every supported strain produces ?strain={value}', () => {
+      for (const s of ['indica', 'sativa', 'hybrid', 'cbd']) {
+        const r = buildBrowseMore(BASE, { preferLineages: [s] }, 0);
+        expect(r?.url).toBe(`${BASE}/shop/all?strain=${s}`);
+      }
     });
   });
 
