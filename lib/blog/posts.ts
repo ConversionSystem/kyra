@@ -11,6 +11,217 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'per-client-ai-container-isolation-2026',
+    title: 'Per-Client AI Container Isolation in 2026: How Agencies Run 50+ AI Workers Without Cross-Contamination',
+    description: 'Per-client AI container isolation is the deployment pattern that gives every AI worker its own filesystem, network, and credentials. Compare Docker, gVisor, and Firecracker for multi-tenant AI agents in 2026, with a step-by-step OpenClaw setup, threat model, and the real cost math for agencies running 50+ clients.',
+    date: '2026-05-01',
+    readMins: 12,
+    category: 'AI Infrastructure',
+    emoji: '🔒',
+    content: `
+<p><em>Last updated: May 1, 2026</em></p>
+
+<p><strong>Per-client AI container isolation</strong> is a deployment pattern that runs each client's AI worker in a separate hardened sandbox so prompts, files, credentials, and tool calls from one client cannot reach another. For agencies operating 10, 50, or 500 AI workers from the same dashboard, it is the difference between a controllable platform and a single bad prompt that quietly leaks every tenant's data.</p>
+
+<p>This guide breaks down the four isolation models that matter in 2026, the threat model each one addresses, and a step-by-step setup using OpenClaw and Docker. By the end you will know how to draw a hard boundary around every client without paying enterprise SaaS prices to do it.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;"><p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p><ul style="margin:0;">
+<li>Per-client container isolation gives every AI worker its own filesystem, network, credentials, and process tree. A prompt injection inside client A cannot reach client B.</li>
+<li>Four isolation models matter in 2026: shared process, Docker container, gVisor sandbox, and Firecracker microVM. Each trades isolation for startup time and overhead.</li>
+<li>OpenClaw v2026.4.27 ships a per-session Docker sandbox runtime out of the box. Anthropic's Claude Managed Agents (launched April 8, 2026) uses gVisor at $0.08 per session-hour.</li>
+<li>For agencies running 50+ clients, self-hosted Docker isolation costs roughly $0.003 per worker-hour in compute. Managed alternatives cost about 25x more in runtime alone.</li>
+<li>By the end of 2026, 40% of enterprise applications will have embedded task-specific agents, up from less than 5% in early 2025. Multi-tenant isolation is now table stakes.</li>
+<li>Isolation only holds if the boundaries hold. Default-deny network egress, scoped filesystems, and proxy-injected credentials are non-negotiable.</li>
+</ul></div>
+
+<h2>Why container isolation matters for multi-tenant AI agents in 2026</h2>
+
+<p>An AI agent is not a chatbot. It runs tool calls, writes files, hits APIs, executes shell commands. When the same process serves multiple clients, a single prompt injection in one tenant becomes a path into every other tenant on the box. The blast radius scales with your client list.</p>
+
+<p>This is not hypothetical. By the end of 2026, 40% of enterprise applications will have embedded task-specific agents, up from less than 5% in early 2025. Most of those agents are deployed by agencies and platforms running multi-tenant infrastructure. If the architecture cannot draw a hard boundary at the tenant level, every new client expands the attack surface of every existing client.</p>
+
+<p>The 2026 isolation question is therefore not "should we isolate?" but "where do we draw the boundary?" The boundary can sit at the application layer, at the container, at the kernel syscall layer, or at the virtual machine. Each option costs more and isolates more. Agencies need to know which one fits which client, and how to operate the boundary so it actually holds.</p>
+
+<h2>The four isolation models that matter in 2026</h2>
+
+<p>There are four production-grade approaches. Picking the right one depends on data sensitivity, the agent's tool surface, and how much you can pay per worker-hour.</p>
+
+<p><strong>1. Shared process, logical isolation.</strong> All clients run inside one process. Each request carries a tenant ID. The application enforces the boundary in code. Cheapest to run, weakest to compromise. Suitable only when the agent has read-only tools and no shell access.</p>
+
+<p><strong>2. Per-client Docker container.</strong> Each client gets its own container with namespaced filesystem, network, processes, and limited Linux capabilities. Standard containers share the host kernel, but with hardening (user namespace remapping, dropped capabilities, no-new-privs, resource limits) they block the most common attacks. This is the OpenClaw default for non-main sessions.</p>
+
+<p><strong>3. gVisor sandbox.</strong> gVisor sits between the container and the host kernel. It intercepts syscalls in user space and re-implements them, so a kernel exploit inside the container cannot directly hit the host. This is the model Anthropic chose for Claude Managed Agents. Slightly slower than raw Docker, dramatically harder to escape.</p>
+
+<p><strong>4. Firecracker microVM.</strong> A hardware-virtualized VM, but stripped to the bone. Boots in roughly 125 ms with under 5 MiB overhead per VM. A single host can launch up to 150 microVMs per second. This is the technology AWS uses behind Lambda. The strongest isolation; the highest infrastructure complexity.</p>
+
+<p>Here is how the four compare in practice for an agency running per-client AI workers:</p>
+
+<table>
+<thead>
+<tr><th>Model</th><th>Boundary</th><th>Startup</th><th>Overhead</th><th>Escape difficulty</th><th>Best for</th></tr>
+</thead>
+<tbody>
+<tr><td>Shared process</td><td>Application code</td><td>0 ms</td><td>~5 MB</td><td>Trivial if injection works</td><td>Read-only chat, no tools</td></tr>
+<tr><td>Docker container</td><td>Linux namespaces</td><td>200–800 ms</td><td>~30 MB</td><td>Hard with hardening</td><td>Most agency clients</td></tr>
+<tr><td>gVisor sandbox</td><td>Syscall interception</td><td>500–1500 ms</td><td>~50 MB</td><td>Very hard</td><td>Regulated workloads</td></tr>
+<tr><td>Firecracker microVM</td><td>Hypervisor</td><td>~125 ms</td><td>&lt;5 MB</td><td>Hardware-grade</td><td>Untrusted code execution</td></tr>
+</tbody>
+</table>
+
+<h2>Threat model: what cross-contamination actually looks like</h2>
+
+<p>Before locking down the architecture, name the attacks you are defending against. There are five concrete failure modes a multi-tenant AI platform must block.</p>
+
+<p><strong>Prompt injection across tenants.</strong> Client A pastes a malicious instruction. The agent calls a shared tool. The tool returns content from client B's workspace. Logical isolation alone does not stop this; the agent process must not be able to reach client B's files in the first place.</p>
+
+<p><strong>Credential leakage.</strong> Each client has API keys for GoHighLevel, Stripe, Twilio, OpenAI, and so on. If those keys live in a shared environment variable, any agent with shell access can read them. The fix is per-client credential scoping, ideally injected by a proxy outside the agent's view.</p>
+
+<p><strong>Filesystem traversal.</strong> The agent writes a file. The path is constructed from user input. Without a chrooted or namespaced filesystem, the file lands somewhere it should not. Docker namespaces close this off by default; shared-process deployments do not.</p>
+
+<p><strong>Resource exhaustion.</strong> One client triggers a fork bomb, a memory leak, or a runaway loop. Without per-tenant CPU and memory limits, every other client on the box slows down or dies. Containers fix this with cgroups; bare processes do not.</p>
+
+<p><strong>Network pivoting.</strong> An agent gets compromised, then uses outbound HTTP to exfiltrate data or scan the internal network. Default-deny egress, with an explicit allowlist per client, blocks this entire class of attack at the network layer.</p>
+
+<h2>Step-by-step: per-client OpenClaw container setup</h2>
+
+<p>OpenClaw v2026.4.27 ships a Docker sandbox runtime that runs each non-main session inside its own container. Below is the setup for an agency that wants every client on its own isolated worker.</p>
+
+<p>Assume you have a VPS with Docker, 8 GB RAM, and root access. Each client container runs around 1.5 GB. A 32 GB box comfortably holds 18–20 production clients before swap pressure starts.</p>
+
+<p><strong>1. Pull the OpenClaw image and create a per-client directory.</strong></p>
+
+<pre><code>docker pull openclaw/openclaw:v2026.4.27
+mkdir -p /srv/openclaw/clients/acme-dental
+cd /srv/openclaw/clients/acme-dental</code></pre>
+
+<p><strong>2. Generate a per-client config.</strong> Each client gets its own <code>openclaw.json</code>, <code>auth-profiles.json</code>, and workspace. Never share these across tenants.</p>
+
+<pre><code>cat &gt; openclaw.json &lt;&lt;'EOF'
+{
+  "gateway": {
+    "auth": { "type": "token" },
+    "trustedProxies": ["10.0.0.0/8"]
+  },
+  "agents": {
+    "defaults": { "model": "openai/gpt-4o-mini" }
+  },
+  "channels": ["whatsapp", "web"]
+}
+EOF</code></pre>
+
+<p><strong>3. Create a per-client Docker network.</strong> Each client gets its own bridge so containers cannot see each other's traffic.</p>
+
+<pre><code>docker network create --driver bridge acme-net</code></pre>
+
+<p><strong>4. Launch the container with hardening flags.</strong> The flags below drop capabilities, prevent privilege escalation, set resource limits, and pin the user to a non-root UID inside the container.</p>
+
+<pre><code>docker run -d \\
+  --name openclaw-acme-dental \\
+  --memory=1536m --cpus=1.0 \\
+  --cap-drop=ALL \\
+  --security-opt=no-new-privileges \\
+  --read-only \\
+  --tmpfs /tmp:rw,noexec,nosuid \\
+  -v /srv/openclaw/clients/acme-dental:/workspace \\
+  --network=acme-net \\
+  -p 127.0.0.1:8001:8080 \\
+  openclaw/openclaw:v2026.4.27</code></pre>
+
+<p><strong>5. Inject credentials via a proxy, not env vars.</strong> Run a small reverse proxy in front of the container that adds the client's API keys to outbound requests. The agent calls <code>http://proxy/ghl/contacts</code>; the proxy maps that to the real GoHighLevel API with the right token. The agent never reads the key.</p>
+
+<p><strong>6. Verify isolation.</strong> Exec into the container and try to reach a sibling. It should fail.</p>
+
+<pre><code>docker exec -it openclaw-acme-dental sh -c 'wget -T 3 http://openclaw-other-client:8080'
+# expected: "could not resolve host"</code></pre>
+
+<p>Repeat steps 1–6 for every new client. Automate the loop with a thin provisioning script and you have a multi-tenant platform.</p>
+
+<h2>Network, filesystem, and credential boundaries</h2>
+
+<p>Containers do most of the work, but three boundaries deserve special attention because that is where most leaks happen in production.</p>
+
+<p><strong>Network.</strong> Default-deny is the rule. Inside each container, allow outbound traffic only to the specific domains the agent needs: the LLM API, the client's CRM, and a logging endpoint. Anthropic's Managed Agents default to deny-all egress with explicit allowlists, and there is no reason your self-hosted setup should be looser. Implement this with an egress proxy or with iptables rules in the container's network namespace.</p>
+
+<p><strong>Filesystem.</strong> Mount the container read-only and put any writable area in a tmpfs or a per-client volume. Two paths matter: a writable <code>/workspace</code> for the agent's state, and a read-only mount for shared skills and templates. This is the same split Anthropic uses (<code>/workspace</code> writable, <code>/source</code> read-only). It works because it is simple to reason about and easy to audit.</p>
+
+<p><strong>Credentials.</strong> Never bake API keys into the container image. Never inject them as environment variables either, because any process inside the container can read them. The right pattern is a credential proxy: the agent makes a request to a local sidecar, the sidecar injects the right key for the right tenant, and the response flows back. The agent sees URLs and bodies, never tokens.</p>
+
+<h2>The real cost of running 50+ isolated AI workers</h2>
+
+<p>Isolation has a price. The question is whether you pay it in compute or in dollars.</p>
+
+<p>A self-hosted Docker setup on a $40-per-month VPS with 32 GB RAM holds around 18 clients comfortably. That works out to roughly $0.003 per client-hour for the runtime. Add the LLM tokens and the all-in cost per client per hour stays under $0.05 for most agency workloads.</p>
+
+<p>Anthropic's Claude Managed Agents, launched April 8, 2026, charges $0.08 per session-hour for runtime alone, on top of standard token rates. A worker running 24/7 costs around $58 per month in runtime before tokens. For 50 clients running continuously, that is roughly $2,900 per month just for the gVisor sandboxes. The same workload on three self-hosted VPSes costs around $120 in compute.</p>
+
+<p>The trade is not money for nothing. Managed Agents gives you gVisor isolation, automatic patching, and a credential proxy out of the box. Self-hosting gives you control, BYO keys, and predictable cost. Most agencies running 10+ clients land on self-hosted Docker with optional gVisor for the regulated tenants.</p>
+
+<table>
+<thead>
+<tr><th>Setup</th><th>50 clients runtime / month</th><th>Isolation strength</th><th>Operational burden</th></tr>
+</thead>
+<tbody>
+<tr><td>Shared process on 1 VPS</td><td>~$40</td><td>Logical only</td><td>Low (one process)</td></tr>
+<tr><td>Self-hosted Docker (3 VPSes)</td><td>~$120</td><td>Container</td><td>Medium</td></tr>
+<tr><td>Self-hosted gVisor</td><td>~$200</td><td>Syscall</td><td>High</td></tr>
+<tr><td>Claude Managed Agents</td><td>~$2,900</td><td>gVisor</td><td>None (you pay for it)</td></tr>
+</tbody>
+</table>
+
+<h2>Operational practices that keep isolation real</h2>
+
+<p>Containers do not isolate themselves. The boundary holds only if the operator keeps it tight. Five practices separate platforms that survive their first audit from those that do not.</p>
+
+<p><strong>Patch on a schedule.</strong> Run <code>docker pull</code> against the OpenClaw image weekly. The April 27, 2026 release alone shipped a long tail of reliability and security fixes. Old images accumulate CVEs.</p>
+
+<p><strong>Restart cadence.</strong> Containers should be cattle, not pets. Restart each client's container nightly so a leaked credential or compromised process has a finite life. Use a cron entry, a hook, or a systemd timer.</p>
+
+<p><strong>Per-client logs.</strong> Pipe container stdout to a per-tenant log stream. Never log into a shared file. If client A reads a log line that came from client B, you have re-introduced cross-contamination at the observability layer.</p>
+
+<p><strong>Capability audits.</strong> Every quarter, list which Linux capabilities each container holds. Drop the ones that are unused. Most AI workers do not need <code>NET_ADMIN</code>, <code>SYS_PTRACE</code>, or <code>DAC_OVERRIDE</code>. Confirm by inspecting the running container's effective capabilities with <code>capsh --print</code>.</p>
+
+<p><strong>Allowlist drift.</strong> Each client's egress allowlist grows over time as the agent picks up new tools. Review the list quarterly. Anything not actively used gets removed. The fewer destinations the agent can reach, the smaller the exfiltration surface.</p>
+
+<h2>When per-client isolation is not for you</h2>
+
+<p>Container isolation is not always the right call. Three situations make it overkill.</p>
+
+<p><strong>You only have one client.</strong> A single tenant on a single box does not need cross-contamination defenses, because there is nothing to contaminate. Run the agent in a normal process, harden the host, and save the operational overhead.</p>
+
+<p><strong>The agent has no tools.</strong> A pure chat assistant that only calls an LLM and returns text has almost no attack surface. The worst a prompt injection can do is generate weird output. Containerization here is theater.</p>
+
+<p><strong>You can pay for managed.</strong> If you have ten clients and $300 of margin per client, paying Anthropic $58 per worker-month for Claude Managed Agents is fine. You trade money for the headache of running infrastructure. For agencies still building margin, that math flips fast.</p>
+
+<p>Everywhere else, per-client isolation is the default. The cost of getting it wrong is one breach away from being existential.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Does Docker container isolation actually stop prompt injection attacks?</h3>
+<p>It does not stop the injection itself. The malicious prompt still runs. What it stops is the blast radius. A compromised agent inside a hardened container cannot read another tenant's files, cannot call another tenant's APIs, and cannot exfiltrate to arbitrary domains. The injection becomes a contained incident instead of a platform-wide breach.</p>
+
+<h3>How is gVisor different from a standard Docker container?</h3>
+<p>A standard Docker container shares the host's Linux kernel. A kernel exploit inside the container can hit the host directly. gVisor sits between the two, intercepts syscalls in user space, and re-implements the dangerous ones. The agent never talks to the real kernel, so a kernel CVE in the container does not become a host compromise. The trade is a small performance hit and slightly slower startup, which is why Anthropic chose this model for Claude Managed Agents.</p>
+
+<h3>Why not just use a virtual machine per client?</h3>
+<p>You can. Firecracker microVMs are designed for exactly this and boot in around 125 ms with under 5 MiB of overhead per VM. The reason most agencies do not is operational complexity: networking, image management, and orchestration are all heavier than Docker. Use microVMs when you are running untrusted code, hosting code interpreters, or operating in a regulated industry where a hypervisor boundary is the audit requirement.</p>
+
+<h3>How many isolated AI workers can one VPS run?</h3>
+<p>Roughly RAM divided by 1.5 GB, minus 2 GB for the host. A 32 GB VPS holds 18–20 OpenClaw workers comfortably. CPU is rarely the bottleneck since most agent time is spent waiting on LLM responses. If your workers are heavy on local tool calls or RAG over local files, drop the density to 12–15 per box.</p>
+
+<h3>Can I mix isolation levels for different clients?</h3>
+<p>Yes, and this is what most mature platforms do. Standard SMB clients run on hardened Docker. Healthcare and finance tenants run on gVisor or Firecracker. Trial users run on shared-process with read-only tools. The orchestrator picks the runtime per client based on a sensitivity tier in the database. The key is that the tier is set at provisioning time and never silently downgraded.</p>
+
+<h3>What happens if I just run everything on Anthropic's Claude Managed Agents?</h3>
+<p>You get production-grade gVisor isolation without operating any infrastructure. You also pay $0.08 per session-hour plus token costs, with batch discounts disabled. For an agency with a handful of clients and high margin, this is a reasonable trade. For an agency running 50+ clients on tight margins, the math does not work and you will end up self-hosting the workers and using Managed Agents only for the regulated tenants.</p>
+
+<h2>Closing thought</h2>
+
+<p>Per-client AI container isolation is the architectural decision that separates a platform from a script. Get it right and you can scale to hundreds of clients on commodity hardware while sleeping at night. Get it wrong and your first prompt injection becomes a disclosure email to every tenant on the box. The technology to do this well, at agency prices, is sitting in the OpenClaw repository today. The hard part is not the runtime. The hard part is the operational discipline to keep the boundaries tight as the platform grows.</p>
+
+<p>If you would rather skip the Docker yak-shave and ship hardened per-client AI workers in a few minutes, <a href="/solo">Kyra</a> deploys this exact architecture for agencies, with per-client isolation, BYO keys, and a credential proxy already wired in. We use the same OpenClaw 2026.4.27 runtime described above and follow the same isolation rules. Pair it with our <a href="/blog/ai-data-sovereignty-self-hosted-2026">AI data sovereignty guide</a> and the <a href="/blog/what-is-openclaw-ai-gateway-explained">OpenClaw gateway explainer</a> if you want the full architectural picture. For canonical sources on isolation primitives, see the <a href="https://github.com/openclaw/openclaw">OpenClaw repository on GitHub</a>, the <a href="https://docs.openclaw.ai/install/docker">OpenClaw Docker documentation</a>, and Anthropic's <a href="https://platform.claude.com/docs/en/agent-sdk/secure-deployment">secure agent deployment guide</a>.</p>
+`,
+  },
+    {
     slug: 'ai-data-sovereignty-self-hosted-2026',
     title: 'AI Data Sovereignty in 2026: Why Self-Hosted Is Winning Regulated Industries',
     description: 'AI data sovereignty is the legal and technical guarantee that prompts, completions, and embeddings stay under your jurisdiction. Here is what changed in 2026 with the EU AI Act, the US CLOUD Act gap, an honest self-hosted vs cloud AI comparison, and a step-by-step OpenClaw deployment for regulated workloads.',
