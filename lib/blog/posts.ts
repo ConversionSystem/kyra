@@ -2282,7 +2282,7 @@ openclaw mcp list my-first-agent</code></pre>
     <li>Connection uses GHL Private Integration Tokens — no marketplace listing, no OAuth app, no review process required.</li>
     <li>All seven GHL conversation channels are covered from a single unified inbox.</li>
     <li>Typical retainer pricing: $500 (restaurant, basic) to $2,000 (real estate, premium) per month per client.</li>
-    <li>Proactive outreach is the highest-leverage feature: the AI contacts new leads within ~60 seconds of creation.</li>
+    <li>Proactive outreach is the highest-impact feature: the AI contacts new leads within ~60 seconds of creation.</li>
     <li>Every conversation auto-updates GHL tags, pipeline stages, and contact notes — no manual CRM maintenance.</li>
   </ul>
 </div>
@@ -2877,7 +2877,7 @@ every appointment time and date twice before booking.</code></pre>
 <li><strong>Month 7–12:</strong> Systemize. Hire a junior VA for onboarding. You focus on sales. Target: 50 clients.</li>
 </ul>
 
-<p>The key leverage: every client you add at month 6 is still paying at month 18. The churn is nearly zero because the AI is delivering daily, measurable value.</p>
+<p>The compounding advantage: every client you add at month 6 is still paying at month 18. The churn is nearly zero because the AI is delivering daily, measurable value.</p>
 
 <h2>The Pitch That Closes</h2>
 
