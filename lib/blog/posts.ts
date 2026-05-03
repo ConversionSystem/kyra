@@ -11,6 +11,207 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'self-hosted-ai-cost-vs-cloud-2026',
+    title: 'Self-Hosted AI Cost vs Cloud LLM Bills in 2026: The Honest Math for Agencies',
+    description: 'Self-hosted AI cost in 2026 is not just the GPU bill. Compare Anthropic Claude pricing after caching and batch discounts, real Hetzner and RunPod infrastructure rates, and a step-by-step way to model your true monthly bill across light, medium, and heavy agency tiers.',
+    date: '2026-05-03',
+    readMins: 16,
+    category: 'AI Infrastructure',
+    emoji: '💸',
+    content: `
+<p><em>Last updated: May 3, 2026</em></p>
+
+<p><strong>Self-hosted AI cost</strong> is the all-in monthly bill an agency or operator pays to run AI workers on its own infrastructure instead of routing every request to a cloud LLM provider. In 2026 that bill includes compute (CPU or GPU), bandwidth, storage, monitoring, the people-hours to keep the stack running, and a much smaller line item for inference itself when bring-your-own-key (BYOK) routing is used. Compared in isolation, cloud LLM pricing looks cheap. Compared at scale across dozens of clients with high token volume, the same cloud bill quietly turns into the largest single operating expense in the business.</p>
+
+<p>This post breaks down the real cost math for 2026: what cloud LLMs actually charge after caching and batch discounts, what a self-hosted gateway plus a GPU VPS actually costs, where the break-even point sits for an agency running 10, 50, or 200 clients, and the hybrid setup most operators land on once they run the numbers honestly.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>Anthropic's 2026 rate card: Haiku 4.5 at $1/$5, Sonnet 4.6 at $3/$15, Opus 4.7 at $5/$25 per million input/output tokens. Prompt caching cuts cached input by 90% and batch processing halves the rest, so an optimized request can land at roughly 5% of the headline rate.</li>
+    <li>A 32 GB Hetzner CPU VPS at about EUR 60 per month comfortably hosts an OpenClaw gateway and 18 to 20 client workspaces. GPU VPS rates start at around $0.20 per hour for an RTX 4090 spot instance on RunPod, or $144 per month at full uptime.</li>
+    <li>Self-hosted is decisively cheaper above roughly 50 million tokens per day. One published 36-month TCO comparison puts heavy-tier self-hosting at $391,707 against $540,000 for the same workload routed entirely to Anthropic.</li>
+    <li>Cloud is decisively cheaper below roughly 5 million tokens per month per agency, where a self-hosted GPU sits idle most of the time and burns its rental fee.</li>
+    <li>The 2026 majority pattern is hybrid: a self-hosted OpenClaw gateway, BYOK to a region-pinned model endpoint, prompt caching always on, batch processing for non-interactive workloads.</li>
+    <li>The hidden costs that flip the math are engineering hours for setup, ongoing patching, and the cost of an outage, not the rate card itself.</li>
+  </ul>
+</div>
+
+<h2>What you actually pay for in an AI worker stack</h2>
+
+<p>Agency operators usually look at the OpenAI or Anthropic dashboard and decide cost based on the per-million-token number. That number is real, but it is one of seven separate line items in a multi-tenant AI worker stack. Knowing the others is what separates a back-of-napkin estimate from a number that survives twelve months of growth.</p>
+
+<p>The seven line items, in roughly the order they bite:</p>
+
+<ol>
+  <li><strong>Inference.</strong> The per-token charge for the model itself, paid to Anthropic, OpenAI, OpenRouter, Together, or your own GPU.</li>
+  <li><strong>Compute.</strong> The CPU and RAM to run the gateway, the per-client containers, the queue, and the dashboard. Even the cheapest cloud-only stack still pays for this somewhere.</li>
+  <li><strong>Storage.</strong> Workspace files, conversation history, embeddings, and audit logs. Quiet at first, very loud after a year.</li>
+  <li><strong>Bandwidth.</strong> Egress fees on hyperscalers can quietly exceed compute. Hetzner and OVH include generous egress; AWS and GCP do not.</li>
+  <li><strong>Channels.</strong> Twilio for SMS and voice, Vonage for WhatsApp, Stripe for billing, all per-message or per-minute fees that scale with usage.</li>
+  <li><strong>Engineering.</strong> The hours to install, patch, monitor, and debug the stack. At an agency owner's blended rate this is usually the second-largest line item after inference.</li>
+  <li><strong>Insurance and downtime.</strong> The cost of an outage during business hours, multiplied by the probability over a year. Usually invisible until it isn't.</li>
+</ol>
+
+<p>Cloud-first stacks roll items 2 to 4 into the per-token rate, which is convenient but obscures the true cost of growth. Self-hosted stacks pay each item visibly, which feels more expensive at small scale and turns out to be cheaper at large scale once volume amortizes the fixed compute and engineering cost.</p>
+
+<h2>Cloud LLM pricing in 2026: the headline rates and the real ones</h2>
+
+<p>Anthropic's published rate card as of May 2026, after the April 16 launch of Claude Opus 4.7:</p>
+
+<table>
+<thead>
+<tr><th>Model</th><th>Input ($/MTok)</th><th>Output ($/MTok)</th><th>Context window</th><th>Best fit</th></tr>
+</thead>
+<tbody>
+<tr><td>Haiku 4.5</td><td>$1.00</td><td>$5.00</td><td>200K</td><td>High-volume routing, classification, light chat</td></tr>
+<tr><td>Sonnet 4.6</td><td>$3.00</td><td>$15.00</td><td>1M</td><td>Default agent workloads, tool use, RAG</td></tr>
+<tr><td>Opus 4.7</td><td>$5.00</td><td>$25.00</td><td>1M</td><td>Long-horizon reasoning, autonomous tasks</td></tr>
+</tbody>
+</table>
+
+<p>Two discounts move the real bill significantly below the rate card.</p>
+
+<p><strong>Prompt caching</strong> cuts cached input cost by 90%. A cache hit on Sonnet 4.6 costs $0.30 per million input tokens instead of $3.00. That matters because most agency workloads carry the same system prompt, the same skill instructions, and the same tool definitions on every call. With sticky session routing the cache hit rate runs in the 70 to 95 percent range for chat workloads.</p>
+
+<p><strong>Batch processing</strong> halves the per-token cost on every request that does not need a response inside 24 hours. Lead enrichment, nightly summaries, embedding generation, scheduled outreach, anything event-driven rather than user-facing, is a candidate.</p>
+
+<p>Stack both and a cached batch request on Sonnet 4.6 lands at about $0.15 per million input tokens and $7.50 per million output tokens. That is roughly 5% of the rate card. If you are paying anywhere near sticker price in 2026 you have left money on the table.</p>
+
+<p>One footnote that quietly inflates real bills: Opus 4.7 ships with a new tokenizer that produces up to 35% more tokens for the same input text. The per-token rate did not change in April; the per-request invoice did, by a meaningful margin. Test on your own workload before you swap Sonnet for Opus across the fleet.</p>
+
+<h2>Self-hosted infrastructure pricing in 2026</h2>
+
+<p>"Self-hosted" splits cleanly into two cases. The simple case is self-hosting the gateway, the workspace, and the audit trail while routing inference to a managed model endpoint with BYOK. The hard case is self-hosting the model itself on your own GPU.</p>
+
+<p>For the simple case, a single 32 GB CPU VPS is enough. Hetzner's CCX33 (8 vCPU, 32 GB RAM, 240 GB NVMe) lists at about EUR 52 per month including roughly 20 TB of egress. That comfortably runs an OpenClaw gateway and 18 to 20 per-client containers. Doubling the box to CCX43 (16 vCPU, 64 GB RAM) handles 40 to 50 clients and lists around EUR 100 per month. OVH's similar bare-metal range is competitive and adds dedicated NVMe for workloads that need fast disk.</p>
+
+<p>For the hard case, a GPU VPS adds a separate line item. As of May 2026 the relevant references are:</p>
+
+<ul>
+  <li>RunPod RTX 4090 community pods at $0.29 per hour, or $212 per month at 24/7 uptime</li>
+  <li>RunPod RTX 4090 spot at $0.20 per hour, or $144 per month, with preemption risk</li>
+  <li>Hetzner GPU monthly lock from EUR 159 per month for a single mid-tier GPU</li>
+  <li>Lambda Labs H100 at $2.49 per hour, or $1,820 per month at 24/7, best for short bursts</li>
+  <li>Reserved CoreWeave H100 at roughly $2.80 per hour, or $2,016 per month for continuous operation</li>
+</ul>
+
+<p>An RTX 4090 with vLLM running an open-weight 70B-class model serves comfortably above 50 tokens per second, which is enough for a small fleet of agents. An H100 is overkill for almost every agency workload and only earns its keep when you genuinely need long-context low-latency throughput on a large open-weight model.</p>
+
+<h2>Step by step: calculating your true monthly bill</h2>
+
+<p>The fastest way to get a defensible number is to start with measured token counts from a sample week, then layer in the fixed costs. Here is the reproducible workflow against a running OpenClaw gateway.</p>
+
+<p><strong>1. Pull a week of token usage from the gateway.</strong> OpenClaw v2026.4.27 ships an audit log with per-request token counts. The CLI exposes a usage report.</p>
+
+<pre><code>openclaw usage report \\
+  --from 2026-04-26 \\
+  --to 2026-05-02 \\
+  --group-by client \\
+  --format json &gt; usage.json</code></pre>
+
+<p><strong>2. Project monthly tokens per client.</strong> Multiply weekly tokens by 4.345 (weeks per month). Most agencies see a long-tail distribution where one or two heavy clients drive 60% of total volume.</p>
+
+<pre><code>jq '[.clients[] | {client: .name, monthly_in: (.input_tokens * 4.345), monthly_out: (.output_tokens * 4.345)}]' usage.json</code></pre>
+
+<p><strong>3. Compute the cloud bill at three discount tiers.</strong> Headline (no discount), cached (system prompt cache hit on every call), and cached plus batch (only for batchable workloads). A small projection script makes this reproducible.</p>
+
+<pre><code>npx tsx scripts/cost-projection.ts \\
+  --usage usage.json \\
+  --model sonnet-4-6 \\
+  --cache-hit-rate 0.85 \\
+  --batch-share 0.30</code></pre>
+
+<p><strong>4. Compute the self-hosted bill.</strong> Add the fixed monthly costs (VPS, monitoring, backup, off-site replication), then divide by the number of clients to get per-client cost. Compare to the cloud bill from step 3.</p>
+
+<p><strong>5. Decide per workload, not per agency.</strong> The output of this exercise is rarely "go all-in on cloud" or "go all-in on self-hosted." It is "route interactive Sonnet calls to BYOK with caching, batch the nightly enrichment to a discount provider, and keep the gateway and the workspace self-hosted." That mixed posture saves the most money in 2026 with the least operational risk.</p>
+
+<h2>Three-tier cost comparison: light, medium, heavy</h2>
+
+<p>To make the trade-offs concrete, here is a side-by-side at three realistic agency scales. Numbers assume Sonnet 4.6 with an 85% prompt cache hit rate, 30% of workload batchable, plus standard infrastructure.</p>
+
+<table>
+<thead>
+<tr><th>Tier</th><th>Volume</th><th>Cloud (BYOK + caching)</th><th>Self-hosted gateway, BYOK inference</th><th>Self-hosted gateway + open-weight GPU</th></tr>
+</thead>
+<tbody>
+<tr><td>Light (5 clients)</td><td>~3M tokens/day</td><td>~$280/mo inference + $0 infra</td><td>~$280/mo inference + $60/mo VPS</td><td>~$60/mo VPS + $144/mo GPU = $204/mo</td></tr>
+<tr><td>Medium (25 clients)</td><td>~15M tokens/day</td><td>~$1,400/mo inference + $0 infra</td><td>~$1,400/mo + $100/mo VPS</td><td>~$100/mo VPS + $212/mo GPU = $312/mo</td></tr>
+<tr><td>Heavy (100 clients)</td><td>~80M tokens/day</td><td>~$7,500/mo inference + $0 infra</td><td>~$7,500/mo + $200/mo VPS</td><td>~$200/mo VPS + $1,820/mo H100 = $2,020/mo</td></tr>
+</tbody>
+</table>
+
+<p>Three observations from the table. First, the gateway VPS is rounding error at every tier; the question is never "can I afford the gateway." Second, BYOK to a managed endpoint beats a self-hosted GPU at every realistic agency volume up to roughly 80 million tokens per day, where the open-weight GPU finally undercuts the BYOK bill. Third, the published independent 36-month TCO study that put heavy-tier self-hosting at $391,707 against $540,000 for Anthropic is consistent with the table once you scale the heavy tier up another 4 to 5 times to enterprise volume.</p>
+
+<h2>Hidden costs that flip the math</h2>
+
+<p>A clean TCO model still misses three categories of cost that matter at the agency scale.</p>
+
+<p><strong>Engineering hours for setup.</strong> A clean OpenClaw deployment with monitoring, backups, and a per-client provisioner takes roughly 16 to 24 hours of senior engineer time the first time, dropping to 1 to 2 hours per new client thereafter. At a $150 per hour blended rate the first deployment is a $2,400 to $3,600 one-time cost. That number disappears at 100 clients but dominates at 5.</p>
+
+<p><strong>Ongoing maintenance.</strong> Patching the operating system, rotating tokens, refreshing model pricing tables, dealing with provider deprecations. Industry estimates put this at 1 to 6 hours per month per agency depending on tier. Often forgotten in cloud comparisons because the cloud provider absorbs it silently inside the per-token price.</p>
+
+<p><strong>Outage risk.</strong> A self-hosted gateway with one VPS and no failover hits roughly 99.5% practical uptime, which is 3.6 hours of downtime per month. For a chat workload that is invisible. For a missed-call follow-up workload at a dental practice it is a real revenue hit. Multi-region failover, even a warm standby, can double the infrastructure line. Most agencies accept the single-region risk and document it; some do not have that luxury.</p>
+
+<p>Add these three to the model and the break-even point shifts. Cloud is the right answer below about $300 per month in inference. Self-hosted is the right answer above about $2,500 per month. Between those two figures it is a judgment call about engineering capacity, operational appetite, and risk tolerance.</p>
+
+<h2>The hybrid pattern most operators land on in 2026</h2>
+
+<p>The cleanest 2026 architecture has four parts, and it shows up in roughly the same shape across most agencies that have done the math:</p>
+
+<ol>
+  <li><strong>Gateway, memory, and audit self-hosted</strong> on a single CPU VPS. OpenClaw, per-client containers, append-only audit log, off-site backup nightly.</li>
+  <li><strong>BYOK to a managed model endpoint</strong> for interactive workloads. Region-pinned, prompt caching always on, sticky session routing to maximize cache hits.</li>
+  <li><strong>Batch routing for non-interactive workloads</strong> through Anthropic's Message Batches API or an equivalent. Halves the bill on every job that can wait 24 hours.</li>
+  <li><strong>Optional open-weight GPU</strong> for high-volume embedding generation, classification, or sensitive workloads that cannot leave the perimeter. Skipped at light and medium tiers.</li>
+</ol>
+
+<p>This pattern keeps inference cheap and predictable, keeps prompts and customer data inside the agency's perimeter, and keeps the engineering surface small. It is also what the OpenClaw daemon was designed to support: a single gateway that fronts every channel and every client regardless of whether the model behind it is hosted by Anthropic, OpenAI, OpenRouter, or your own GPU.</p>
+
+<h2>When self-hosted isn't for you</h2>
+
+<p>Three honest situations where self-hosted is the wrong answer in 2026. If any of these apply, stay on cloud-first inference until they don't.</p>
+
+<p><strong>You have fewer than 5 paying AI clients.</strong> The fixed cost of running and maintaining infrastructure isn't worth recovering across a small base. Spend the engineering time on selling, not on a gateway you barely use.</p>
+
+<p><strong>You have no Linux operator on the team.</strong> Self-hosted means somebody is on the hook when a kernel update breaks the network bridge at 2am. If that role is unfilled, a managed deployment partner or a pure-cloud architecture is honestly safer.</p>
+
+<p><strong>Your token volume is bursty and unpredictable.</strong> A self-hosted GPU sitting idle 22 hours a day is the most expensive way to serve traffic. Cloud auto-scales for free; the GPU does not. Workloads with sharp peaks and long valleys are the textbook case for staying on managed inference.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Is self-hosted AI always cheaper than cloud?</h3>
+
+<p>No. At light token volume cloud is decisively cheaper because the fixed cost of a VPS, monitoring, and engineering hours has nowhere to amortize. The crossover for an agency stack typically sits between 5 and 25 paying clients, depending on per-client token usage and how much engineering time the operator already has available. Above that point self-hosted gateways with BYOK inference run roughly 25 to 40 percent cheaper than pure cloud at the same workload.</p>
+
+<h3>How much does an OpenClaw gateway cost to run per month?</h3>
+
+<p>For most agencies, between $60 and $200 per month in raw infrastructure. A single Hetzner CCX33 (about EUR 52 per month) handles up to about 20 clients comfortably; a CCX43 (around EUR 100 per month) covers 40 to 50. Add about $20 per month for backup storage and another $10 to $30 for monitoring (Better Stack, Grafana Cloud free tier, or Uptime Kuma self-hosted). That figure does not include inference, which lands separately on the BYOK model bill.</p>
+
+<h3>Does prompt caching really cut my Anthropic bill by 90%?</h3>
+
+<p>It cuts cached input by 90%. The realized saving on the total bill depends on cache hit rate and the input/output ratio of the workload. A typical agency chat workload with a long system prompt and a fixed skill loadout sees a 60 to 75 percent reduction in the total monthly bill once caching is enabled and sticky session routing keeps the same provider endpoint serving the same conversation. Pair caching with batch processing on non-interactive jobs and the saving climbs further.</p>
+
+<h3>What happens to my cost if I move from Sonnet 4.6 to Opus 4.7?</h3>
+
+<p>The rate card jumps from $3/$15 to $5/$25 per million tokens. That looks like a 67% increase. The real increase is larger because Opus 4.7 ships with a new tokenizer that can produce up to 35% more tokens for the same input. Test on a representative workload before switching the whole fleet. Many agency workloads do not need Opus, and Sonnet 4.6 with caching is the value sweet spot in May 2026.</p>
+
+<h3>Can I run an AI worker on a CPU-only VPS?</h3>
+
+<p>For the gateway, the workspace, and the audit log, yes. For inference, only if you are doing classification or short generation on a small open-weight model and can tolerate single-digit tokens per second. Almost every interactive agent in 2026 routes inference to a GPU somewhere, either yours or the model provider's. The win in self-hosting the gateway is operational, not inference-cost.</p>
+
+<h3>How long until self-hosted pays for itself?</h3>
+
+<p>For a medium-tier agency (25 active clients) the typical payback period is 3 to 6 months from the initial setup investment. Light agencies often never break even on a self-hosted GPU but do break even on a self-hosted gateway with BYOK inference, usually within a year. Heavy agencies (100+ clients) typically pay back the entire setup in under a quarter. Track inference spend monthly during the trial period and revisit the model after each new client onboarding.</p>
+
+<h2>The honest bottom line on AI cost in 2026</h2>
+
+<p>Cloud LLMs in 2026 are cheaper per token than they have ever been, and prompt caching plus batch processing has compressed the gap further still. For most agencies starting out, the right first move is not a self-hosted GPU but a self-hosted gateway with BYOK inference: a single CPU VPS, an OpenClaw daemon, region-pinned model endpoints, and the discipline to enable caching on every prompt. That setup keeps customer data inside your perimeter, keeps the inference bill tied directly to revenue, and stays an order of magnitude cheaper than enterprise SaaS workforce platforms billed per seat.</p>
+
+<p>If you want that hybrid stack standing up without spending a fortnight on infrastructure plumbing, that is the architecture <a href="/solo">Kyra</a> deploys for you on day one: gateway, per-client isolation, BYOK routing, and an audit trail that survives a procurement review. For deeper reading on the building blocks, the <a href="/blog/what-is-openclaw-ai-gateway-explained">OpenClaw gateway explainer</a> covers the daemon itself, the <a href="/blog/per-client-ai-container-isolation-2026">container isolation breakdown</a> covers the multi-tenant security side, and the <a href="/ai-for/dental">dental practice playbook</a> shows what an end-to-end deployment looks like in a regulated industry. The two external references worth bookmarking are the <a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching">Anthropic prompt caching documentation</a> for getting the rate card down and the <a href="https://github.com/openclaw/openclaw">openclaw/openclaw GitHub repository</a> for the gateway itself. The cost story in 2026 is no longer about choosing between cloud and self-hosted. It is about knowing which workload belongs where, and building a single stack that holds both with a straight face.</p>
+`,
+  },
+  {
     slug: 'per-client-ai-container-isolation-2026',
     title: 'Per-Client AI Container Isolation in 2026: How Agencies Run 50+ AI Workers Without Cross-Contamination',
     description: 'Per-client AI container isolation is the deployment pattern that gives every AI worker its own filesystem, network, and credentials. Compare Docker, gVisor, and Firecracker for multi-tenant AI agents in 2026, with a step-by-step OpenClaw setup, threat model, and the real cost math for agencies running 50+ clients.',
