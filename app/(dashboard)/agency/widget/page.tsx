@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { SectionNav } from '@/components/dashboard/section-nav';
 import { WidgetBuilderEmbedded } from '@/components/dashboard/widget-builder-embedded';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
+import Link from 'next/link';
 
 interface ClientOption { id: string; name: string; industry?: string; container_config?: Record<string, unknown> | null }
 
@@ -34,11 +35,11 @@ export default function WidgetPage() {
       <SectionNav currentHref="/agency/widget" />
       <div className="max-w-7xl mx-auto p-4 sm:p-6">
         {/* Header + Client Selector */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Chat Widget</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Chat Widget — Cross-Client View</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Customize your AI chat widget and track its performance
+              Quickly switch between clients to configure their chat widgets from one place.
             </p>
           </div>
           {clients.length > 1 && (
@@ -53,6 +54,25 @@ export default function WidgetPage() {
             </select>
           )}
         </div>
+
+        {/* Disambiguation banner — explains why this exists alongside the
+            per-client Channels → Chat Widget tab. Both surfaces edit the SAME
+            container_config.widget_* fields for the SAME client. This page is
+            just a multi-client switcher; per-client editing is canonical. */}
+        {selectedClient && (
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+            <Info className="h-4 w-4 mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p>
+                You&apos;re editing <strong>{selected?.name || 'this client'}</strong>&apos;s widget — same fields you&apos;d see under{' '}
+                <Link href={`/agency/clients/${selectedClient}?tab=channels`} className="underline hover:no-underline">
+                  Clients → {selected?.name || 'this client'} → Channels → Chat Widget
+                </Link>
+                . Saves apply to that one client.
+              </p>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center h-64">
