@@ -222,17 +222,33 @@ export async function POST(request: NextRequest) {
 
   const userMd = `# ${name}\n\nClient of ${agency.name}.`;
 
-  // Auto-provision with retry — fire and forget
+  // Auto-provision with retry — fire and forget.
+  // ALSO bundle in any agency-wide knowledge documents that already exist, so
+  // the new container is born with the latest training data instead of
+  // catching up on the next dashboard edit. Per-client docs don't exist yet
+  // for a brand-new client, but agency-wide docs do.
   const provisionWithRetry = async () => {
-    const result = await provisionClientGateway(client.id, agency.id, { soulMd, userMd }, {}, name);
+    let knowledgeBase: string[] | undefined;
+    try {
+      const { createServiceClientWithoutCookies } = await import('@/lib/supabase/server');
+      const { loadKnowledgeForClient } = await import('@/lib/knowledge/sync-to-gateway');
+      const supabase = createServiceClientWithoutCookies();
+      const bundle = await loadKnowledgeForClient(supabase, agency.id, client.id);
+      if (bundle.documentCount > 0) knowledgeBase = bundle.chunks;
+    } catch (err) {
+      console.warn(`[clients] knowledge bundle load failed for ${client.id}:`, err instanceof Error ? err.message : err);
+    }
+
+    const config = { soulMd, userMd, knowledgeBase };
+    const result = await provisionClientGateway(client.id, agency.id, config, {}, name);
     if (result.success) {
-      console.log(`[clients] Gateway provisioned for ${client.id}: ${result.gatewayUrl}`);
+      console.log(`[clients] Gateway provisioned for ${client.id} with ${knowledgeBase?.length ?? 0} knowledge chunks: ${result.gatewayUrl}`);
       return;
     }
     // First attempt failed — wait 5s and retry once
     console.warn(`[clients] First provision attempt failed for ${client.id}: ${result.error}. Retrying in 5s...`);
     await new Promise(r => setTimeout(r, 5000));
-    const retry = await provisionClientGateway(client.id, agency.id, { soulMd, userMd }, {}, name);
+    const retry = await provisionClientGateway(client.id, agency.id, config, {}, name);
     if (retry.success) {
       console.log(`[clients] Gateway provisioned on retry for ${client.id}: ${retry.gatewayUrl}`);
     } else {

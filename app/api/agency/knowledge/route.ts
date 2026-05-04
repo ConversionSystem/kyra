@@ -3,13 +3,70 @@
 //
 // CRUD for knowledge base documents.
 // Documents get synced to the gateway as context for AI responses.
+//
+// Auto-sync (2026-05-04): every successful create / update / delete now
+// fires a fire-and-forget push to the OpenClaw gateway via the shared
+// `pushKnowledgeToGateway` helper. Without this, the embedded chat widget
+// got fresh knowledge instantly (RAG reads the DB at request time) but
+// OpenClaw containers stayed blind until someone clicked the manual Sync
+// button. Now both runtimes converge automatically.
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { requireAgencyMember } from '@/lib/agency/middleware';
+import { getGatewayByAgencyId, getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
+import {
+  loadKnowledgeForAgency,
+  loadKnowledgeForClient,
+  pushKnowledgeToGateway,
+  markSynced,
+} from '@/lib/knowledge/sync-to-gateway';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Fire-and-forget knowledge push. Called from POST/PATCH/DELETE after a
+ * successful DB write. Wrapped in setImmediate so the response returns
+ * before the gateway round-trip — the customer doesn't wait on us.
+ *
+ * `affectedClientId`: when the doc was scoped to a specific client we only
+ * push to that client's gateway. When the doc was agency-wide (client_id
+ * NULL) we push to the agency's primary gateway, which propagates the
+ * agency-wide section to every client gateway as part of the next routine
+ * client-config update. (Per-client targeted sync would require iterating
+ * every client gateway here, which is too expensive on every doc edit.)
+ */
+function autoSyncKnowledge(
+  agencyId: string,
+  affectedClientId: string | null,
+): void {
+  // Run after the response returns. Errors get logged but never block.
+  setImmediate(async () => {
+    try {
+      const supabase = createServiceClientWithoutCookies();
+      const gateway = affectedClientId
+        ? await getGatewayByClientId(affectedClientId)
+        : await getGatewayByAgencyId(agencyId);
+      if (!gateway) {
+        // No gateway provisioned yet — nothing to do. The next client-create
+        // call will pick up the docs from scratch.
+        return;
+      }
+      const bundle = affectedClientId
+        ? await loadKnowledgeForClient(supabase, agencyId, affectedClientId)
+        : await loadKnowledgeForAgency(supabase, agencyId);
+      const push = await pushKnowledgeToGateway(gateway, bundle, { wakeAi: false });
+      if (!push.ok) {
+        console.warn('[knowledge/auto-sync] gateway push failed:', push.error);
+        return;
+      }
+      await markSynced(supabase, bundle.documentIds);
+    } catch (err) {
+      console.warn('[knowledge/auto-sync] failed:', err instanceof Error ? err.message : err);
+    }
+  });
+}
 
 // GET — List all knowledge documents
 export async function GET(request: NextRequest) {
@@ -110,6 +167,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Push the new doc to the gateway in the background — embedded widget
+  // already has it via DB-read RAG, but OpenClaw runtime needs the file.
+  autoSyncKnowledge(agency.id, data.client_id ?? null);
+
   return NextResponse.json({ document: data });
 }
 
@@ -152,6 +213,10 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Re-sync to the gateway. Covers content edits, enable/disable toggles,
+  // and re-scoping a doc between agency-wide and client-specific.
+  autoSyncKnowledge(agency.id, data.client_id ?? null);
+
   return NextResponse.json({ document: data });
 }
 
@@ -172,6 +237,15 @@ export async function DELETE(request: NextRequest) {
 
   const supabase = createServiceClientWithoutCookies();
 
+  // Capture the doc's client_id BEFORE delete so we know which gateway to
+  // re-sync. (Otherwise the row is gone and we can't tell if it was scoped.)
+  const { data: existing } = await supabase
+    .from('knowledge_documents')
+    .select('client_id')
+    .eq('id', docId)
+    .eq('agency_id', agency.id)
+    .single();
+
   const { error } = await supabase
     .from('knowledge_documents')
     .delete()
@@ -182,6 +256,9 @@ export async function DELETE(request: NextRequest) {
     console.error('[knowledge] Delete error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Re-sync the now-shorter bundle so the gateway reflects the deletion.
+  autoSyncKnowledge(agency.id, existing?.client_id ?? null);
 
   return NextResponse.json({ success: true });
 }
