@@ -131,7 +131,19 @@ export async function GET(
   // Priority: container_config override → agency primary_color → agency accent_color → default
   const widgetColor = (cfg.widget_color as string) || agencyPrimaryColor || agencyAccentColor || '#6366f1';
   const widgetTitle = (cfg.widget_title as string) || (agencyCompanyName ? `Chat with ${agencyCompanyName}` : (client ? `Chat with ${client.name}` : 'Chat with us'));
-  const widgetGreeting = (cfg.widget_greeting as string) || `Hi! 👋 How can I help you today?`;
+  // Greeting source priority (regression 2026-05-01):
+  //   1. container_config.greeting   — what the dashboard's Identity tab saves
+  //   2. container_config.widget_greeting — legacy key, kept for back-compat
+  //   3. hardcoded default
+  // Until today the widget only read `widget_greeting`, so the dashboard's
+  // greeting field was a ghost UI — saved to DB, used by OpenClaw, ignored
+  // by the embedded widget. Customers were always seeing the generic default
+  // even after editing it. OpenClaw already reads `greeting`; the widget now
+  // matches.
+  const widgetGreeting =
+    (cfg.greeting as string) ||
+    (cfg.widget_greeting as string) ||
+    `Hi! 👋 How can I help you today?`;
   // Free and Lite plans: badge always on regardless of config
   const planForcedBadge = ['free', 'starter'].includes(agencyPlan);
   const widgetPoweredBy = planForcedBadge ? true : (cfg.widget_powered_by !== false);

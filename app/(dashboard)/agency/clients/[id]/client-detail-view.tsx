@@ -1780,8 +1780,15 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
       .finally(() => setVoiceLoading(false));
   }, [channelFilter, client.id]);
 
-  // Load threads
-  const loadThreads = useCallback(() => {
+  // Load threads.
+  //
+  // `silent` mode skips the loading spinner + ONLY commits state when the
+  // result actually changed. Background polls use silent=true so the inbox
+  // doesn't flash/re-render every interval (the customer-reported "refresh
+  // every 8-10 seconds" bug — interval polls were calling setThreads on every
+  // tick regardless of whether anything changed, causing the conversation
+  // list to re-mount and lose scroll/selection state).
+  const loadThreads = useCallback((silent = false) => {
     const params = new URLSearchParams({ limit: '30' });
     if (searchQuery) params.set('q', searchQuery);
     fetch(`/api/agency/clients/${client.id}/threads?${params}`)
@@ -1790,61 +1797,94 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
         return r.json();
       })
       .then(d => {
-        setThreads(d.threads || []);
-        setTotalThreads(d.total || 0);
+        const next: Thread[] = d.threads || [];
+        // Diff before commit — fingerprint the relevant fields so we skip
+        // setState when the server returns the same shape we already have.
+        const fp = (xs: Thread[]) => xs
+          .map(t => `${t.contactId}|${t.lastMessageAt}|${t.messageCount ?? ''}`)
+          .join(';');
+        setThreads(prev => (fp(prev) === fp(next) ? prev : next));
+        setTotalThreads(prev => (prev === (d.total || 0) ? prev : (d.total || 0)));
         setLoadError(null);
       })
       .catch(err => {
         console.error('[threads] load failed:', err);
         setLoadError(`Couldn't refresh inbox: ${err instanceof Error ? err.message : 'unknown error'}. Retrying…`);
       })
-      .finally(() => setLoading(false));
+      .finally(() => { if (!silent) setLoading(false); });
   }, [client.id, searchQuery]);
 
   useEffect(() => {
-    loadThreads();
+    loadThreads(false);  // initial load shows the spinner
+    // Background poll every 30s (was 15s). The diff-before-commit logic
+    // above means this fires a setState only when the conversation list
+    // actually changed — usually a no-op on a quiet inbox.
     const interval = setInterval(() => {
-      // Skip polling when tab is hidden — wasted bandwidth + rate-limit hits
-      if (isDocumentVisible()) loadThreads();
-    }, 15_000);
+      if (isDocumentVisible()) loadThreads(true);
+    }, 30_000);
     return () => clearInterval(interval);
   }, [loadThreads]);
 
-  // Load messages for selected thread
-  const loadThreadMessages = useCallback((contactId: string, messageType?: string) => {
-    setThreadLoading(true);
+  // Load messages for selected thread.
+  //
+  // Same silent-poll + diff-before-commit pattern. Plus: only auto-scroll to
+  // bottom on the INITIAL load or when the user was already at the bottom.
+  // Was scrolling on every poll, jumping the user away from older messages
+  // they were reading.
+  const loadThreadMessages = useCallback((contactId: string, messageType?: string, silent = false) => {
+    if (!silent) setThreadLoading(true);
     const isWebChat = messageType === 'Web Chat';
     const url = isWebChat
       ? `/api/agency/clients/${client.id}/messages?source=webchat&contactId=${encodeURIComponent(contactId)}`
       : `/api/agency/clients/${client.id}/messages?limit=100`;
+    // Capture scroll-at-bottom BEFORE the fetch so we know whether to auto-
+    // scroll on this update. If the user was already pinned to the bottom
+    // (or this is the first load), scroll. Otherwise leave them in place.
+    const scroller = messagesEndRef.current?.parentElement?.parentElement;
+    const wasAtBottom = !scroller || (scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80);
     fetch(url)
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
       .then(d => {
-        const msgs = (d.messages || [])
+        const next: GHLMessage[] = (d.messages || [])
           .filter((m: GHLMessage) => isWebChat || m.contact_id === contactId)
           .sort((a: GHLMessage, b: GHLMessage) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-        setThreadMessages(msgs);
+        // Fingerprint by message id + timestamps + content lengths so re-renders
+        // only happen when content actually changed.
+        const fp = (xs: GHLMessage[]) => xs
+          .map(m => `${m.id ?? m.created_at}|${m.inbound_message?.length ?? 0}|${m.ai_response?.length ?? 0}`)
+          .join(';');
+        let changed = false;
+        setThreadMessages(prev => {
+          if (fp(prev) === fp(next)) return prev;
+          changed = true;
+          return next;
+        });
         setLoadError(null);
-        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        if (changed && (wasAtBottom || !silent)) {
+          setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        }
       })
       .catch(err => {
         console.error('[thread-messages] load failed:', err);
         setLoadError(`Couldn't load messages: ${err instanceof Error ? err.message : 'unknown error'}. Retrying…`);
       })
-      .finally(() => setThreadLoading(false));
+      .finally(() => { if (!silent) setThreadLoading(false); });
   }, [client.id]);
 
   useEffect(() => {
     if (selectedContact) {
-      loadThreadMessages(selectedContact.contactId, selectedContact.messageType);
+      loadThreadMessages(selectedContact.contactId, selectedContact.messageType, false);  // initial: spinner + scroll
+      // Background poll every 20s (was 10s). Silent mode: no spinner, no
+      // re-render when content unchanged, no scroll-jump unless the user
+      // was already at the bottom.
       const interval = setInterval(() => {
         if (isDocumentVisible()) {
-          loadThreadMessages(selectedContact.contactId, selectedContact.messageType);
+          loadThreadMessages(selectedContact.contactId, selectedContact.messageType, true);
         }
-      }, 10_000);
+      }, 20_000);
       return () => clearInterval(interval);
     }
   }, [selectedContact, loadThreadMessages]);
