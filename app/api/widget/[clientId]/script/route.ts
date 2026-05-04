@@ -179,7 +179,18 @@ export async function GET(
   var STORAGE_KEY = 'kyra_session_' + CLIENT_ID;
 
   // Don't init twice
+  // Single-mount guard. Two layers:
+  //   1. window.__kyraWidget — protects against the script tag being injected
+  //      and executed twice from the same page (typical case: customer pasted
+  //      the embed snippet once in their HTML and once via GTM/Tag Manager).
+  //   2. Existing FAB DOM check — if the button is already in the DOM (from
+  //      a prior successful mount that left orphaned state, e.g. the global
+  //      got cleared by some navigation framework), don't double-render.
+  // Customer 2026-05-04 reported "two widget instances on the page" — most
+  // likely two embed snippets in their site, but the DOM check makes the
+  // guard bulletproof against weirder pathological cases too.
   if (window.__kyraWidget) return;
+  if (document.getElementById('kyra-widget-btn')) return;
   window.__kyraWidget = true;
 
   // ── Styles ──────────────────────────────────────────────────────────────────

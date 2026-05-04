@@ -1387,18 +1387,28 @@ export function resolveSupportLinks(
   // policy) carry an empty `path` — the chip only renders when the client has an
   // explicit `support_links[topic]` override in container_config. This prevents
   // the widget from ever shipping a 404 chip.
+  // Verified working paths on plpcsanjose.com 2026-05-04 (typical Jane Roots
+  // dispensary template). When the customer asks "how do I order" / "where do
+  // I buy", route to /shop — the live menu where they can actually purchase.
+  // /menu was the prior default; /shop is more accurate (it's the buy surface,
+  // not the help-page surface). For PL specifically /how-to-order also exists,
+  // but /shop is the higher-conversion answer and matches the customer's
+  // intent ("how do I get this product").
+  //
+  // /payment-options confirmed live on PL — moves payment from "no default"
+  // to a default that works on the typical Jane build.
   const topics: Array<{ topic: string; triggers: RegExp[]; label: string; path: string }> = [
-    { topic: 'ordering', triggers: [/how.*(?:order|buy|purchase|checkout)/i, /ordering/i, /how to (?:place|get)/i], label: 'How to Order', path: '/menu' },
+    { topic: 'ordering', triggers: [/how.*(?:order|buy|purchase|checkout)/i, /ordering/i, /how to (?:place|get)/i, /where.*(?:buy|order|shop|purchase)/i], label: 'How to Order', path: '/shop' },
     { topic: 'delivery', triggers: [/deliver|delivery zone|service area|where.*deliver/i, /shipping|do you ship/i], label: 'Delivery Info', path: '/delivery' },
     { topic: 'pickup', triggers: [/pick.?up|curbside|in.?store/i], label: 'Pickup Info', path: '/pickup' },
     { topic: 'hours', triggers: [/hours|open|close|when.*open/i], label: 'Store Hours', path: '/locations' },
     { topic: 'location', triggers: [/where.*(?:locat|store|shop)|address|direction|how to find/i], label: 'Location', path: '/locations' },
     { topic: 'rewards', triggers: [/reward|loyal(?:ty)?|points|member/i], label: 'Rewards Program', path: '/rewards' },
     { topic: 'deals', triggers: [/deal|promo|discount|special|sale|offer|coupon/i], label: "Today's Deals", path: '/deals' },
-    { topic: 'menu', triggers: [/\bmenu\b|inventory|full catalog|shop all/i], label: 'Full Menu', path: '/shop/all' },
+    { topic: 'menu', triggers: [/\bmenu\b|inventory|full catalog|shop all/i], label: 'Full Menu', path: '/shop' },
     { topic: 'contact', triggers: [/contact|phone|call|reach/i], label: 'Contact Us', path: '/contact' },
-    // No reliable default — chip only renders if client overrides via support_links.
-    { topic: 'payment', triggers: [/pay(?:ment)?|credit card|debit|cash|accept|charge/i], label: 'Payment Options', path: '' },
+    { topic: 'payment', triggers: [/pay(?:ment)?|credit card|debit|cash|accept|charge|treez/i], label: 'Payment Options', path: '/payment-options' },
+    // Still no reliable default — chip only renders if client overrides via support_links.
     { topic: 'returns', triggers: [/return|refund|exchange/i], label: 'Returns Policy', path: '' },
     { topic: 'id_age', triggers: [/\bid\b|identification|age requirement|21\+/i], label: 'ID & Age Policy', path: '' },
   ];

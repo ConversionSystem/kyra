@@ -87,25 +87,59 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceClientWithoutCookies();
 
-    const doc = {
-      agency_id: agency.id,
-      client_id: body.clientId || null,
-      title,
-      content,
-      source_type: 'url' as const,
-      source_url: body.url,
-      char_count: content.length,
-      enabled: true,
-    };
-
-    const { data, error } = await supabase
+    // Dedupe: if a doc for this exact URL already exists in the same scope
+    // (agency-wide or this client), refresh its content + title instead of
+    // inserting a fresh row. Customer 2026-05-04 had 7+ identical
+    // plpcsanjose.com rows from re-adding the same URL through the
+    // dashboard — this single-source-of-truth check fixes that.
+    const targetClientId = (body.clientId as string | undefined) || null;
+    const existingQuery = supabase
       .from('knowledge_documents')
-      .insert(doc)
-      .select()
-      .single();
+      .select('id')
+      .eq('agency_id', agency.id)
+      .eq('source_url', body.url);
+    const existing = targetClientId
+      ? await existingQuery.eq('client_id', targetClientId).maybeSingle()
+      : await existingQuery.is('client_id', null).maybeSingle();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    let data: Record<string, unknown> | null = null;
+    if (existing.data?.id) {
+      const upd = await supabase
+        .from('knowledge_documents')
+        .update({
+          title,
+          content,
+          char_count: content.length,
+          enabled: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.data.id)
+        .select()
+        .single();
+      data = upd.data;
+      if (upd.error) {
+        return NextResponse.json({ error: upd.error.message }, { status: 500 });
+      }
+    } else {
+      const doc = {
+        agency_id: agency.id,
+        client_id: targetClientId,
+        title,
+        content,
+        source_type: 'url' as const,
+        source_url: body.url,
+        char_count: content.length,
+        enabled: true,
+      };
+      const ins = await supabase
+        .from('knowledge_documents')
+        .insert(doc)
+        .select()
+        .single();
+      data = ins.data;
+      if (ins.error) {
+        return NextResponse.json({ error: ins.error.message }, { status: 500 });
+      }
     }
 
     // Auto-sync to the OpenClaw gateway so the new URL content reaches the
