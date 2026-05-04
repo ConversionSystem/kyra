@@ -131,17 +131,26 @@ export async function GET(
   // Priority: container_config override → agency primary_color → agency accent_color → default
   const widgetColor = (cfg.widget_color as string) || agencyPrimaryColor || agencyAccentColor || '#6366f1';
   const widgetTitle = (cfg.widget_title as string) || (agencyCompanyName ? `Chat with ${agencyCompanyName}` : (client ? `Chat with ${client.name}` : 'Chat with us'));
-  // Greeting source priority (regression 2026-05-01):
-  //   1. container_config.greeting   — what the dashboard's Identity tab saves
-  //   2. container_config.widget_greeting — legacy key, kept for back-compat
-  //   3. hardcoded default
-  // Until today the widget only read `widget_greeting`, so the dashboard's
-  // greeting field was a ghost UI — saved to DB, used by OpenClaw, ignored
-  // by the embedded widget. Customers were always seeing the generic default
-  // even after editing it. OpenClaw already reads `greeting`; the widget now
-  // matches.
+  // Greeting source priority (revised 2026-05-04):
+  //   1. container_config.widget_greeting — what the dashboard's
+  //                                         Channels → Chat Widget → Appearance
+  //                                         "Opening Greeting" field saves.
+  //                                         Channel-specific. Right answer.
+  //   2. hardcoded default                — friendly fallback if the customer
+  //                                         hasn't set anything yet.
+  //
+  // We deliberately do NOT fall through to `cfg.greeting` (the unified
+  // Identity tab "Greeting Message" field). That field is for VOICE/PHONE —
+  // it's surfaced to the Retell phone agent's begin_message and to OpenClaw's
+  // SOUL.md. PR #449 wired it into the widget too as a "ghost UI" fix, but
+  // that produced the opposite bug: customers who set a phone greeting like
+  // "Thank you for calling Purple Lotus..." saw it surface in the chat widget
+  // ("Thank you for calling" reads completely wrong on a chat surface).
+  //
+  // The two greetings are SUPPOSED to be independent — chat ≠ voice. The
+  // dashboard already has both fields wired to separate inputs. The widget
+  // just needs to read the one that belongs to it.
   const widgetGreeting =
-    (cfg.greeting as string) ||
     (cfg.widget_greeting as string) ||
     `Hi! 👋 How can I help you today?`;
   // Free and Lite plans: badge always on regardless of config
