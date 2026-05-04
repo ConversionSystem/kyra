@@ -92,6 +92,22 @@ export default function BehaviorSubTab({ client }: { client: AgencyClient }) {
           <CardDescription className="text-gray-500">
             Proactive greetings and keyword-triggered actions for your AI worker.
           </CardDescription>
+          {/* Channel scope — clarifies which channels honor these settings.
+              Without it, customers assumed these applied everywhere (incl.
+              the embedded chat widget) and got confused when they didn't fire.
+              Active code paths: lib/ghl/smart-handler.ts handles SMS, FB
+              Messenger, Instagram DM, GHL Web Chat. NOT honored by the
+              embedded chat widget at /api/widget/chat (yet). */}
+          <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-700">
+            <span>Active on:</span>
+            <span className="rounded bg-white px-1.5 py-0.5 border border-indigo-100">SMS</span>
+            <span className="rounded bg-white px-1.5 py-0.5 border border-indigo-100">FB Messenger</span>
+            <span className="rounded bg-white px-1.5 py-0.5 border border-indigo-100">Instagram DM</span>
+            <span className="rounded bg-white px-1.5 py-0.5 border border-indigo-100">GHL Web Chat</span>
+          </div>
+          <p className="mt-1 text-[11px] text-gray-400">
+            Embedded chat widget uses the Identity tab above for greeting and tone.
+          </p>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Proactive Greeting */}
