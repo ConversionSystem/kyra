@@ -24,26 +24,38 @@ import type { AgencyClient } from '@/lib/agency/queries';
 import KnowledgeEngineCard from './knowledge-engine-card';
 
 // ── Knowledge source helpers ─────────────────────────────────────────────────
+//
+// 2026-05-04 source-of-truth fix:
+//   Pre-fix, this tab wrote files + URLs as metadata-only entries into
+//   `agency_clients.settings.knowledge_sources` — a JSON column that the
+//   widget RAG (lib/knowledge/rag.ts) NEVER reads. Files were never extracted,
+//   URLs were never fetched. The user thought they'd trained the AI; the AI
+//   answered every question generically because it had no actual content.
+//
+//   Now: files POST to /api/agency/knowledge/import-file (server extracts via
+//   mammoth/text), URLs POST to /api/agency/knowledge/import-url (server fetches
+//   + strips HTML), and BOTH land as `knowledge_documents` rows that the widget
+//   RAG + OpenClaw KNOWLEDGE_BASE.md sync both read. ONE source of truth.
+//
+//   The dashboard list reads from /api/agency/knowledge?client=<id>, the same
+//   table the widget queries — what you see is what the AI sees.
 
-interface KnowledgeSource {
+interface KnowledgeDoc {
   id: string;
-  type: 'file' | 'url';
-  name: string;
-  url?: string;
-  size?: number;
-  addedAt: string;
+  title: string;
+  source_type: 'file' | 'url' | 'text';
+  source_url: string | null;
+  file_name: string | null;
+  char_count: number | null;
+  created_at: string;
+  enabled: boolean;
 }
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-const ACCEPTED_EXTENSIONS = ['pdf', 'txt', 'md', 'docx', 'csv'];
-const ACCEPTED_FILE_INPUT = '.pdf,.txt,.md,.docx,.csv';
-
-function formatFileSize(size?: number) {
-  if (!size) return '—';
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-}
+// PDF deferred — the import-file route returns 415 for now with a friendly
+// "convert to .txt or .docx" message. Server-side PDF extraction is a follow-up.
+const ACCEPTED_EXTENSIONS = ['txt', 'md', 'docx', 'csv'];
+const ACCEPTED_FILE_INPUT = '.txt,.md,.docx,.csv';
 
 function formatDate(iso: string) {
   const date = new Date(iso);
@@ -68,8 +80,10 @@ export default function TrainingSubTab({ client }: { client: AgencyClient }) {
     personaUpdated?: boolean;
   } | null>(null);
 
-  // Knowledge Sources (docs + URLs)
-  const [sources, setSources] = useState<KnowledgeSource[]>([]);
+  // Knowledge Sources (docs + URLs) — backed by the `knowledge_documents`
+  // table now, NOT the legacy `settings.knowledge_sources` JSON. See header
+  // comment for the source-of-truth fix details.
+  const [sources, setSources] = useState<KnowledgeDoc[]>([]);
   const [urlInput, setUrlInput] = useState('');
   const [kbLoading, setKbLoading] = useState(true);
   const [kbSaving, setKbSaving] = useState(false);
@@ -95,81 +109,117 @@ export default function TrainingSubTab({ client }: { client: AgencyClient }) {
 
   // ── Knowledge Base logic ─────────────────────────────────────────────────
 
-  useEffect(() => {
-    const initial = (client.settings?.knowledge_sources as KnowledgeSource[] | undefined) ?? [];
-    setSources(initial);
+  // Load the live knowledge_documents the AI is actually using. Filtered to
+  // this client (also includes agency-wide docs — those help every client).
+  const refetchSources = async () => {
     setKbError(null);
-    setKbLoading(false);
-  }, [client.id, client.settings]);
-
-  const persistSources = async (nextSources: KnowledgeSource[]) => {
-    setKbSaving(true);
-    setKbError(null);
+    setKbLoading(true);
     try {
-      const response = await fetch(`/api/agency/clients/${client.id}/knowledge`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ knowledge_sources: nextSources }),
-      });
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(payload.error ?? 'Failed to save knowledge sources');
-      }
-      setSources(nextSources);
+      const res = await fetch(`/api/agency/knowledge?client=${client.id}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const docs = (data.documents || []) as KnowledgeDoc[];
+      // Show client-scoped + agency-wide; sort newest first.
+      setSources(
+        docs
+          .slice()
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+      );
     } catch (err) {
-      setKbError(err instanceof Error ? err.message : 'Failed to save knowledge sources');
+      setKbError(err instanceof Error ? err.message : 'Failed to load training documents');
+    } finally {
+      setKbLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void refetchSources();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client.id]);
+
+  const handleFileSelection = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    setKbError(null);
+    setKbSaving(true);
+    try {
+      // Upload each file sequentially. Server extracts text + saves a
+      // knowledge_documents row + auto-syncs to OpenClaw.
+      for (const file of Array.from(fileList)) {
+        const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+        if (!ACCEPTED_EXTENSIONS.includes(extension)) {
+          if (extension === 'pdf') {
+            setKbError(`PDF extraction isn't supported yet — convert ${file.name} to .docx or .txt and re-upload.`);
+          } else {
+            setKbError(`Unsupported file type: ${file.name}`);
+          }
+          continue;
+        }
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+          setKbError(`File too large: ${file.name} (max 10MB)`);
+          continue;
+        }
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('clientId', client.id);
+        const res = await fetch('/api/agency/knowledge/import-file', { method: 'POST', body: fd });
+        if (!res.ok) {
+          const payload = (await res.json().catch(() => ({}))) as { error?: string };
+          setKbError(payload.error || `Upload failed for ${file.name}`);
+          continue;
+        }
+      }
+      await refetchSources();
     } finally {
       setKbSaving(false);
     }
   };
 
-  const handleFileSelection = (fileList: FileList | null) => {
-    if (!fileList || fileList.length === 0) return;
-    const newItems: KnowledgeSource[] = [];
-    Array.from(fileList).forEach((file) => {
-      const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
-      if (!ACCEPTED_EXTENSIONS.includes(extension)) {
-        setKbError(`Unsupported file type: ${file.name}`);
-        return;
-      }
-      if (file.size > MAX_FILE_SIZE_BYTES) {
-        setKbError(`File too large: ${file.name} (max 10MB)`);
-        return;
-      }
-      newItems.push({
-        id: crypto.randomUUID(),
-        type: 'file',
-        name: file.name,
-        size: file.size,
-        addedAt: new Date().toISOString(),
-      });
-    });
-    if (!newItems.length) return;
-    void persistSources([...sources, ...newItems]);
-  };
-
   const addUrl = async () => {
     const raw = urlInput.trim();
     if (!raw) return;
+    setKbError(null);
     try {
       const parsed = new URL(raw);
       if (!['http:', 'https:'].includes(parsed.protocol)) {
         setKbError('Only HTTP and HTTPS URLs are allowed.');
         return;
       }
-      const nextSources: KnowledgeSource[] = [
-        ...sources,
-        { id: crypto.randomUUID(), type: 'url', name: parsed.hostname, url: parsed.toString(), addedAt: new Date().toISOString() },
-      ];
-      await persistSources(nextSources);
+      setKbSaving(true);
+      // Server fetches the page, strips HTML, saves to knowledge_documents,
+      // auto-syncs to OpenClaw. Replaces the metadata-only legacy save.
+      const res = await fetch('/api/agency/knowledge/import-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: parsed.toString(), clientId: client.id }),
+      });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(payload.error || 'Failed to import URL');
+      }
       setUrlInput('');
-    } catch {
-      setKbError('Please enter a valid URL (e.g. https://example.com).');
+      await refetchSources();
+    } catch (err) {
+      setKbError(err instanceof Error ? err.message : 'Please enter a valid URL (e.g. https://example.com).');
+    } finally {
+      setKbSaving(false);
     }
   };
 
   const deleteSource = async (id: string) => {
-    await persistSources(sources.filter((s) => s.id !== id));
+    setKbError(null);
+    setKbSaving(true);
+    try {
+      const res = await fetch(`/api/agency/knowledge?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(payload.error || 'Failed to delete');
+      }
+      setSources((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      setKbError(err instanceof Error ? err.message : 'Failed to delete document');
+    } finally {
+      setKbSaving(false);
+    }
   };
 
   // ── Auto-train (scrape + generate persona) ────────────────────────────────
@@ -233,8 +283,11 @@ export default function TrainingSubTab({ client }: { client: AgencyClient }) {
 
   // ── Derived ──────────────────────────────────────────────────────────────
 
-  const fileSources = sources.filter((s) => s.type === 'file');
-  const urlSources = sources.filter((s) => s.type === 'url');
+  // Derived view of the live knowledge_documents — filter by source_type so
+  // URLs render in the URL list, files in the file list, and manual text
+  // entries are bucketed with files (they share the "uploaded content" UX).
+  const fileSources = sources.filter((s) => s.source_type === 'file' || s.source_type === 'text');
+  const urlSources = sources.filter((s) => s.source_type === 'url');
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -336,14 +389,16 @@ export default function TrainingSubTab({ client }: { client: AgencyClient }) {
                 <div key={source.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
                   <Globe className="h-4 w-4 shrink-0 text-gray-500" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-gray-900">{source.url}</p>
-                    <p className="text-xs text-gray-500">Added {formatDate(source.addedAt)}</p>
+                    <p className="truncate text-sm font-medium text-gray-900">{source.source_url || source.title}</p>
+                    <p className="text-xs text-gray-500">
+                      {source.char_count ? `${(source.char_count / 1024).toFixed(1)} KB extracted` : 'Added'} • {formatDate(source.created_at)}
+                    </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => deleteSource(source.id)}
                     className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-white hover:text-red-600"
-                    aria-label={`Delete ${source.name}`}
+                    aria-label={`Delete ${source.title}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -394,7 +449,7 @@ export default function TrainingSubTab({ client }: { client: AgencyClient }) {
           >
             <UploadCloud className="mx-auto h-8 w-8 text-gray-400" />
             <p className="mt-2 text-sm font-medium text-gray-700">Drag & drop files here or click to upload</p>
-            <p className="mt-1 text-xs text-gray-500">Accepted: PDF, TXT, MD, DOCX, CSV (max 10MB each)</p>
+            <p className="mt-1 text-xs text-gray-500">Accepted: TXT, MD, DOCX, CSV (max 10MB each) — PDF coming soon</p>
           </div>
 
           <input
@@ -412,16 +467,16 @@ export default function TrainingSubTab({ client }: { client: AgencyClient }) {
                 <div key={source.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
                   <FileText className="h-4 w-4 shrink-0 text-gray-500" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-gray-900">{source.name}</p>
+                    <p className="truncate text-sm font-medium text-gray-900">{source.file_name || source.title}</p>
                     <p className="text-xs text-gray-500">
-                      {formatFileSize(source.size)} • {formatDate(source.addedAt)}
+                      {source.char_count ? `${(source.char_count / 1024).toFixed(1)} KB extracted` : '—'} • {formatDate(source.created_at)}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => deleteSource(source.id)}
                     className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-white hover:text-red-600"
-                    aria-label={`Delete ${source.name}`}
+                    aria-label={`Delete ${source.title}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

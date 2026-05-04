@@ -7,6 +7,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { requireAgencyMember } from '@/lib/agency/middleware';
+import { getGatewayByAgencyId, getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
+import {
+  loadKnowledgeForAgency,
+  loadKnowledgeForClient,
+  pushKnowledgeToGateway,
+  markSynced,
+} from '@/lib/knowledge/sync-to-gateway';
 
 export const dynamic = 'force-dynamic';
 
@@ -100,6 +107,28 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // Auto-sync to the OpenClaw gateway so the new URL content reaches the
+    // autonomous runtime (not just the embedded widget RAG which reads the
+    // DB directly). Fire-and-forget — don't block the dashboard's response.
+    setImmediate(async () => {
+      try {
+        const supabase2 = createServiceClientWithoutCookies();
+        const targetClientId = body.clientId || null;
+        const gateway = targetClientId
+          ? await getGatewayByClientId(targetClientId)
+          : await getGatewayByAgencyId(agency.id);
+        if (!gateway) return;
+        const bundle = targetClientId
+          ? await loadKnowledgeForClient(supabase2, agency.id, targetClientId)
+          : await loadKnowledgeForAgency(supabase2, agency.id);
+        const push = await pushKnowledgeToGateway(gateway, bundle, { wakeAi: false });
+        if (push.ok) await markSynced(supabase2, bundle.documentIds);
+        else console.warn('[import-url] gateway push failed:', push.error);
+      } catch (err) {
+        console.warn('[import-url] auto-sync failed:', err instanceof Error ? err.message : err);
+      }
+    });
 
     return NextResponse.json({
       document: data,
