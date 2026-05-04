@@ -389,6 +389,17 @@ export async function POST(request: NextRequest) {
     `- Give specific, useful answers. If you know the answer, give it directly. If you don't have the information, say so honestly and offer to connect them with the team.`,
     `- Keep replies to 2-4 sentences unless more detail is needed.`,
     `- Be conversational and natural, not robotic.`,
+    // KB-grounding rules — added 2026-05-04 after customer audit. Without
+    // these, the model would pull "deal" / "payment" / "rewards" /
+    // "delivery" answers from generic priors instead of from the training
+    // documents the dashboard uploaded. Specifics are what make the bot
+    // feel on-brand vs. like generic AI output.
+    `KNOWLEDGE-BASE GROUNDING — when a Business Knowledge Base section appears below this prompt, treat it as the source of truth. When the customer asks about deals, rewards, payment options, returns, hours, locations, delivery zones, or anything business-specific:`,
+    `- Quote SPECIFIC details from the Knowledge Base (e.g. "1st order: free gift + 25% off delivery with code new25", "Treez Pay is a secure cashless payment linked to your bank account", "delivery usually arrives in 1-2 hours in San Jose"). Don't paraphrase into generic answers.`,
+    `- Name at least one concrete deal, perk, or named feature when the topic warrants it. Generic "we have great deals — check the page" is unacceptable when the Knowledge Base contains the actual deal names.`,
+    `- For payment questions, mention payment methods by name (cash, debit, Treez Pay, on-site ATMs) and briefly explain Treez Pay if the Knowledge Base describes it.`,
+    `- For "how to order" / "where do I buy" questions, give a one-line walkthrough (browse menu → add to cart → choose pickup/delivery → 21+ ID at handoff) and point them to the live menu chip below.`,
+    `- If the Knowledge Base contradicts your general training, the Knowledge Base wins.`,
     `BANNED CLOSING PHRASES — NEVER end your response with any of these or anything similar:`,
     `"If you have any other questions..." / "feel free to ask" / "don't hesitate to reach out" / "How can I help you today?" / "Is there anything else I can help with?" / "Let me know if you need anything else" / "just let me know" / "Happy to help!" / "Hope that helps!"`,
     `END your response naturally after giving the answer. Stop talking. Do NOT add a closing invitation phrase.`,
@@ -488,14 +499,19 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
         }
       }
       // Auto-generate common links from website_url if support_links not fully configured.
-      // Paths verified 2026-04-29 against plpcsanjose.com (typical Jane storefront layout).
+      // Paths verified 2026-05-04 against plpcsanjose.com (typical Jane storefront layout).
       // Keep this set in sync with resolveSupportLinks defaults in lib/integrations/jane.ts.
       if (websiteUrl && (!links || Object.keys(links).length < 3)) {
-        if (!links?.menu && !links?.['shop']) entries.push(`- Full Menu: ${websiteUrl}/shop/all`);
+        if (!links?.menu && !links?.['shop']) entries.push(`- Full Menu: ${websiteUrl}/shop`);
         if (!links?.delivery) entries.push(`- Delivery Info: ${websiteUrl}/delivery`);
         if (!links?.deals && !links?.['specials']) entries.push(`- Today's Deals: ${websiteUrl}/deals`);
-        // "How to Order" used to point at /order which 404s on Jane sites — use /menu instead.
-        if (!links?.ordering && !links?.['how to order']) entries.push(`- How to Order: ${websiteUrl}/menu`);
+        // "How to Order" / "where do I buy" — route to /shop (the live menu
+        // where customers actually purchase). Was /menu (PR #436) which
+        // worked but /shop is the higher-conversion answer per customer
+        // request 2026-05-04. Both pages exist on Jane Roots; /shop is
+        // the buy surface, /menu is the older alias.
+        if (!links?.ordering && !links?.['how to order']) entries.push(`- How to Order: ${websiteUrl}/shop`);
+        if (!links?.payment) entries.push(`- Payment Options: ${websiteUrl}/payment-options`);
       }
       if (entries.length === 0) return '';
       return `SUPPORT LINKS — when answering informational questions, include the relevant link:\n${entries.join('\n')}`;

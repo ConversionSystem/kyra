@@ -819,10 +819,20 @@ describe('brand facet + getBrandCatalog', () => {
 describe('resolveSupportLinks', () => {
   const cfg = { website_url: 'https://plpcsanjose.com' };
 
-  it('detects ordering intent — fallback path is /menu (verified 200 on plpcsanjose.com 2026-04-29)', () => {
+  it('detects ordering intent — fallback path is /shop (changed 2026-05-04, was /menu)', () => {
+    // Customer feedback: "how do I order" / "where do I buy" should route
+    // directly to /shop (the live menu where they actually purchase) rather
+    // than /menu (older alias). Both pages exist on Jane Roots, but /shop
+    // is the higher-conversion answer and matches the customer's intent.
     const links = resolveSupportLinks('how do I order?', cfg);
     expect(links.some((l) => l.topic === 'ordering')).toBe(true);
-    expect(links[0].url).toBe('https://plpcsanjose.com/menu');
+    expect(links[0].url).toBe('https://plpcsanjose.com/shop');
+  });
+
+  it('detects "where do I buy" as ordering intent (new trigger 2026-05-04)', () => {
+    const links = resolveSupportLinks('where do I buy these?', cfg);
+    expect(links.some((l) => l.topic === 'ordering')).toBe(true);
+    expect(links.find((l) => l.topic === 'ordering')?.url).toBe('https://plpcsanjose.com/shop');
   });
 
   it('detects delivery intent', () => {
@@ -866,19 +876,30 @@ describe('resolveSupportLinks', () => {
   // are now suppressed entirely unless the client provides an explicit
   // support_links override.
 
-  it('payment topic does NOT emit a chip without explicit support_links override', () => {
+  it('payment topic emits a /payment-options chip by default (changed 2026-05-04)', () => {
+    // Earlier the payment topic carried an empty default path and only
+    // rendered a chip when the client provided an explicit override.
+    // Customer audit confirmed /payment-options is a real page on the
+    // typical Jane Roots build, so it's now a default. Empty-path-fallback
+    // logic still in place for `returns` / `id_age` (no reliable defaults).
     const links = resolveSupportLinks('what payment do you accept?', cfg);
-    // "accept" matches both payment + nothing-else; assert no payment chip rendered
-    expect(links.find((l) => l.topic === 'payment')).toBeUndefined();
+    const link = links.find((l) => l.topic === 'payment');
+    expect(link).toBeDefined();
+    expect(link?.url).toBe('https://plpcsanjose.com/payment-options');
   });
 
-  it('payment topic DOES emit a chip when client provides explicit override', () => {
+  it('payment topic respects explicit support_links override', () => {
     const links = resolveSupportLinks('what payment do you accept?', {
       website_url: 'https://plpcsanjose.com',
       support_links: { payment: 'https://plpcsanjose.com/about/payment' },
     });
     const link = links.find((l) => l.topic === 'payment');
     expect(link?.url).toBe('https://plpcsanjose.com/about/payment');
+  });
+
+  it('payment topic triggers on "treez" (Treez Pay mention)', () => {
+    const links = resolveSupportLinks('does treez pay work here?', cfg);
+    expect(links.some((l) => l.topic === 'payment')).toBe(true);
   });
 
   it('returns/refund topic suppressed without explicit override', () => {
@@ -899,18 +920,19 @@ describe('resolveSupportLinks', () => {
   });
 
   it('lockfile: every topic with a default path resolves to a path verified to return HTTP 200 on plpcsanjose.com', () => {
-    // Verified 2026-04-29 via curl probe. If you change a default path here,
+    // Verified 2026-05-04 via curl probe. If you change a default path here,
     // re-probe the new path against a real Jane-storefront site and update.
-    const VERIFIED_PATHS_2026_04_29: Record<string, string> = {
-      ordering: '/menu',
+    const VERIFIED_PATHS_2026_05_04: Record<string, string> = {
+      ordering: '/shop',          // was /menu pre-2026-05-04
       delivery: '/delivery',
       pickup: '/pickup',
       hours: '/locations',
       location: '/locations',
       rewards: '/rewards',
       deals: '/deals',
-      menu: '/shop/all',
+      menu: '/shop',              // was /shop/all; both work, /shop is canonical
       contact: '/contact',
+      payment: '/payment-options', // new default 2026-05-04
     };
     // Fire a message that triggers each topic in turn.
     const triggers: Record<string, string> = {
@@ -923,8 +945,9 @@ describe('resolveSupportLinks', () => {
       deals: 'any deals today?',
       menu: 'show me your full menu',
       contact: 'how do I contact you?',
+      payment: 'what payment methods do you accept?',
     };
-    for (const [topic, expectedPath] of Object.entries(VERIFIED_PATHS_2026_04_29)) {
+    for (const [topic, expectedPath] of Object.entries(VERIFIED_PATHS_2026_05_04)) {
       const links = resolveSupportLinks(triggers[topic], cfg);
       const link = links.find((l) => l.topic === topic);
       expect(link, `topic=${topic} did not produce a chip`).toBeDefined();
