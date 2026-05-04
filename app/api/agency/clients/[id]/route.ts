@@ -250,13 +250,33 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const responseLanguage = (cfg.response_language as string) || 'auto';
 
     // Always push SOUL.md when container_config changes (even if fields cleared)
+    // ALSO bundle the latest knowledge documents — every config push is a
+    // chance to reconcile gateway state with the dashboard. Pre-fix, the
+    // OpenClaw runtime stayed blind to training docs unless someone clicked
+    // the manual Sync button or hit /api/agency/knowledge/sync. Now SOUL.md
+    // and KNOWLEDGE_BASE.md update together.
     void (async () => {
       try {
         const soulMd = buildSoulMd(client.name, persona, greeting, instructions, responseLanguage);
         const userMd = buildUserMd(client.name, cfg, client.industry);
-        const result = await updateClientConfig(client.id, { soulMd, userMd });
+
+        // Knowledge bundle for THIS client (agency-wide + client-scoped docs).
+        // Failure here doesn't block SOUL.md/USER.md push — the gateway just
+        // keeps yesterday's knowledge until the next successful sync.
+        let knowledgeBase: string[] | undefined;
+        try {
+          const { createServiceClientWithoutCookies } = await import('@/lib/supabase/server');
+          const { loadKnowledgeForClient } = await import('@/lib/knowledge/sync-to-gateway');
+          const supabase = createServiceClientWithoutCookies();
+          const bundle = await loadKnowledgeForClient(supabase, client.agency_id, client.id);
+          if (bundle.documentCount > 0) knowledgeBase = bundle.chunks;
+        } catch (err) {
+          console.warn(`[personality] knowledge bundle load failed for ${client.id}:`, err instanceof Error ? err.message : err);
+        }
+
+        const result = await updateClientConfig(client.id, { soulMd, userMd, knowledgeBase });
         if (result.success) {
-          console.log(`[personality] SOUL.md pushed to container for client ${client.id}`);
+          console.log(`[personality] SOUL.md + ${knowledgeBase?.length ?? 0} knowledge chunks pushed to container for client ${client.id}`);
         } else {
           console.warn(`[personality] Failed to push SOUL.md for ${client.id}:`, result.error);
         }
