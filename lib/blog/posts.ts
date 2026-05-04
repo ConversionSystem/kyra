@@ -11,6 +11,236 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'ai-agent-memory-systems-openclaw-2026',
+    title: 'AI Agent Memory Systems in 2026: How OpenClaw Workspaces, SOUL.md, and Context Compaction Actually Work',
+    description: 'AI agent memory in 2026 is three layers: workspace files like SOUL.md and MEMORY.md, runtime context with Sonnet 4.6 compaction, and Anthropic’s memory tool for long-term storage. Step-by-step setup, comparison tables, anti-patterns, and FAQ for agency operators.',
+    date: '2026-05-04',
+    readMins: 13,
+    category: 'AI Infrastructure',
+    emoji: '🧠',
+    content: `
+<p><em>Last updated: May 4, 2026</em></p>
+
+<p><strong>AI agent memory</strong> is the system an autonomous agent uses to retain identity, knowledge, and unfinished work across context boundaries. It combines files on disk, the live context window, and long-term storage. In 2026 the concept has split into three distinct layers. The workspace layer is plain Markdown on disk. The runtime layer lives inside the model context window. The long-term layer survives compaction or restart through a memory tool or external store. Confusing the three is the most common reason agency-deployed agents start strong and quietly degrade after a week.</p>
+
+<p>This post walks through the memory architecture that ships in OpenClaw v2026.4.26 today, how it interacts with Anthropic’s April 2026 memory tool and Sonnet 4.6 automatic context compaction, what to put in each file, and the anti-patterns that turn a working agent into a forgetful one. The aim is a clear mental model you can take into a real client deployment, not a tour of every API.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>Agent memory in 2026 is three layers: workspace files on disk (SOUL.md, MEMORY.md, AGENTS.md), runtime context inside the model window, and long-term storage via Anthropic’s memory tool or a vector store.</li>
+    <li>OpenClaw assembles its workspace into the system prompt at session start. Sonnet 4.6 holds a 1M-token window and runs automatic compaction once it fills, so older turns are summarized server-side rather than dropped.</li>
+    <li>Anthropic announced its memory tool on April 23, 2026. It writes Markdown into a /memories directory the model can read, write, and delete via tool calls, making memory exportable and editable instead of opaque.</li>
+    <li>Workspace memory and the memory tool are complementary. Workspace files set identity and rules; the memory tool stores running facts the agent learned during a task.</li>
+    <li>Most degrading agents are degrading because their MEMORY.md is unbounded. Capping at 200 lines and summarizing older notes into a CHANGELOG section keeps performance steady.</li>
+    <li>Vector RAG is still useful, but only as the third layer for genuinely large knowledge bases. For a single client’s conversational history, plain files compress better and cite cleaner.</li>
+  </ul>
+</div>
+
+<h2>What "AI agent memory" actually means in 2026</h2>
+
+<p>The phrase "agent memory" papers over three different technologies that operate on different timescales. Treating them as one thing is what produces the "my agent forgets after a few hours" complaint that fills Reddit threads in 2026.</p>
+
+<p>The three layers, ordered from shortest to longest timescale:</p>
+
+<ol>
+  <li><strong>Runtime memory.</strong> Whatever fits inside the active context window during the current call. With Sonnet 4.6 that is up to one million tokens, but practical sessions stay below 200K because cost and latency scale linearly. Runtime memory dies when the session ends.</li>
+  <li><strong>Workspace memory.</strong> Plain Markdown files on disk (SOUL.md, AGENTS.md, MEMORY.md, USER.md, TOOLS.md, HEARTBEAT.md, IDENTITY.md) that the gateway concatenates into the system prompt every time the agent starts. Workspace memory persists for the life of the workspace folder and is editable by humans.</li>
+  <li><strong>Long-term memory.</strong> Information the agent decides to keep beyond the current task. In 2026 there are two production-grade options: Anthropic’s memory tool (announced April 23, 2026), which writes files to a /memories directory via tool calls, and external vector stores (pgvector, Pinecone, Weaviate) for arbitrarily large bodies of text.</li>
+</ol>
+
+<p>A well-built agent uses all three. Identity and operating rules live in the workspace. Today’s task uses runtime context. Anything the agent learned that should outlive the task gets written to the memory tool or a vector store. None of the three is optional. Missing any one of them produces a specific failure mode.</p>
+
+<h2>The OpenClaw workspace: seven files, one ontology</h2>
+
+<p>OpenClaw treats the workspace folder as the agent’s filesystem of record. The seven files are read in a strict precedence order at session start, concatenated, and injected into the system prompt before any user message. The set:</p>
+
+<table>
+<thead>
+<tr><th>File</th><th>Purpose</th><th>Edit cadence</th><th>Typical length</th></tr>
+</thead>
+<tbody>
+<tr><td><code>SOUL.md</code></td><td>Personality, values, voice, immutable principles</td><td>Rarely (quarterly)</td><td>30 to 80 lines</td></tr>
+<tr><td><code>IDENTITY.md</code></td><td>Name, role, who this specific deployment serves</td><td>Once at provisioning</td><td>10 to 30 lines</td></tr>
+<tr><td><code>AGENTS.md</code></td><td>Operating rules, sub-agent routing, escalation policy</td><td>Weekly</td><td>50 to 150 lines</td></tr>
+<tr><td><code>USER.md</code></td><td>What the agent knows about the human or client</td><td>On change</td><td>20 to 100 lines</td></tr>
+<tr><td><code>TOOLS.md</code></td><td>Tool allowlist, denylist, usage notes</td><td>Per release</td><td>30 to 100 lines</td></tr>
+<tr><td><code>HEARTBEAT.md</code></td><td>Scheduled tasks in plain English</td><td>Per task</td><td>10 to 60 lines</td></tr>
+<tr><td><code>MEMORY.md</code></td><td>Running notes, facts learned, recent decisions</td><td>Continuously</td><td>Cap at 200 lines</td></tr>
+</tbody>
+</table>
+
+<p>The mental model worth holding: SOUL.md and IDENTITY.md are who the agent is. AGENTS.md is how it behaves. USER.md and TOOLS.md are what it works with. HEARTBEAT.md is when it acts. MEMORY.md is what it remembers.</p>
+
+<p>OpenClaw v2026.4.26 ships releases roughly every two days, and the workspace files have been stable since the late-March 2026 security cleanup. Names and ordering are unlikely to shift before the 0.15 series. The official reference lives at <a href="https://docs.openclaw.ai/concepts/memory">docs.openclaw.ai/concepts/memory</a>, and the heartbeat docs are at <a href="https://docs.openclaw.ai/gateway/heartbeat">docs.openclaw.ai/gateway/heartbeat</a>.</p>
+
+<h2>How context compaction extends memory beyond the window</h2>
+
+<p>Anthropic’s context-compaction-2026-02-01 beta turned on automatic server-side summarization for Sonnet 4.5 and stayed on by default for Sonnet 4.6 and Opus 4.7. When a conversation gets within roughly 80% of the model’s context limit, older turns are replaced with a summary the model itself produces. The new condensed history takes the place of the original, freeing room for new turns.</p>
+
+<p>For an agency operator that means three practical things.</p>
+
+<ul>
+  <li><strong>Long-running sessions stop dying.</strong> A multi-hour task that previously hit the limit and reset now keeps going past the boundary. The gateway sees a continuous conversation. The model sees a compacted one.</li>
+  <li><strong>Specific details can disappear into the summary.</strong> Compaction is lossy by design. A client’s account number mentioned 30 turns ago might survive or might not. Anything the agent must remember after compaction belongs in MEMORY.md or in the memory tool, not in conversation.</li>
+  <li><strong>Cost grows roughly linearly with elapsed time, not with raw turn count.</strong> Compaction collapses old turns into shorter form, so the running input cost stops doubling indefinitely.</li>
+</ul>
+
+<p>The interaction with the memory tool is the part most teams miss. Compaction summarizes; the memory tool persists. They are not redundant. A long-horizon agent should write any commitment, deadline, account, or user preference to /memories the moment it learns it, on the assumption that the conversation it appeared in will be compressed away within the hour.</p>
+
+<h2>Set up workspace memory in OpenClaw, step by step</h2>
+
+<p>This is the path most agencies follow when provisioning a new client. Each step assumes you already have a running OpenClaw gateway and you are SSH’d into the host or running commands inside the per-client container.</p>
+
+<p><strong>1. Create the workspace folder.</strong></p>
+
+<pre><code>mkdir -p /opt/openclaw/workspaces/acme-dental
+cd /opt/openclaw/workspaces/acme-dental</code></pre>
+
+<p><strong>2. Initialize the seven kernel files.</strong></p>
+
+<pre><code>touch SOUL.md IDENTITY.md AGENTS.md USER.md TOOLS.md HEARTBEAT.md MEMORY.md</code></pre>
+
+<p><strong>3. Write SOUL.md.</strong> Keep it short. Voice, values, refusal policy.</p>
+
+<pre><code>cat &gt; SOUL.md &lt;&lt; 'EOF'
+# Soul
+
+Voice: warm, brief, never salesy.
+Values: protect the patient’s time. Confirm before booking.
+Refuses: medical advice, prescription questions, billing disputes.
+EOF</code></pre>
+
+<p><strong>4. Write IDENTITY.md.</strong></p>
+
+<pre><code>cat &gt; IDENTITY.md &lt;&lt; 'EOF'
+Name: Sage
+Role: Front-desk assistant for Acme Dental.
+Hours: Mon-Fri 7am-7pm Eastern.
+Languages: English, Spanish.
+EOF</code></pre>
+
+<p><strong>5. Write AGENTS.md.</strong> Routing rules and escalation.</p>
+
+<pre><code>cat &gt; AGENTS.md &lt;&lt; 'EOF'
+- Booking requests: confirm patient name, date of birth, and reason. Use the gohighlevel.book_appointment tool.
+- Insurance questions: collect payer name, route to a human via slack.send_to_billing.
+- After 3 unanswered clarifications: hand off with summary.
+EOF</code></pre>
+
+<p><strong>6. Configure HEARTBEAT.md.</strong> Scheduled tasks in plain language. OpenClaw checks the file every 30 minutes.</p>
+
+<pre><code>cat &gt; HEARTBEAT.md &lt;&lt; 'EOF'
+Every weekday at 8am Eastern:
+  Pull tomorrow’s appointments from GHL and send confirmation SMS.
+
+Every Monday at 9am Eastern:
+  Summarize last week’s missed calls. Post to #front-desk in Slack.
+EOF</code></pre>
+
+<p><strong>7. Bound MEMORY.md.</strong> The agent will write to this file. Set a shape now so unbounded growth is not the default.</p>
+
+<pre><code>cat &gt; MEMORY.md &lt;&lt; 'EOF'
+# Memory (most recent first, prune below 200 lines)
+
+## Recent decisions
+-
+
+## Facts learned
+-
+
+## Changelog (auto-summarized weekly)
+-
+EOF</code></pre>
+
+<p><strong>8. Restart the gateway and confirm load.</strong></p>
+
+<pre><code>openclaw gateway restart
+openclaw workspace status acme-dental</code></pre>
+
+<p>The status command prints the seven files and the line count of each. If any are missing or any are over the recommended cap, the gateway warns at startup. From here, the agent reads the workspace at every session start. Humans can edit any file at any time; changes apply on the next session.</p>
+
+<h2>OpenClaw vs Anthropic memory tool vs Claude Code CLAUDE.md vs vector RAG</h2>
+
+<p>Four memory technologies dominate 2026 deployments. They are often confused, partly because the file conventions overlap. The differences matter for production.</p>
+
+<table>
+<thead>
+<tr><th>System</th><th>Storage</th><th>Persistence</th><th>Best for</th><th>Failure mode</th></tr>
+</thead>
+<tbody>
+<tr><td>OpenClaw workspace</td><td>Markdown files on disk</td><td>Permanent until edited</td><td>Identity, rules, scheduled tasks</td><td>Drift if files are not curated</td></tr>
+<tr><td>Anthropic memory tool</td><td>Files in /memories via tool calls</td><td>Across sessions on the platform</td><td>Facts the agent learned in a task</td><td>Unbounded growth without pruning</td></tr>
+<tr><td>Claude Code CLAUDE.md</td><td>Single Markdown file in repo</td><td>Per project, version controlled</td><td>Coding rules, repo conventions</td><td>Compliance degrades past 200 lines</td></tr>
+<tr><td>Vector RAG (pgvector, Pinecone)</td><td>Embeddings in a database</td><td>Permanent, searchable</td><td>Large reference corpora</td><td>Noisy retrieval, citation gaps</td></tr>
+</tbody>
+</table>
+
+<p>For a typical agency client, the right starting stack is OpenClaw workspace plus the memory tool. CLAUDE.md is for engineering teams using Claude Code as a developer tool, not for client-facing agents. Vector RAG enters the picture only when a client has a body of reference material (product manuals, legal documents, internal wikis) that genuinely will not fit even with compaction.</p>
+
+<h2>Memory anti-patterns that quietly break agents in production</h2>
+
+<p>Six failure modes show up repeatedly in agency deployments. Each has a fix that is more boring than its root cause.</p>
+
+<p><strong>1. Unbounded MEMORY.md.</strong> The agent writes a note every interaction and never prunes. By week two the system prompt is 4,000 lines and the agent forgets its instructions. Fix: cap at 200 lines, run a weekly summarization cron that compresses older notes into a CHANGELOG section.</p>
+
+<p><strong>2. Identity drift.</strong> SOUL.md is edited mid-session by a well-meaning operator. The agent’s voice changes, customers notice. Fix: treat SOUL.md as read-only outside a quarterly review. Track changes in git.</p>
+
+<p><strong>3. Memory tool used as a journal.</strong> The agent writes a long entry to /memories every turn. Token cost on the next session balloons. Fix: only write atomic facts (one fact per file, short title, dated). Read selectively, not in bulk.</p>
+
+<p><strong>4. Compaction-blind context engineering.</strong> The system prompt assumes the user’s first message will still be visible 50 turns later. After compaction it is not. Fix: re-state task-critical context every 10 to 20 turns, or persist it to memory.</p>
+
+<p><strong>5. Vector RAG without metadata.</strong> Embeddings retrieve passages with no source, no date, no author. The agent cites the wrong document. Fix: always store source URL, last-modified date, and author in the metadata column. Filter on those before semantic ranking.</p>
+
+<p><strong>6. Per-client containers sharing a memory store.</strong> Two clients see each other’s data. Fix: isolate the /memories directory per container, and audit at provisioning. The OpenClaw gateway enforces this when configured correctly. Verify, do not assume.</p>
+
+<h2>When workspace memory is not for you</h2>
+
+<p>This pattern is wrong for a few specific cases. Worth naming so nobody force-fits it.</p>
+
+<ul>
+  <li><strong>Stateless one-shot agents.</strong> A classifier that scores a single email has no need for SOUL.md or MEMORY.md. Pass instructions in the system prompt, return JSON, exit. Workspace memory adds startup cost for no benefit.</li>
+  <li><strong>Real-time chat at consumer scale.</strong> If you are running thousands of concurrent end-user sessions per second, the per-session disk read becomes a bottleneck. Use an in-memory cache layer in front of the workspace files, or pre-bake the merged system prompt.</li>
+  <li><strong>Strict regulatory environments where every prompt token must be auditable.</strong> Compaction summaries are model-generated. If a regulator demands the exact tokens shown to the model, run with compaction disabled and architect for shorter sessions.</li>
+  <li><strong>Workloads dominated by retrieval over reasoning.</strong> A pure search assistant over a 10-million-document corpus is better served by a vector index plus a small model than by an agent with a workspace.</li>
+</ul>
+
+<p>For everything in between (the long tail of agency deployments handling appointments, qualification, follow-up, support, internal ops), workspace memory plus the memory tool is the 2026 default. The cost of building it is one afternoon. The cost of not building it shows up four weeks later when the agent stops behaving the way it did at launch.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Does Sonnet 4.6’s 1M context window mean I do not need workspace memory?</h3>
+
+<p>No. The 1M window holds runtime context for the current session, but every new session starts empty. Workspace memory is what the agent reads at the start of every session to know who it is. Without it, the model is a blank slate at session zero, regardless of how much context the window can hold.</p>
+
+<h3>Should I use Anthropic’s memory tool or write to a database?</h3>
+
+<p>Start with the memory tool. It was announced April 23, 2026, ships as files in a /memories directory, and is exportable, editable, and inspectable through the Claude Console or the API. A database is the right answer once you need cross-agent search, structured queries, or volumes that exceed a few hundred files. Until then the file-based memory tool is simpler and cheaper.</p>
+
+<h3>How does compaction interact with the memory tool?</h3>
+
+<p>They run in different layers. Compaction summarizes the active conversation when it nears the context limit. The memory tool persists named files across sessions. A practical pattern: at the end of every task the agent writes a short summary to /memories with a clear name (for example, <code>2026-05-04-acme-policy-update.md</code>). Even after compaction or a session reset, that file remains and can be re-read on the next task.</p>
+
+<h3>Can I edit MEMORY.md while the agent is running?</h3>
+
+<p>Yes, with one caveat: the change applies on the next session start, not mid-session. If the agent is in a long-running heartbeat run, your edit is picked up after the current run ends. For urgent changes (a wrong fact, a leaked PII), restart the workspace to force an immediate reload.</p>
+
+<h3>What about CLAUDE.md from Claude Code? Is that the same thing?</h3>
+
+<p>Same idea, different surface. CLAUDE.md is a single Markdown file Claude Code reads at the top of every session in a repository, used to teach the coding agent your conventions. It is the right tool for engineering use cases. OpenClaw’s seven-file workspace is the same idea generalized to non-coding agents (front-desk assistants, sales qualifiers, support workers) where identity, scheduled tasks, and per-client knowledge matter as much as coding rules.</p>
+
+<h3>How big should MEMORY.md actually get?</h3>
+
+<p>Cap it at 200 lines. Beyond 200, model compliance with the rest of the system prompt starts to degrade. Anthropic’s own Claude Code guidance reaches the same number for CLAUDE.md. When the file approaches the cap, run a weekly summarization that pushes older notes into a "Changelog" section as one-line entries, then deletes them from the active section. Treat MEMORY.md the way a good ops engineer treats a logfile: rotate, summarize, archive.</p>
+
+<h2>Pulling the layers together</h2>
+
+<p>An agent that survives a year in production has all three layers configured. A small, stable workspace defines identity and rules. A runtime context benefits from compaction without depending on it. A long-term memory is written to selectively, pruned regularly, and audited per client. None of this is exotic infrastructure. It is the boring discipline of treating an agent like a long-running service rather than a one-off prompt.</p>
+
+<p>If you are deploying for clients and want the workspace plus memory tool plus per-client isolation already wired up, <a href="/solo">Kyra</a> ships it as the default. The same architecture is open source under OpenClaw if you would rather run it yourself; the public docs live at <a href="https://docs.openclaw.ai/concepts/memory">docs.openclaw.ai/concepts/memory</a>, the source is on <a href="https://github.com/openclaw/openclaw">GitHub</a>, and Anthropic’s official memory tool reference is at <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool">platform.claude.com</a>. Anthropic’s context management notes are at <a href="https://www.anthropic.com/news/context-management">anthropic.com/news/context-management</a>. For a deeper companion read, the architecture-level walkthrough in <a href="/blog/what-is-openclaw-ai-gateway-explained">what is OpenClaw</a> covers the gateway side, and the <a href="/blog/write-your-first-claude-skill-openclaw-2026">first Claude Skill</a> guide shows what to build once memory is in place. Vertical examples live at <a href="/ai-for/dental-practices">AI for dental practices</a>.</p>
+`,
+  },
+    {
     slug: 'self-hosted-ai-cost-vs-cloud-2026',
     title: 'Self-Hosted AI Cost vs Cloud LLM Bills in 2026: The Honest Math for Agencies',
     description: 'Self-hosted AI cost in 2026 is not just the GPU bill. Compare Anthropic Claude pricing after caching and batch discounts, real Hetzner and RunPod infrastructure rates, and a step-by-step way to model your true monthly bill across light, medium, and heavy agency tiers.',
