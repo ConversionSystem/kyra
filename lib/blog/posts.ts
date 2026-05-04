@@ -11,6 +11,437 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'ai-agent-memory-systems-openclaw-2026',
+    title: 'AI Agent Memory Systems in 2026: How OpenClaw Workspaces, SOUL.md, and Context Compaction Actually Work',
+    description: 'AI agent memory in 2026 is three layers: workspace files like SOUL.md and MEMORY.md, runtime context with Sonnet 4.6 compaction, and Anthropic’s memory tool for long-term storage. Step-by-step setup, comparison tables, anti-patterns, and FAQ for agency operators.',
+    date: '2026-05-04',
+    readMins: 13,
+    category: 'AI Infrastructure',
+    emoji: '🧠',
+    content: `
+<p><em>Last updated: May 4, 2026</em></p>
+
+<p><strong>AI agent memory</strong> is the system an autonomous agent uses to retain identity, knowledge, and unfinished work across context boundaries. It combines files on disk, the live context window, and long-term storage. In 2026 the concept has split into three distinct layers. The workspace layer is plain Markdown on disk. The runtime layer lives inside the model context window. The long-term layer survives compaction or restart through a memory tool or external store. Confusing the three is the most common reason agency-deployed agents start strong and quietly degrade after a week.</p>
+
+<p>This post walks through the memory architecture that ships in OpenClaw v2026.4.26 today, how it interacts with Anthropic’s April 2026 memory tool and Sonnet 4.6 automatic context compaction, what to put in each file, and the anti-patterns that turn a working agent into a forgetful one. The aim is a clear mental model you can take into a real client deployment, not a tour of every API.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>Agent memory in 2026 is three layers: workspace files on disk (SOUL.md, MEMORY.md, AGENTS.md), runtime context inside the model window, and long-term storage via Anthropic’s memory tool or a vector store.</li>
+    <li>OpenClaw assembles its workspace into the system prompt at session start. Sonnet 4.6 holds a 1M-token window and runs automatic compaction once it fills, so older turns are summarized server-side rather than dropped.</li>
+    <li>Anthropic announced its memory tool on April 23, 2026. It writes Markdown into a /memories directory the model can read, write, and delete via tool calls, making memory exportable and editable instead of opaque.</li>
+    <li>Workspace memory and the memory tool are complementary. Workspace files set identity and rules; the memory tool stores running facts the agent learned during a task.</li>
+    <li>Most degrading agents are degrading because their MEMORY.md is unbounded. Capping at 200 lines and summarizing older notes into a CHANGELOG section keeps performance steady.</li>
+    <li>Vector RAG is still useful, but only as the third layer for genuinely large knowledge bases. For a single client’s conversational history, plain files compress better and cite cleaner.</li>
+  </ul>
+</div>
+
+<h2>What "AI agent memory" actually means in 2026</h2>
+
+<p>The phrase "agent memory" papers over three different technologies that operate on different timescales. Treating them as one thing is what produces the "my agent forgets after a few hours" complaint that fills Reddit threads in 2026.</p>
+
+<p>The three layers, ordered from shortest to longest timescale:</p>
+
+<ol>
+  <li><strong>Runtime memory.</strong> Whatever fits inside the active context window during the current call. With Sonnet 4.6 that is up to one million tokens, but practical sessions stay below 200K because cost and latency scale linearly. Runtime memory dies when the session ends.</li>
+  <li><strong>Workspace memory.</strong> Plain Markdown files on disk (SOUL.md, AGENTS.md, MEMORY.md, USER.md, TOOLS.md, HEARTBEAT.md, IDENTITY.md) that the gateway concatenates into the system prompt every time the agent starts. Workspace memory persists for the life of the workspace folder and is editable by humans.</li>
+  <li><strong>Long-term memory.</strong> Information the agent decides to keep beyond the current task. In 2026 there are two production-grade options: Anthropic’s memory tool (announced April 23, 2026), which writes files to a /memories directory via tool calls, and external vector stores (pgvector, Pinecone, Weaviate) for arbitrarily large bodies of text.</li>
+</ol>
+
+<p>A well-built agent uses all three. Identity and operating rules live in the workspace. Today’s task uses runtime context. Anything the agent learned that should outlive the task gets written to the memory tool or a vector store. None of the three is optional. Missing any one of them produces a specific failure mode.</p>
+
+<h2>The OpenClaw workspace: seven files, one ontology</h2>
+
+<p>OpenClaw treats the workspace folder as the agent’s filesystem of record. The seven files are read in a strict precedence order at session start, concatenated, and injected into the system prompt before any user message. The set:</p>
+
+<table>
+<thead>
+<tr><th>File</th><th>Purpose</th><th>Edit cadence</th><th>Typical length</th></tr>
+</thead>
+<tbody>
+<tr><td><code>SOUL.md</code></td><td>Personality, values, voice, immutable principles</td><td>Rarely (quarterly)</td><td>30 to 80 lines</td></tr>
+<tr><td><code>IDENTITY.md</code></td><td>Name, role, who this specific deployment serves</td><td>Once at provisioning</td><td>10 to 30 lines</td></tr>
+<tr><td><code>AGENTS.md</code></td><td>Operating rules, sub-agent routing, escalation policy</td><td>Weekly</td><td>50 to 150 lines</td></tr>
+<tr><td><code>USER.md</code></td><td>What the agent knows about the human or client</td><td>On change</td><td>20 to 100 lines</td></tr>
+<tr><td><code>TOOLS.md</code></td><td>Tool allowlist, denylist, usage notes</td><td>Per release</td><td>30 to 100 lines</td></tr>
+<tr><td><code>HEARTBEAT.md</code></td><td>Scheduled tasks in plain English</td><td>Per task</td><td>10 to 60 lines</td></tr>
+<tr><td><code>MEMORY.md</code></td><td>Running notes, facts learned, recent decisions</td><td>Continuously</td><td>Cap at 200 lines</td></tr>
+</tbody>
+</table>
+
+<p>The mental model worth holding: SOUL.md and IDENTITY.md are who the agent is. AGENTS.md is how it behaves. USER.md and TOOLS.md are what it works with. HEARTBEAT.md is when it acts. MEMORY.md is what it remembers.</p>
+
+<p>OpenClaw v2026.4.26 ships releases roughly every two days, and the workspace files have been stable since the late-March 2026 security cleanup. Names and ordering are unlikely to shift before the 0.15 series. The official reference lives at <a href="https://docs.openclaw.ai/concepts/memory">docs.openclaw.ai/concepts/memory</a>, and the heartbeat docs are at <a href="https://docs.openclaw.ai/gateway/heartbeat">docs.openclaw.ai/gateway/heartbeat</a>.</p>
+
+<h2>How context compaction extends memory beyond the window</h2>
+
+<p>Anthropic’s context-compaction-2026-02-01 beta turned on automatic server-side summarization for Sonnet 4.5 and stayed on by default for Sonnet 4.6 and Opus 4.7. When a conversation gets within roughly 80% of the model’s context limit, older turns are replaced with a summary the model itself produces. The new condensed history takes the place of the original, freeing room for new turns.</p>
+
+<p>For an agency operator that means three practical things.</p>
+
+<ul>
+  <li><strong>Long-running sessions stop dying.</strong> A multi-hour task that previously hit the limit and reset now keeps going past the boundary. The gateway sees a continuous conversation. The model sees a compacted one.</li>
+  <li><strong>Specific details can disappear into the summary.</strong> Compaction is lossy by design. A client’s account number mentioned 30 turns ago might survive or might not. Anything the agent must remember after compaction belongs in MEMORY.md or in the memory tool, not in conversation.</li>
+  <li><strong>Cost grows roughly linearly with elapsed time, not with raw turn count.</strong> Compaction collapses old turns into shorter form, so the running input cost stops doubling indefinitely.</li>
+</ul>
+
+<p>The interaction with the memory tool is the part most teams miss. Compaction summarizes; the memory tool persists. They are not redundant. A long-horizon agent should write any commitment, deadline, account, or user preference to /memories the moment it learns it, on the assumption that the conversation it appeared in will be compressed away within the hour.</p>
+
+<h2>Set up workspace memory in OpenClaw, step by step</h2>
+
+<p>This is the path most agencies follow when provisioning a new client. Each step assumes you already have a running OpenClaw gateway and you are SSH’d into the host or running commands inside the per-client container.</p>
+
+<p><strong>1. Create the workspace folder.</strong></p>
+
+<pre><code>mkdir -p /opt/openclaw/workspaces/acme-dental
+cd /opt/openclaw/workspaces/acme-dental</code></pre>
+
+<p><strong>2. Initialize the seven kernel files.</strong></p>
+
+<pre><code>touch SOUL.md IDENTITY.md AGENTS.md USER.md TOOLS.md HEARTBEAT.md MEMORY.md</code></pre>
+
+<p><strong>3. Write SOUL.md.</strong> Keep it short. Voice, values, refusal policy.</p>
+
+<pre><code>cat &gt; SOUL.md &lt;&lt; 'EOF'
+# Soul
+
+Voice: warm, brief, never salesy.
+Values: protect the patient’s time. Confirm before booking.
+Refuses: medical advice, prescription questions, billing disputes.
+EOF</code></pre>
+
+<p><strong>4. Write IDENTITY.md.</strong></p>
+
+<pre><code>cat &gt; IDENTITY.md &lt;&lt; 'EOF'
+Name: Sage
+Role: Front-desk assistant for Acme Dental.
+Hours: Mon-Fri 7am-7pm Eastern.
+Languages: English, Spanish.
+EOF</code></pre>
+
+<p><strong>5. Write AGENTS.md.</strong> Routing rules and escalation.</p>
+
+<pre><code>cat &gt; AGENTS.md &lt;&lt; 'EOF'
+- Booking requests: confirm patient name, date of birth, and reason. Use the gohighlevel.book_appointment tool.
+- Insurance questions: collect payer name, route to a human via slack.send_to_billing.
+- After 3 unanswered clarifications: hand off with summary.
+EOF</code></pre>
+
+<p><strong>6. Configure HEARTBEAT.md.</strong> Scheduled tasks in plain language. OpenClaw checks the file every 30 minutes.</p>
+
+<pre><code>cat &gt; HEARTBEAT.md &lt;&lt; 'EOF'
+Every weekday at 8am Eastern:
+  Pull tomorrow’s appointments from GHL and send confirmation SMS.
+
+Every Monday at 9am Eastern:
+  Summarize last week’s missed calls. Post to #front-desk in Slack.
+EOF</code></pre>
+
+<p><strong>7. Bound MEMORY.md.</strong> The agent will write to this file. Set a shape now so unbounded growth is not the default.</p>
+
+<pre><code>cat &gt; MEMORY.md &lt;&lt; 'EOF'
+# Memory (most recent first, prune below 200 lines)
+
+## Recent decisions
+-
+
+## Facts learned
+-
+
+## Changelog (auto-summarized weekly)
+-
+EOF</code></pre>
+
+<p><strong>8. Restart the gateway and confirm load.</strong></p>
+
+<pre><code>openclaw gateway restart
+openclaw workspace status acme-dental</code></pre>
+
+<p>The status command prints the seven files and the line count of each. If any are missing or any are over the recommended cap, the gateway warns at startup. From here, the agent reads the workspace at every session start. Humans can edit any file at any time; changes apply on the next session.</p>
+
+<h2>OpenClaw vs Anthropic memory tool vs Claude Code CLAUDE.md vs vector RAG</h2>
+
+<p>Four memory technologies dominate 2026 deployments. They are often confused, partly because the file conventions overlap. The differences matter for production.</p>
+
+<table>
+<thead>
+<tr><th>System</th><th>Storage</th><th>Persistence</th><th>Best for</th><th>Failure mode</th></tr>
+</thead>
+<tbody>
+<tr><td>OpenClaw workspace</td><td>Markdown files on disk</td><td>Permanent until edited</td><td>Identity, rules, scheduled tasks</td><td>Drift if files are not curated</td></tr>
+<tr><td>Anthropic memory tool</td><td>Files in /memories via tool calls</td><td>Across sessions on the platform</td><td>Facts the agent learned in a task</td><td>Unbounded growth without pruning</td></tr>
+<tr><td>Claude Code CLAUDE.md</td><td>Single Markdown file in repo</td><td>Per project, version controlled</td><td>Coding rules, repo conventions</td><td>Compliance degrades past 200 lines</td></tr>
+<tr><td>Vector RAG (pgvector, Pinecone)</td><td>Embeddings in a database</td><td>Permanent, searchable</td><td>Large reference corpora</td><td>Noisy retrieval, citation gaps</td></tr>
+</tbody>
+</table>
+
+<p>For a typical agency client, the right starting stack is OpenClaw workspace plus the memory tool. CLAUDE.md is for engineering teams using Claude Code as a developer tool, not for client-facing agents. Vector RAG enters the picture only when a client has a body of reference material (product manuals, legal documents, internal wikis) that genuinely will not fit even with compaction.</p>
+
+<h2>Memory anti-patterns that quietly break agents in production</h2>
+
+<p>Six failure modes show up repeatedly in agency deployments. Each has a fix that is more boring than its root cause.</p>
+
+<p><strong>1. Unbounded MEMORY.md.</strong> The agent writes a note every interaction and never prunes. By week two the system prompt is 4,000 lines and the agent forgets its instructions. Fix: cap at 200 lines, run a weekly summarization cron that compresses older notes into a CHANGELOG section.</p>
+
+<p><strong>2. Identity drift.</strong> SOUL.md is edited mid-session by a well-meaning operator. The agent’s voice changes, customers notice. Fix: treat SOUL.md as read-only outside a quarterly review. Track changes in git.</p>
+
+<p><strong>3. Memory tool used as a journal.</strong> The agent writes a long entry to /memories every turn. Token cost on the next session balloons. Fix: only write atomic facts (one fact per file, short title, dated). Read selectively, not in bulk.</p>
+
+<p><strong>4. Compaction-blind context engineering.</strong> The system prompt assumes the user’s first message will still be visible 50 turns later. After compaction it is not. Fix: re-state task-critical context every 10 to 20 turns, or persist it to memory.</p>
+
+<p><strong>5. Vector RAG without metadata.</strong> Embeddings retrieve passages with no source, no date, no author. The agent cites the wrong document. Fix: always store source URL, last-modified date, and author in the metadata column. Filter on those before semantic ranking.</p>
+
+<p><strong>6. Per-client containers sharing a memory store.</strong> Two clients see each other’s data. Fix: isolate the /memories directory per container, and audit at provisioning. The OpenClaw gateway enforces this when configured correctly. Verify, do not assume.</p>
+
+<h2>When workspace memory is not for you</h2>
+
+<p>This pattern is wrong for a few specific cases. Worth naming so nobody force-fits it.</p>
+
+<ul>
+  <li><strong>Stateless one-shot agents.</strong> A classifier that scores a single email has no need for SOUL.md or MEMORY.md. Pass instructions in the system prompt, return JSON, exit. Workspace memory adds startup cost for no benefit.</li>
+  <li><strong>Real-time chat at consumer scale.</strong> If you are running thousands of concurrent end-user sessions per second, the per-session disk read becomes a bottleneck. Use an in-memory cache layer in front of the workspace files, or pre-bake the merged system prompt.</li>
+  <li><strong>Strict regulatory environments where every prompt token must be auditable.</strong> Compaction summaries are model-generated. If a regulator demands the exact tokens shown to the model, run with compaction disabled and architect for shorter sessions.</li>
+  <li><strong>Workloads dominated by retrieval over reasoning.</strong> A pure search assistant over a 10-million-document corpus is better served by a vector index plus a small model than by an agent with a workspace.</li>
+</ul>
+
+<p>For everything in between (the long tail of agency deployments handling appointments, qualification, follow-up, support, internal ops), workspace memory plus the memory tool is the 2026 default. The cost of building it is one afternoon. The cost of not building it shows up four weeks later when the agent stops behaving the way it did at launch.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Does Sonnet 4.6’s 1M context window mean I do not need workspace memory?</h3>
+
+<p>No. The 1M window holds runtime context for the current session, but every new session starts empty. Workspace memory is what the agent reads at the start of every session to know who it is. Without it, the model is a blank slate at session zero, regardless of how much context the window can hold.</p>
+
+<h3>Should I use Anthropic’s memory tool or write to a database?</h3>
+
+<p>Start with the memory tool. It was announced April 23, 2026, ships as files in a /memories directory, and is exportable, editable, and inspectable through the Claude Console or the API. A database is the right answer once you need cross-agent search, structured queries, or volumes that exceed a few hundred files. Until then the file-based memory tool is simpler and cheaper.</p>
+
+<h3>How does compaction interact with the memory tool?</h3>
+
+<p>They run in different layers. Compaction summarizes the active conversation when it nears the context limit. The memory tool persists named files across sessions. A practical pattern: at the end of every task the agent writes a short summary to /memories with a clear name (for example, <code>2026-05-04-acme-policy-update.md</code>). Even after compaction or a session reset, that file remains and can be re-read on the next task.</p>
+
+<h3>Can I edit MEMORY.md while the agent is running?</h3>
+
+<p>Yes, with one caveat: the change applies on the next session start, not mid-session. If the agent is in a long-running heartbeat run, your edit is picked up after the current run ends. For urgent changes (a wrong fact, a leaked PII), restart the workspace to force an immediate reload.</p>
+
+<h3>What about CLAUDE.md from Claude Code? Is that the same thing?</h3>
+
+<p>Same idea, different surface. CLAUDE.md is a single Markdown file Claude Code reads at the top of every session in a repository, used to teach the coding agent your conventions. It is the right tool for engineering use cases. OpenClaw’s seven-file workspace is the same idea generalized to non-coding agents (front-desk assistants, sales qualifiers, support workers) where identity, scheduled tasks, and per-client knowledge matter as much as coding rules.</p>
+
+<h3>How big should MEMORY.md actually get?</h3>
+
+<p>Cap it at 200 lines. Beyond 200, model compliance with the rest of the system prompt starts to degrade. Anthropic’s own Claude Code guidance reaches the same number for CLAUDE.md. When the file approaches the cap, run a weekly summarization that pushes older notes into a "Changelog" section as one-line entries, then deletes them from the active section. Treat MEMORY.md the way a good ops engineer treats a logfile: rotate, summarize, archive.</p>
+
+<h2>Pulling the layers together</h2>
+
+<p>An agent that survives a year in production has all three layers configured. A small, stable workspace defines identity and rules. A runtime context benefits from compaction without depending on it. A long-term memory is written to selectively, pruned regularly, and audited per client. None of this is exotic infrastructure. It is the boring discipline of treating an agent like a long-running service rather than a one-off prompt.</p>
+
+<p>If you are deploying for clients and want the workspace plus memory tool plus per-client isolation already wired up, <a href="/solo">Kyra</a> ships it as the default. The same architecture is open source under OpenClaw if you would rather run it yourself; the public docs live at <a href="https://docs.openclaw.ai/concepts/memory">docs.openclaw.ai/concepts/memory</a>, the source is on <a href="https://github.com/openclaw/openclaw">GitHub</a>, and Anthropic’s official memory tool reference is at <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool">platform.claude.com</a>. Anthropic’s context management notes are at <a href="https://www.anthropic.com/news/context-management">anthropic.com/news/context-management</a>. For a deeper companion read, the architecture-level walkthrough in <a href="/blog/what-is-openclaw-ai-gateway-explained">what is OpenClaw</a> covers the gateway side, and the <a href="/blog/write-your-first-claude-skill-openclaw-2026">first Claude Skill</a> guide shows what to build once memory is in place. Vertical examples live at <a href="/ai-for/dental-practices">AI for dental practices</a>.</p>
+`,
+  },
+  {
+    slug: 'self-hosted-ai-cost-vs-cloud-2026',
+    title: 'Self-Hosted AI Cost vs Cloud LLM Bills in 2026: The Honest Math for Agencies',
+    description: 'Self-hosted AI cost in 2026 is not just the GPU bill. Compare Anthropic Claude pricing after caching and batch discounts, real Hetzner and RunPod infrastructure rates, and a step-by-step way to model your true monthly bill across light, medium, and heavy agency tiers.',
+    date: '2026-05-03',
+    readMins: 16,
+    category: 'AI Infrastructure',
+    emoji: '💸',
+    content: `
+<p><em>Last updated: May 3, 2026</em></p>
+
+<p><strong>Self-hosted AI cost</strong> is the all-in monthly bill an agency or operator pays to run AI workers on its own infrastructure instead of routing every request to a cloud LLM provider. In 2026 that bill includes compute (CPU or GPU), bandwidth, storage, monitoring, the people-hours to keep the stack running, and a much smaller line item for inference itself when bring-your-own-key (BYOK) routing is used. Compared in isolation, cloud LLM pricing looks cheap. Compared at scale across dozens of clients with high token volume, the same cloud bill quietly turns into the largest single operating expense in the business.</p>
+
+<p>This post breaks down the real cost math for 2026: what cloud LLMs actually charge after caching and batch discounts, what a self-hosted gateway plus a GPU VPS actually costs, where the break-even point sits for an agency running 10, 50, or 200 clients, and the hybrid setup most operators land on once they run the numbers honestly.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>Anthropic's 2026 rate card: Haiku 4.5 at $1/$5, Sonnet 4.6 at $3/$15, Opus 4.7 at $5/$25 per million input/output tokens. Prompt caching cuts cached input by 90% and batch processing halves the rest, so an optimized request can land at roughly 5% of the headline rate.</li>
+    <li>A 32 GB Hetzner CPU VPS at about EUR 60 per month comfortably hosts an OpenClaw gateway and 18 to 20 client workspaces. GPU VPS rates start at around $0.20 per hour for an RTX 4090 spot instance on RunPod, or $144 per month at full uptime.</li>
+    <li>Self-hosted is decisively cheaper above roughly 50 million tokens per day. One published 36-month TCO comparison puts heavy-tier self-hosting at $391,707 against $540,000 for the same workload routed entirely to Anthropic.</li>
+    <li>Cloud is decisively cheaper below roughly 5 million tokens per month per agency, where a self-hosted GPU sits idle most of the time and burns its rental fee.</li>
+    <li>The 2026 majority pattern is hybrid: a self-hosted OpenClaw gateway, BYOK to a region-pinned model endpoint, prompt caching always on, batch processing for non-interactive workloads.</li>
+    <li>The hidden costs that flip the math are engineering hours for setup, ongoing patching, and the cost of an outage, not the rate card itself.</li>
+  </ul>
+</div>
+
+<h2>What you actually pay for in an AI worker stack</h2>
+
+<p>Agency operators usually look at the OpenAI or Anthropic dashboard and decide cost based on the per-million-token number. That number is real, but it is one of seven separate line items in a multi-tenant AI worker stack. Knowing the others is what separates a back-of-napkin estimate from a number that survives twelve months of growth.</p>
+
+<p>The seven line items, in roughly the order they bite:</p>
+
+<ol>
+  <li><strong>Inference.</strong> The per-token charge for the model itself, paid to Anthropic, OpenAI, OpenRouter, Together, or your own GPU.</li>
+  <li><strong>Compute.</strong> The CPU and RAM to run the gateway, the per-client containers, the queue, and the dashboard. Even the cheapest cloud-only stack still pays for this somewhere.</li>
+  <li><strong>Storage.</strong> Workspace files, conversation history, embeddings, and audit logs. Quiet at first, very loud after a year.</li>
+  <li><strong>Bandwidth.</strong> Egress fees on hyperscalers can quietly exceed compute. Hetzner and OVH include generous egress; AWS and GCP do not.</li>
+  <li><strong>Channels.</strong> Twilio for SMS and voice, Vonage for WhatsApp, Stripe for billing, all per-message or per-minute fees that scale with usage.</li>
+  <li><strong>Engineering.</strong> The hours to install, patch, monitor, and debug the stack. At an agency owner's blended rate this is usually the second-largest line item after inference.</li>
+  <li><strong>Insurance and downtime.</strong> The cost of an outage during business hours, multiplied by the probability over a year. Usually invisible until it isn't.</li>
+</ol>
+
+<p>Cloud-first stacks roll items 2 to 4 into the per-token rate, which is convenient but obscures the true cost of growth. Self-hosted stacks pay each item visibly, which feels more expensive at small scale and turns out to be cheaper at large scale once volume amortizes the fixed compute and engineering cost.</p>
+
+<h2>Cloud LLM pricing in 2026: the headline rates and the real ones</h2>
+
+<p>Anthropic's published rate card as of May 2026, after the April 16 launch of Claude Opus 4.7:</p>
+
+<table>
+<thead>
+<tr><th>Model</th><th>Input ($/MTok)</th><th>Output ($/MTok)</th><th>Context window</th><th>Best fit</th></tr>
+</thead>
+<tbody>
+<tr><td>Haiku 4.5</td><td>$1.00</td><td>$5.00</td><td>200K</td><td>High-volume routing, classification, light chat</td></tr>
+<tr><td>Sonnet 4.6</td><td>$3.00</td><td>$15.00</td><td>1M</td><td>Default agent workloads, tool use, RAG</td></tr>
+<tr><td>Opus 4.7</td><td>$5.00</td><td>$25.00</td><td>1M</td><td>Long-horizon reasoning, autonomous tasks</td></tr>
+</tbody>
+</table>
+
+<p>Two discounts move the real bill significantly below the rate card.</p>
+
+<p><strong>Prompt caching</strong> cuts cached input cost by 90%. A cache hit on Sonnet 4.6 costs $0.30 per million input tokens instead of $3.00. That matters because most agency workloads carry the same system prompt, the same skill instructions, and the same tool definitions on every call. With sticky session routing the cache hit rate runs in the 70 to 95 percent range for chat workloads.</p>
+
+<p><strong>Batch processing</strong> halves the per-token cost on every request that does not need a response inside 24 hours. Lead enrichment, nightly summaries, embedding generation, scheduled outreach, anything event-driven rather than user-facing, is a candidate.</p>
+
+<p>Stack both and a cached batch request on Sonnet 4.6 lands at about $0.15 per million input tokens and $7.50 per million output tokens. That is roughly 5% of the rate card. If you are paying anywhere near sticker price in 2026 you have left money on the table.</p>
+
+<p>One footnote that quietly inflates real bills: Opus 4.7 ships with a new tokenizer that produces up to 35% more tokens for the same input text. The per-token rate did not change in April; the per-request invoice did, by a meaningful margin. Test on your own workload before you swap Sonnet for Opus across the fleet.</p>
+
+<h2>Self-hosted infrastructure pricing in 2026</h2>
+
+<p>"Self-hosted" splits cleanly into two cases. The simple case is self-hosting the gateway, the workspace, and the audit trail while routing inference to a managed model endpoint with BYOK. The hard case is self-hosting the model itself on your own GPU.</p>
+
+<p>For the simple case, a single 32 GB CPU VPS is enough. Hetzner's CCX33 (8 vCPU, 32 GB RAM, 240 GB NVMe) lists at about EUR 52 per month including roughly 20 TB of egress. That comfortably runs an OpenClaw gateway and 18 to 20 per-client containers. Doubling the box to CCX43 (16 vCPU, 64 GB RAM) handles 40 to 50 clients and lists around EUR 100 per month. OVH's similar bare-metal range is competitive and adds dedicated NVMe for workloads that need fast disk.</p>
+
+<p>For the hard case, a GPU VPS adds a separate line item. As of May 2026 the relevant references are:</p>
+
+<ul>
+  <li>RunPod RTX 4090 community pods at $0.29 per hour, or $212 per month at 24/7 uptime</li>
+  <li>RunPod RTX 4090 spot at $0.20 per hour, or $144 per month, with preemption risk</li>
+  <li>Hetzner GPU monthly lock from EUR 159 per month for a single mid-tier GPU</li>
+  <li>Lambda Labs H100 at $2.49 per hour, or $1,820 per month at 24/7, best for short bursts</li>
+  <li>Reserved CoreWeave H100 at roughly $2.80 per hour, or $2,016 per month for continuous operation</li>
+</ul>
+
+<p>An RTX 4090 with vLLM running an open-weight 70B-class model serves comfortably above 50 tokens per second, which is enough for a small fleet of agents. An H100 is overkill for almost every agency workload and only earns its keep when you genuinely need long-context low-latency throughput on a large open-weight model.</p>
+
+<h2>Step by step: calculating your true monthly bill</h2>
+
+<p>The fastest way to get a defensible number is to start with measured token counts from a sample week, then layer in the fixed costs. Here is the reproducible workflow against a running OpenClaw gateway.</p>
+
+<p><strong>1. Pull a week of token usage from the gateway.</strong> OpenClaw v2026.4.27 ships an audit log with per-request token counts. The CLI exposes a usage report.</p>
+
+<pre><code>openclaw usage report \\
+  --from 2026-04-26 \\
+  --to 2026-05-02 \\
+  --group-by client \\
+  --format json &gt; usage.json</code></pre>
+
+<p><strong>2. Project monthly tokens per client.</strong> Multiply weekly tokens by 4.345 (weeks per month). Most agencies see a long-tail distribution where one or two heavy clients drive 60% of total volume.</p>
+
+<pre><code>jq '[.clients[] | {client: .name, monthly_in: (.input_tokens * 4.345), monthly_out: (.output_tokens * 4.345)}]' usage.json</code></pre>
+
+<p><strong>3. Compute the cloud bill at three discount tiers.</strong> Headline (no discount), cached (system prompt cache hit on every call), and cached plus batch (only for batchable workloads). A small projection script makes this reproducible.</p>
+
+<pre><code>npx tsx scripts/cost-projection.ts \\
+  --usage usage.json \\
+  --model sonnet-4-6 \\
+  --cache-hit-rate 0.85 \\
+  --batch-share 0.30</code></pre>
+
+<p><strong>4. Compute the self-hosted bill.</strong> Add the fixed monthly costs (VPS, monitoring, backup, off-site replication), then divide by the number of clients to get per-client cost. Compare to the cloud bill from step 3.</p>
+
+<p><strong>5. Decide per workload, not per agency.</strong> The output of this exercise is rarely "go all-in on cloud" or "go all-in on self-hosted." It is "route interactive Sonnet calls to BYOK with caching, batch the nightly enrichment to a discount provider, and keep the gateway and the workspace self-hosted." That mixed posture saves the most money in 2026 with the least operational risk.</p>
+
+<h2>Three-tier cost comparison: light, medium, heavy</h2>
+
+<p>To make the trade-offs concrete, here is a side-by-side at three realistic agency scales. Numbers assume Sonnet 4.6 with an 85% prompt cache hit rate, 30% of workload batchable, plus standard infrastructure.</p>
+
+<table>
+<thead>
+<tr><th>Tier</th><th>Volume</th><th>Cloud (BYOK + caching)</th><th>Self-hosted gateway, BYOK inference</th><th>Self-hosted gateway + open-weight GPU</th></tr>
+</thead>
+<tbody>
+<tr><td>Light (5 clients)</td><td>~3M tokens/day</td><td>~$280/mo inference + $0 infra</td><td>~$280/mo inference + $60/mo VPS</td><td>~$60/mo VPS + $144/mo GPU = $204/mo</td></tr>
+<tr><td>Medium (25 clients)</td><td>~15M tokens/day</td><td>~$1,400/mo inference + $0 infra</td><td>~$1,400/mo + $100/mo VPS</td><td>~$100/mo VPS + $212/mo GPU = $312/mo</td></tr>
+<tr><td>Heavy (100 clients)</td><td>~80M tokens/day</td><td>~$7,500/mo inference + $0 infra</td><td>~$7,500/mo + $200/mo VPS</td><td>~$200/mo VPS + $1,820/mo H100 = $2,020/mo</td></tr>
+</tbody>
+</table>
+
+<p>Three observations from the table. First, the gateway VPS is rounding error at every tier; the question is never "can I afford the gateway." Second, BYOK to a managed endpoint beats a self-hosted GPU at every realistic agency volume up to roughly 80 million tokens per day, where the open-weight GPU finally undercuts the BYOK bill. Third, the published independent 36-month TCO study that put heavy-tier self-hosting at $391,707 against $540,000 for Anthropic is consistent with the table once you scale the heavy tier up another 4 to 5 times to enterprise volume.</p>
+
+<h2>Hidden costs that flip the math</h2>
+
+<p>A clean TCO model still misses three categories of cost that matter at the agency scale.</p>
+
+<p><strong>Engineering hours for setup.</strong> A clean OpenClaw deployment with monitoring, backups, and a per-client provisioner takes roughly 16 to 24 hours of senior engineer time the first time, dropping to 1 to 2 hours per new client thereafter. At a $150 per hour blended rate the first deployment is a $2,400 to $3,600 one-time cost. That number disappears at 100 clients but dominates at 5.</p>
+
+<p><strong>Ongoing maintenance.</strong> Patching the operating system, rotating tokens, refreshing model pricing tables, dealing with provider deprecations. Industry estimates put this at 1 to 6 hours per month per agency depending on tier. Often forgotten in cloud comparisons because the cloud provider absorbs it silently inside the per-token price.</p>
+
+<p><strong>Outage risk.</strong> A self-hosted gateway with one VPS and no failover hits roughly 99.5% practical uptime, which is 3.6 hours of downtime per month. For a chat workload that is invisible. For a missed-call follow-up workload at a dental practice it is a real revenue hit. Multi-region failover, even a warm standby, can double the infrastructure line. Most agencies accept the single-region risk and document it; some do not have that luxury.</p>
+
+<p>Add these three to the model and the break-even point shifts. Cloud is the right answer below about $300 per month in inference. Self-hosted is the right answer above about $2,500 per month. Between those two figures it is a judgment call about engineering capacity, operational appetite, and risk tolerance.</p>
+
+<h2>The hybrid pattern most operators land on in 2026</h2>
+
+<p>The cleanest 2026 architecture has four parts, and it shows up in roughly the same shape across most agencies that have done the math:</p>
+
+<ol>
+  <li><strong>Gateway, memory, and audit self-hosted</strong> on a single CPU VPS. OpenClaw, per-client containers, append-only audit log, off-site backup nightly.</li>
+  <li><strong>BYOK to a managed model endpoint</strong> for interactive workloads. Region-pinned, prompt caching always on, sticky session routing to maximize cache hits.</li>
+  <li><strong>Batch routing for non-interactive workloads</strong> through Anthropic's Message Batches API or an equivalent. Halves the bill on every job that can wait 24 hours.</li>
+  <li><strong>Optional open-weight GPU</strong> for high-volume embedding generation, classification, or sensitive workloads that cannot leave the perimeter. Skipped at light and medium tiers.</li>
+</ol>
+
+<p>This pattern keeps inference cheap and predictable, keeps prompts and customer data inside the agency's perimeter, and keeps the engineering surface small. It is also what the OpenClaw daemon was designed to support: a single gateway that fronts every channel and every client regardless of whether the model behind it is hosted by Anthropic, OpenAI, OpenRouter, or your own GPU.</p>
+
+<h2>When self-hosted isn't for you</h2>
+
+<p>Three honest situations where self-hosted is the wrong answer in 2026. If any of these apply, stay on cloud-first inference until they don't.</p>
+
+<p><strong>You have fewer than 5 paying AI clients.</strong> The fixed cost of running and maintaining infrastructure isn't worth recovering across a small base. Spend the engineering time on selling, not on a gateway you barely use.</p>
+
+<p><strong>You have no Linux operator on the team.</strong> Self-hosted means somebody is on the hook when a kernel update breaks the network bridge at 2am. If that role is unfilled, a managed deployment partner or a pure-cloud architecture is honestly safer.</p>
+
+<p><strong>Your token volume is bursty and unpredictable.</strong> A self-hosted GPU sitting idle 22 hours a day is the most expensive way to serve traffic. Cloud auto-scales for free; the GPU does not. Workloads with sharp peaks and long valleys are the textbook case for staying on managed inference.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Is self-hosted AI always cheaper than cloud?</h3>
+
+<p>No. At light token volume cloud is decisively cheaper because the fixed cost of a VPS, monitoring, and engineering hours has nowhere to amortize. The crossover for an agency stack typically sits between 5 and 25 paying clients, depending on per-client token usage and how much engineering time the operator already has available. Above that point self-hosted gateways with BYOK inference run roughly 25 to 40 percent cheaper than pure cloud at the same workload.</p>
+
+<h3>How much does an OpenClaw gateway cost to run per month?</h3>
+
+<p>For most agencies, between $60 and $200 per month in raw infrastructure. A single Hetzner CCX33 (about EUR 52 per month) handles up to about 20 clients comfortably; a CCX43 (around EUR 100 per month) covers 40 to 50. Add about $20 per month for backup storage and another $10 to $30 for monitoring (Better Stack, Grafana Cloud free tier, or Uptime Kuma self-hosted). That figure does not include inference, which lands separately on the BYOK model bill.</p>
+
+<h3>Does prompt caching really cut my Anthropic bill by 90%?</h3>
+
+<p>It cuts cached input by 90%. The realized saving on the total bill depends on cache hit rate and the input/output ratio of the workload. A typical agency chat workload with a long system prompt and a fixed skill loadout sees a 60 to 75 percent reduction in the total monthly bill once caching is enabled and sticky session routing keeps the same provider endpoint serving the same conversation. Pair caching with batch processing on non-interactive jobs and the saving climbs further.</p>
+
+<h3>What happens to my cost if I move from Sonnet 4.6 to Opus 4.7?</h3>
+
+<p>The rate card jumps from $3/$15 to $5/$25 per million tokens. That looks like a 67% increase. The real increase is larger because Opus 4.7 ships with a new tokenizer that can produce up to 35% more tokens for the same input. Test on a representative workload before switching the whole fleet. Many agency workloads do not need Opus, and Sonnet 4.6 with caching is the value sweet spot in May 2026.</p>
+
+<h3>Can I run an AI worker on a CPU-only VPS?</h3>
+
+<p>For the gateway, the workspace, and the audit log, yes. For inference, only if you are doing classification or short generation on a small open-weight model and can tolerate single-digit tokens per second. Almost every interactive agent in 2026 routes inference to a GPU somewhere, either yours or the model provider's. The win in self-hosting the gateway is operational, not inference-cost.</p>
+
+<h3>How long until self-hosted pays for itself?</h3>
+
+<p>For a medium-tier agency (25 active clients) the typical payback period is 3 to 6 months from the initial setup investment. Light agencies often never break even on a self-hosted GPU but do break even on a self-hosted gateway with BYOK inference, usually within a year. Heavy agencies (100+ clients) typically pay back the entire setup in under a quarter. Track inference spend monthly during the trial period and revisit the model after each new client onboarding.</p>
+
+<h2>The honest bottom line on AI cost in 2026</h2>
+
+<p>Cloud LLMs in 2026 are cheaper per token than they have ever been, and prompt caching plus batch processing has compressed the gap further still. For most agencies starting out, the right first move is not a self-hosted GPU but a self-hosted gateway with BYOK inference: a single CPU VPS, an OpenClaw daemon, region-pinned model endpoints, and the discipline to enable caching on every prompt. That setup keeps customer data inside your perimeter, keeps the inference bill tied directly to revenue, and stays an order of magnitude cheaper than enterprise SaaS workforce platforms billed per seat.</p>
+
+<p>If you want that hybrid stack standing up without spending a fortnight on infrastructure plumbing, that is the architecture <a href="/solo">Kyra</a> deploys for you on day one: gateway, per-client isolation, BYOK routing, and an audit trail that survives a procurement review. For deeper reading on the building blocks, the <a href="/blog/what-is-openclaw-ai-gateway-explained">OpenClaw gateway explainer</a> covers the daemon itself, the <a href="/blog/per-client-ai-container-isolation-2026">container isolation breakdown</a> covers the multi-tenant security side, and the <a href="/ai-for/dental">dental practice playbook</a> shows what an end-to-end deployment looks like in a regulated industry. The two external references worth bookmarking are the <a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching">Anthropic prompt caching documentation</a> for getting the rate card down and the <a href="https://github.com/openclaw/openclaw">openclaw/openclaw GitHub repository</a> for the gateway itself. The cost story in 2026 is no longer about choosing between cloud and self-hosted. It is about knowing which workload belongs where, and building a single stack that holds both with a straight face.</p>
+`,
+  },
+  {
     slug: 'per-client-ai-container-isolation-2026',
     title: 'Per-Client AI Container Isolation in 2026: How Agencies Run 50+ AI Workers Without Cross-Contamination',
     description: 'Per-client AI container isolation is the deployment pattern that gives every AI worker its own filesystem, network, and credentials. Compare Docker, gVisor, and Firecracker for multi-tenant AI agents in 2026, with a step-by-step OpenClaw setup, threat model, and the real cost math for agencies running 50+ clients.',
