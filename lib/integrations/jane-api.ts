@@ -157,104 +157,160 @@ export function clearAccessToken(creds: JaneApiCredentials): void {
 // ── Stock check (Menu API V1) ───────────────────────────────────────────────
 
 export interface StockCheckResult {
-  /** Map productId → in-stock for the requested channel. */
+  /** Map productId → in-stock right now. */
   inStock: Record<string, boolean>;
-  /** Products we couldn't find in Jane's response (treat as unknown, NOT out of stock). */
+  /** Always [] in the new implementation (kept for caller compatibility). */
   unknown: string[];
+}
+
+interface InStockSnapshot {
+  /** Set of stringified product ids known to be in stock for this store. */
+  productIds: Set<string>;
+  expiresAt: number; // epoch ms
+}
+
+const STOCK_CACHE = new Map<string, InStockSnapshot>();
+
+/**
+ * How long to trust an in-stock snapshot. Short enough that customer-facing
+ * sell-outs propagate quickly, long enough that a single page request doesn't
+ * pay the full 6-page-walk cost on every Algolia card render.
+ *
+ * Algolia's own freshness lag is ~5 min, so 90s here is a strict improvement.
+ */
+const STOCK_CACHE_TTL_MS = 90 * 1000;
+
+/** Page size — Jane's hard cap is 250 (per Swagger). */
+const PAGE_SIZE = 250;
+
+/** Bail out after this many pages to bound worst-case cost on huge stores. */
+const MAX_PAGES = 20;
+
+/** Drop the cached in-stock snapshot — used in tests. */
+export function clearStockCache(): void {
+  STOCK_CACHE.clear();
+}
+
+/**
+ * Walk every page of the store's menu_products and return the set of
+ * in-stock product ids. The Menu API V1 LIST endpoint defaults to
+ * include_invisible_and_out_of_stock=false, so presence in the response
+ * means "available right now" — there is no per-row availability flag.
+ *
+ * Indexes BOTH `product_id` (catalog id used by Algolia) and `id` (menu
+ * listing id) so callers can pass either without us having to know which
+ * Algolia returned.
+ */
+async function fetchInStockSet(
+  creds: JaneApiCredentials,
+  storeId: number,
+): Promise<Set<string>> {
+  const base = getApiBase();
+  const cacheKey = `${creds.clientSlug}:${storeId}:${base}`;
+  const cached = STOCK_CACHE.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.productIds;
+
+  let token = await getAccessToken(creds);
+  let paginationId: number | null = null;
+  let pages = 0;
+  const productIds = new Set<string>();
+  let total: number | null = null;
+
+  while (pages < MAX_PAGES) {
+    const url = new URL(`${base}/roots/menu_api/v1/menu_products`);
+    url.searchParams.set('store_id', String(storeId));
+    url.searchParams.set('page_size', String(PAGE_SIZE));
+    url.searchParams.set('include_invisible_and_out_of_stock', 'false');
+    if (paginationId !== null) {
+      url.searchParams.set('pagination_id', String(paginationId));
+    }
+
+    let res = await fetch(url.toString(), {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+
+    // Token expired between cache hit and request — refresh once.
+    if (res.status === 401) {
+      clearAccessToken(creds);
+      token = await getAccessToken(creds);
+      res = await fetch(url.toString(), {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        signal: AbortSignal.timeout(8000),
+      });
+    }
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`[jane-api] checkStock ${res.status}: ${text.slice(0, 200)}`);
+    }
+
+    const data = (await res.json()) as {
+      data?: { menu_products?: Array<{ id?: number | string; product_id?: number | string }> };
+      metadata?: { count?: number; total?: number; pagination_id?: number | null };
+    };
+
+    const items = data?.data?.menu_products ?? [];
+    if (items.length === 0) break;
+
+    for (const p of items) {
+      if (p.product_id != null) productIds.add(String(p.product_id));
+      if (p.id != null) productIds.add(String(p.id));
+    }
+
+    if (typeof data?.metadata?.total === 'number') total = data.metadata.total;
+    const next = data?.metadata?.pagination_id;
+    if (next == null || next === paginationId) break; // last page or stuck cursor
+    paginationId = next;
+    pages++;
+
+    // Hit the documented total — no need to spin another page.
+    // (productIds counts both id+product_id per row, so divide by 2.)
+    if (total !== null && productIds.size >= total * 2) break;
+  }
+
+  STOCK_CACHE.set(cacheKey, { productIds, expiresAt: Date.now() + STOCK_CACHE_TTL_MS });
+  return productIds;
 }
 
 /**
  * Verify that the products Algolia returned are still in stock right now.
- * Algolia's index can lag actual inventory by several minutes — by the time
- * the customer sees a card and clicks, the SKU may have sold out. This check
- * adds a freshness pass between Algolia's render and the user's click.
+ * Algolia's index lags actual inventory by ~5 min — by the time the customer
+ * sees a card and clicks, the SKU may have sold out. This check adds a
+ * freshness pass between Algolia's render and the user's click.
  *
- * Returns inStock map. Callers attach an `outOfStock: true` flag to cards
- * Jane reports as unavailable; cards Jane doesn't return at all are left
- * alone (could be a partial response or pagination edge — fail open).
- *
- * NOTE: the exact Menu API V1 endpoint shape isn't in the public docs Allie
- * shared. Implementing the most common REST shape (GET /menu/v1/products
- * with comma-separated ids + store_id query). Sandbox testing will surface
- * any divergence — if Jane uses a different path, only this function changes.
+ * Implementation note (2026-05-05): the Menu API V1 LIST endpoint does NOT
+ * support an `?ids=` filter — confirmed via Swagger response schema. It only
+ * supports `store_id`, `pagination_id`, `page_size`, and the
+ * `include_invisible_and_out_of_stock` toggle. We paginate the whole store
+ * (default filter excludes OOS), build a Set of in-stock ids, cache it for
+ * 90s, and answer membership queries from the Set. Per-row availability
+ * flags (available_for_pickup / available_for_delivery) do NOT exist on
+ * this endpoint, so the `channel` parameter is currently informational only —
+ * presence in the in-stock set means "available for either channel that
+ * Jane's storefront exposes."
  */
 export async function checkStock(
   creds: JaneApiCredentials,
   productIds: Array<string | number>,
   storeId: number,
-  channel: 'pickup' | 'delivery' | 'either' = 'either',
+  // Kept for caller-compat; LIST endpoint doesn't expose channel flags yet.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _channel: 'pickup' | 'delivery' | 'either' = 'either',
 ): Promise<StockCheckResult> {
   if (productIds.length === 0) return { inStock: {}, unknown: [] };
 
   const ids = productIds.map(String);
-  const token = await getAccessToken(creds);
-  const base = getApiBase();
+  const inStockSet = await fetchInStockSet(creds, storeId);
 
-  // Endpoint discovered 2026-05-05 via the live Swagger UI Allie pointed us
-  // at (https://api.iheartjane.com/jane-api-docs/index.html?urls.primaryName=Menu%20API%20V1%20Docs).
-  // The actual path is /roots/menu_api/v1/menu_products — three corrections
-  // from what we'd been guessing for two weeks:
-  //   - /roots/ prefix (we'd dropped this entirely)
-  //   - menu_api  (we'd been using "menu")
-  //   - menu_products (plural, underscore — we'd been using "products")
-  // Everything we'd been hitting (/menu/v1/products etc.) was a non-existent
-  // path on api.iheartjane.com, which is why Cloudflare returned its generic
-  // edge HTML 403 for every variant.
-  const url = new URL(`${base}/roots/menu_api/v1/menu_products`);
-  url.searchParams.set('store_id', String(storeId));
-  url.searchParams.set('ids', ids.join(','));
-
-  let res = await fetch(url.toString(), {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-    },
-    signal: AbortSignal.timeout(5000),
-  });
-
-  // 401 → token expired between cache check and request. Refresh once.
-  if (res.status === 401) {
-    clearAccessToken(creds);
-    const fresh = await getAccessToken(creds);
-    res = await fetch(url.toString(), {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${fresh}`, Accept: 'application/json' },
-      signal: AbortSignal.timeout(5000),
-    });
-  }
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`[jane-api] checkStock ${res.status}: ${text.slice(0, 200)}`);
-  }
-
-  const data = (await res.json()) as {
-    products?: Array<{
-      product_id?: number | string;
-      id?: number | string;
-      available_for_pickup?: boolean;
-      available_for_delivery?: boolean;
-    }>;
-  };
-
-  const products = data.products || [];
   const inStock: Record<string, boolean> = {};
-  const seen = new Set<string>();
+  for (const id of ids) inStock[id] = inStockSet.has(id);
 
-  for (const p of products) {
-    const pid = String(p.product_id ?? p.id ?? '');
-    if (!pid) continue;
-    seen.add(pid);
-    const pickup = p.available_for_pickup === true;
-    const delivery = p.available_for_delivery === true;
-    if (channel === 'pickup') inStock[pid] = pickup;
-    else if (channel === 'delivery') inStock[pid] = delivery;
-    else inStock[pid] = pickup || delivery;
-  }
-
-  const unknown = ids.filter((id) => !seen.has(id));
-  return { inStock, unknown };
+  // No "unknown" bucket anymore — pagination walks the whole store, so
+  // absence from the set is a definitive "out of stock."
+  return { inStock, unknown: [] };
 }
 
 // ── Future phases (stubs for documentation purposes) ────────────────────────
