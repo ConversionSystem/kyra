@@ -213,6 +213,11 @@ export async function POST(request: NextRequest) {
   // an agency can dial down to Haiku/mini if they want.
   const routedModel = clientModel;
 
+  // Per-request observability — surfaces in Vercel logs so we can audit
+  // which model actually served any given conversation without grepping
+  // the LLM-error path.
+  console.log(`[widget/chat] model=${routedModel} client=${clientId.slice(0, 8)}`);
+
   // ── Model-aware credit check ──────────────────────────────────────────────
   const preflightAction = classifyUsage(message.trim());
   const widgetPreflightCost = getCreditsForModel(routedModel);
