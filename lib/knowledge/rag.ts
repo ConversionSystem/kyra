@@ -13,7 +13,26 @@
 
 import { createClient as createSupabase } from '@supabase/supabase-js';
 
-const MAX_KNOWLEDGE_CHARS = 6000; // Max chars to inject into system prompt
+// Max chars of knowledge to inject into the system prompt.
+//
+// Bumped 2026-05-05 from 6000 → 40000 after a Purple Lotus audit:
+// the dispensary's 26K-char training doc (covering senior/veteran/student
+// discounts, return policy specifics, escalation phone, brand list,
+// magical-moment phrases) was being silently truncated to ~6K chars,
+// dropping everything past section 9. With Sonnet 4.6's 200K context
+// window, ~10K tokens of KB is a non-issue cost-wise (~$0.03/request)
+// and it lets agencies upload comprehensive concierge docs without
+// having to chunk them by hand. Truly huge KBs (>40K) still fall to
+// the scoring path below.
+const MAX_KNOWLEDGE_CHARS = 40000;
+
+// Window of each doc's content used by the relevance scorer. Was 2000
+// (with the old 6000-char budget) — too small for long training docs
+// where the most-asked topics (returns, rewards %s, escalation phone)
+// live deep in the file. 10000 is a reasonable bound that keeps scoring
+// fast while covering the bulk of typical training-doc bodies.
+const SCORING_CONTENT_WINDOW = 10000;
+
 const MIN_RELEVANCE_SCORE = 0.1;
 
 interface KnowledgeDoc {
@@ -136,7 +155,7 @@ function scoreAndSelect(documents: KnowledgeDoc[], userMessage: string): Knowled
 
   const scored = documents.map(doc => {
     const titleLower = doc.title.toLowerCase();
-    const contentLower = doc.content.toLowerCase().slice(0, 2000); // Score on first 2K chars
+    const contentLower = doc.content.toLowerCase().slice(0, SCORING_CONTENT_WINDOW);
 
     let score = 0;
 
