@@ -27,7 +27,6 @@ import {
 } from '@/lib/chat/lead-capture';
 import { requireCredits } from '@/lib/billing/credit-engine';
 import { getCreditsForModel } from '@/lib/billing/model-credits';
-import { classifyMessage } from '@/lib/ghl/model-router';
 import {
   getDirectLLMClient,
   resolveModel,
@@ -37,7 +36,11 @@ import {
 import { isRateLimited } from '@/lib/rate-limit';
 import { classifyUsage } from '@/lib/billing/classify-usage';
 
-const WIDGET_MODEL = 'openai/gpt-4o-mini'; // Fast, cheap, good enough for customer service
+// Default chat-widget model. Sonnet 4.6 across the board — better tool-use,
+// stronger KB grounding, fewer "make-something-up" cases than gpt-4o-mini in
+// production traffic. Per-client overrides via container_config.ai_model still
+// win (e.g. an agency that wants Haiku 4.5 for cheaper traffic).
+const WIDGET_MODEL = 'openrouter/anthropic/claude-sonnet-4.6';
 
 // CORS headers required on EVERY response — the widget is embedded on external sites
 const CORS = {
@@ -201,10 +204,19 @@ export async function POST(request: NextRequest) {
   // If resolveModel returns a bare unknown string, fall back to WIDGET_MODEL
   const clientModel = (useOpenRouter && !resolved.includes('/')) ? WIDGET_MODEL : resolved;
 
-  // ── Smart routing (initial — may be overridden after cfg is loaded) ──────
-  const complexity = classifyMessage(message.trim());
-  const escalationPattern = /delivery.*late|charged|wrong item|missing|refund|complain|cancel|dispute|lawsuit/i.test(message);
-  let routedModel = (complexity === 'complex' || escalationPattern) ? clientModel : 'openai/gpt-4o-mini';
+  // ── Model routing ────────────────────────────────────────────────────────
+  // Previously we cost-routed simple queries to gpt-4o-mini and only escalated
+  // complex/escalation/product queries to the client-configured model. That
+  // produced inconsistent voice and poor KB grounding on "easy" questions
+  // (deals, hours, payment options). Sonnet 4.6 is now the default for ALL
+  // widget traffic; the per-client override below still takes precedence so
+  // an agency can dial down to Haiku/mini if they want.
+  const routedModel = clientModel;
+
+  // Per-request observability — surfaces in Vercel logs so we can audit
+  // which model actually served any given conversation without grepping
+  // the LLM-error path.
+  console.log(`[widget/chat] model=${routedModel} client=${clientId.slice(0, 8)}`);
 
   // ── Model-aware credit check ──────────────────────────────────────────────
   const preflightAction = classifyUsage(message.trim());
@@ -266,16 +278,6 @@ export async function POST(request: NextRequest) {
         knownBrands = [...merged];
       }
     } catch { /* cached path still works even on miss */ }
-  }
-
-  // ── Override smart routing for product queries (needs configured model, not mini) ──
-  if (janeActive && routedModel !== clientModel) {
-    try {
-      const { isProductQuery } = await import('@/lib/integrations/jane');
-      if (isProductQuery(message.trim(), knownBrands)) {
-        routedModel = clientModel;
-      }
-    } catch { /* ignore */ }
   }
 
   const persona = (cfg.persona as string) || `AI assistant for ${client.name}`;
