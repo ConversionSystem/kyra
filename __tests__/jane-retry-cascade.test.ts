@@ -819,20 +819,22 @@ describe('brand facet + getBrandCatalog', () => {
 describe('resolveSupportLinks', () => {
   const cfg = { website_url: 'https://plpcsanjose.com' };
 
-  it('detects ordering intent — fallback path is /shop (changed 2026-05-04, was /menu)', () => {
-    // Customer feedback: "how do I order" / "where do I buy" should route
-    // directly to /shop (the live menu where they actually purchase) rather
-    // than /menu (older alias). Both pages exist on Jane Roots, but /shop
-    // is the higher-conversion answer and matches the customer's intent.
+  it('detects ordering intent — fallback path is /how-to-order (changed 2026-05-05, was /shop)', () => {
+    // Customer feedback 2026-05-05: the training doc explicitly says
+    // "Offer this link when customers ask how to order:
+    // https://plpcsanjose.com/how-to-order" — the prior /shop routing
+    // (PR 2026-05-04) didn't honor that. The dedicated explainer page
+    // wins for "how do I order" intent; /shop stays the answer for
+    // "where do I buy" / "browse" which is the menu chip.
     const links = resolveSupportLinks('how do I order?', cfg);
     expect(links.some((l) => l.topic === 'ordering')).toBe(true);
-    expect(links[0].url).toBe('https://plpcsanjose.com/shop');
+    expect(links[0].url).toBe('https://plpcsanjose.com/how-to-order');
   });
 
   it('detects "where do I buy" as ordering intent (new trigger 2026-05-04)', () => {
     const links = resolveSupportLinks('where do I buy these?', cfg);
     expect(links.some((l) => l.topic === 'ordering')).toBe(true);
-    expect(links.find((l) => l.topic === 'ordering')?.url).toBe('https://plpcsanjose.com/shop');
+    expect(links.find((l) => l.topic === 'ordering')?.url).toBe('https://plpcsanjose.com/how-to-order');
   });
 
   it('detects delivery intent', () => {
@@ -923,7 +925,7 @@ describe('resolveSupportLinks', () => {
     // Verified 2026-05-04 via curl probe. If you change a default path here,
     // re-probe the new path against a real Jane-storefront site and update.
     const VERIFIED_PATHS_2026_05_04: Record<string, string> = {
-      ordering: '/shop',          // was /menu pre-2026-05-04
+      ordering: '/how-to-order',  // was /shop until 2026-05-05 (training doc URL wins)
       delivery: '/delivery',
       pickup: '/pickup',
       hours: '/locations',

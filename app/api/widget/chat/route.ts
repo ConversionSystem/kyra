@@ -397,10 +397,18 @@ export async function POST(request: NextRequest) {
     // documents the dashboard uploaded. Specifics are what make the bot
     // feel on-brand vs. like generic AI output.
     `KNOWLEDGE-BASE GROUNDING — when a Business Knowledge Base section appears below this prompt, treat it as the source of truth. When the customer asks about deals, rewards, payment options, returns, hours, locations, delivery zones, or anything business-specific:`,
-    `- Quote SPECIFIC details from the Knowledge Base (e.g. "1st order: free gift + 25% off delivery with code new25", "Treez Pay is a secure cashless payment linked to your bank account", "delivery usually arrives in 1-2 hours in San Jose"). Don't paraphrase into generic answers.`,
+    `- Quote SPECIFIC details from the Knowledge Base (e.g. "1st order: free gift + 25% off delivery with code new25", "Treez Pay is a secure cashless payment linked to your bank account"). Don't paraphrase into generic answers.`,
     `- Name at least one concrete deal, perk, or named feature when the topic warrants it. Generic "we have great deals — check the page" is unacceptable when the Knowledge Base contains the actual deal names.`,
     `- For payment questions, mention payment methods by name (cash, debit, Treez Pay, on-site ATMs) and briefly explain Treez Pay if the Knowledge Base describes it.`,
-    `- For "how to order" / "where do I buy" questions, give a one-line walkthrough (browse menu → add to cart → choose pickup/delivery → 21+ ID at handoff) and point them to the live menu chip below.`,
+    `- For "how to order" / "where do I buy" questions, give a one-line walkthrough (browse menu → add to cart → choose pickup/delivery → 21+ ID at handoff) and tap the "How to Order" chip below for the dedicated step-by-step guide.`,
+    // Delivery zone + timing rules — added 2026-05-05 after a customer
+    // audit found two failure modes:
+    //   (1) the bot was confirming delivery to cities outside the published
+    //       zone (Hollister, San Juan Bautista — both San Benito County).
+    //   (2) the bot was promising "1–2 hours" for every Bay Area address,
+    //       including extended zones where ETA is longer.
+    `DELIVERY ZONE — Purple Lotus delivers ONLY to cities in Santa Clara, Alameda, San Mateo, and Contra Costa counties (~50 Bay Area cities). Cities in San Benito County (Hollister, San Juan Bautista, Gilroy outskirts), Monterey County (Salinas, Monterey, Watsonville), Santa Cruz County (Santa Cruz, Capitola), or further afield are NOT in zone. If a customer asks about a city you can't confirm is in one of those four counties, do NOT say "yes we deliver" — instead say something like: "That may be outside our current delivery zone. Please enter your address on the Delivery Info page below to check, or call us at (408) 456-0420 to confirm."`,
+    `DELIVERY TIMING — say "1–2 hours" ONLY for core San Jose / Santa Clara County addresses. For extended zones (San Mateo, Alameda County including Livermore/Fremont, Contra Costa), say "delivery times vary by area — usually same-day, with the exact ETA shown when you place the order." Don't promise a specific 1–2 hour window outside core San Jose.`,
     `- If the Knowledge Base contradicts your general training, the Knowledge Base wins.`,
     `BANNED CLOSING PHRASES — NEVER end your response with any of these or anything similar:`,
     `"If you have any other questions..." / "feel free to ask" / "don't hesitate to reach out" / "How can I help you today?" / "Is there anything else I can help with?" / "Let me know if you need anything else" / "just let me know" / "Happy to help!" / "Hope that helps!"`,
@@ -507,12 +515,13 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
         if (!links?.menu && !links?.['shop']) entries.push(`- Full Menu: ${websiteUrl}/shop`);
         if (!links?.delivery) entries.push(`- Delivery Info: ${websiteUrl}/delivery`);
         if (!links?.deals && !links?.['specials']) entries.push(`- Today's Deals: ${websiteUrl}/deals`);
-        // "How to Order" / "where do I buy" — route to /shop (the live menu
-        // where customers actually purchase). Was /menu (PR #436) which
-        // worked but /shop is the higher-conversion answer per customer
-        // request 2026-05-04. Both pages exist on Jane Roots; /shop is
-        // the buy surface, /menu is the older alias.
-        if (!links?.ordering && !links?.['how to order']) entries.push(`- How to Order: ${websiteUrl}/shop`);
+        // "How to Order" — route to the dedicated /how-to-order page.
+        // Customer feedback 2026-05-05: the training doc explicitly says
+        // "Offer this link when customers ask how to order:
+        // https://plpcsanjose.com/how-to-order" and the prior /shop
+        // routing didn't honor that. /shop stays as the "Full Menu" chip
+        // above for "browse / where do I buy" intents.
+        if (!links?.ordering && !links?.['how to order']) entries.push(`- How to Order: ${websiteUrl}/how-to-order`);
         if (!links?.payment) entries.push(`- Payment Options: ${websiteUrl}/payment-options`);
       }
       if (entries.length === 0) return '';
