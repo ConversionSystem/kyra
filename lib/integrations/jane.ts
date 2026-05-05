@@ -1388,17 +1388,21 @@ export function resolveSupportLinks(
   // explicit `support_links[topic]` override in container_config. This prevents
   // the widget from ever shipping a 404 chip.
   // Verified working paths on plpcsanjose.com 2026-05-04 (typical Jane Roots
-  // dispensary template). When the customer asks "how do I order" / "where do
-  // I buy", route to /shop — the live menu where they can actually purchase.
-  // /menu was the prior default; /shop is more accurate (it's the buy surface,
-  // not the help-page surface). For PL specifically /how-to-order also exists,
-  // but /shop is the higher-conversion answer and matches the customer's
-  // intent ("how do I get this product").
+  // dispensary template).
+  //
+  // 2026-05-05 update: "how to order" now routes to the dedicated
+  // /how-to-order page rather than /shop. Customer feedback was that the
+  // training doc explicitly says "Offer this link when customers ask how
+  // to order: https://plpcsanjose.com/how-to-order" and the doc-author
+  // expected that exact URL. /shop is still the right destination for
+  // "where do I buy" / "browse" / "checkout" intents (which we keep on
+  // the menu chip below), but the canonical "how to order" educational
+  // page wins for explainer-style queries.
   //
   // /payment-options confirmed live on PL — moves payment from "no default"
   // to a default that works on the typical Jane build.
   const topics: Array<{ topic: string; triggers: RegExp[]; label: string; path: string }> = [
-    { topic: 'ordering', triggers: [/how.*(?:order|buy|purchase|checkout)/i, /ordering/i, /how to (?:place|get)/i, /where.*(?:buy|order|shop|purchase)/i], label: 'How to Order', path: '/shop' },
+    { topic: 'ordering', triggers: [/how.*(?:order|buy|purchase|checkout)/i, /ordering/i, /how to (?:place|get)/i, /where.*(?:buy|order|shop|purchase)/i], label: 'How to Order', path: '/how-to-order' },
     { topic: 'delivery', triggers: [/deliver|delivery zone|service area|where.*deliver/i, /shipping|do you ship/i], label: 'Delivery Info', path: '/delivery' },
     { topic: 'pickup', triggers: [/pick.?up|curbside|in.?store/i], label: 'Pickup Info', path: '/pickup' },
     { topic: 'hours', triggers: [/hours|open|close|when.*open/i], label: 'Store Hours', path: '/locations' },
