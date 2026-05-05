@@ -11,6 +11,222 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'agents-md-openclaw-operating-rules-2026',
+    title: 'AGENTS.md for OpenClaw in 2026: How to Write Operating Rules That Make AI Workers Actually Behave',
+    description: 'AGENTS.md is the Markdown file an AI agent reads before every task. In 2026 it cuts agent runtime by 28.6% and token usage by 16.6% on average. Step-by-step setup, comparison tables, anti-patterns, and FAQ for OpenClaw deployments.',
+    date: '2026-05-05',
+    readMins: 12,
+    category: 'AI Infrastructure',
+    emoji: '📋',
+    content: `
+<p><em>Last updated: May 5, 2026</em></p>
+
+<p><strong>AGENTS.md</strong> is a plain Markdown file that defines the operating rules an AI agent reads before every task. It tells the agent what to always do, what to ask about first, and what to never touch. In 2026 it has become the de facto standard format for guiding coding agents, autonomous workers, and OpenClaw-style multi-channel deployments. The convention is simple. The discipline of writing one well is not.</p>
+
+<p>This post walks through the AGENTS.md spec as it stands in May 2026, why agency operators should care more than they currently do, how OpenClaw v2026.5 assembles an AGENTS.md into the agent's working context, and the patterns that separate a file your agent actually follows from a file it quietly ignores. The aim is a clear template you can copy into a real client deployment today.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>AGENTS.md is the 2026 open standard for telling an AI agent how to behave inside a specific project or workspace. It is read before any task and refreshed every session.</li>
+    <li>GitHub's analysis of 2,500+ repositories found that a well-written AGENTS.md reduces agent runtime by 28.6% and token usage by 16.6%, with up to a 4-point gain in task success rate.</li>
+    <li>The strongest pattern is a three-tier boundaries section: Always do, Ask first, Never do. It out-performs every other format in production tests.</li>
+    <li>Human-written AGENTS.md files beat LLM-generated ones in most controlled studies. Auto-generated files frequently perform worse than no file at all.</li>
+    <li>OpenClaw v2026.5.3 reads AGENTS.md as part of the workspace bundle on every session start, alongside SOUL.md, USER.md, and MEMORY.md.</li>
+    <li>The most common failure is treating AGENTS.md like a wiki. It is an instruction file, not a knowledge base. Length is not depth.</li>
+  </ul>
+</div>
+
+<h2>What AGENTS.md actually is in 2026</h2>
+
+<p>AGENTS.md started as an internal convention inside OpenAI Codex and Cursor in late 2025. By March 2026 it had been adopted by GitHub Copilot, Claude Code, OpenClaw, Aider, Roo Code, and most of the open agent frameworks under a shared spec hosted at agents.md. The spec is intentionally minimal. There is no required schema, no front-matter, no JSON-LD. It is a Markdown file at the root of a project, or in OpenClaw at the root of a workspace, that an agent loads before doing any work.</p>
+
+<p>The core idea is borrowed from how human teams onboard. A senior engineer joining a new repo reads the README to understand what the project is. AGENTS.md is the equivalent for an autonomous worker: a short, specific document that tells it how to work here, not what the project does. The two roles are different. README.md sells the project to humans. AGENTS.md trains the agent.</p>
+
+<p>In the official spec, AGENTS.md is layered. A global file at the user level sets cross-project defaults. A project-level file overrides them. A nested AGENTS.md in a subdirectory overrides again. Most coding agents (Codex, Copilot, Claude Code) walk the directory tree and merge what they find. OpenClaw uses the same pattern at the workspace level, with project-scoped files inside the agent's working directory taking precedence over the global workspace file.</p>
+
+<h2>Why AGENTS.md matters for agency-deployed AI workers</h2>
+
+<p>For an agency running an AI worker on a client account, AGENTS.md is the single most consequential file in the workspace. It is also the most underused. Most agency deployments in 2026 ship with a generic AGENTS.md scraped from a template, or worse, with the file missing entirely and the agent relying on its system prompt alone.</p>
+
+<p>The numbers are the cleanest argument for taking it seriously. In GitHub's published analysis of 2,500+ public repositories using AGENTS.md, repositories with a human-curated file showed a 28.6% reduction in agent runtime and a 16.6% reduction in token usage per task across 124 controlled pull requests. Task success rates rose around 4 percentage points. None of those are headline numbers in isolation. Stacked across thousands of agent calls per month for a single client, they compound into the difference between a profitable account and a break-even one.</p>
+
+<p>The interesting wrinkle in the same data is that LLM-generated AGENTS.md files performed worse than no file at all. The reason is straightforward. An agent reading auto-generated instructions tends to over-explain, restate the obvious, and pad the system prompt in ways that crowd out the actual user request. A short human-written file beats a long auto-generated one almost every time.</p>
+
+<h2>How OpenClaw assembles AGENTS.md into the agent context</h2>
+
+<p>OpenClaw v2026.5.3, released in early May 2026, treats AGENTS.md as part of the workspace bundle that the gateway concatenates into the system prompt at session start. The order matters. The current assembly order is:</p>
+
+<ol>
+  <li><strong>SOUL.md</strong> — agent identity, voice, and personality.</li>
+  <li><strong>AGENTS.md</strong> — operating rules, boundaries, and workflow.</li>
+  <li><strong>USER.md</strong> — known facts about the human or client the agent serves.</li>
+  <li><strong>TOOLS.md</strong> — explicit capabilities and allow/deny lists.</li>
+  <li><strong>MEMORY.md</strong> — running notes the agent has accumulated.</li>
+  <li><strong>HEARTBEAT.md</strong> (optional) — long-running task state.</li>
+</ol>
+
+<p>The full bundle is loaded once per session and then kept resident in context. When Claude Sonnet 4.6's automatic compaction fires (around 800K tokens in the 1M-token window) the gateway re-anchors the workspace files at the start of the compacted summary, so the agent never loses its operating rules even after long autonomous runs. This behavior was formalized in the v2026.3.7 ContextEngine release and tightened again in v2026.5.</p>
+
+<p>The practical implication is that anything in AGENTS.md is durable. If you put a rule in AGENTS.md, the agent will see it on every session, on every compaction cycle, on every channel from WhatsApp to Slack to web. If you instead put the same rule in a one-off chat message, the agent will follow it for that turn and then quietly forget.</p>
+
+<h2>The three-tier boundaries pattern</h2>
+
+<p>The single most consequential section of any AGENTS.md is what the GitHub analysis calls the three-tier boundaries pattern. It is also the pattern that anecdotally emerges from production teams running real agents at scale. The three tiers, in order:</p>
+
+<ul>
+  <li><strong>Always do.</strong> Non-negotiable behaviors that the agent applies to every task. Example: "Always log every outbound email to the CRM before sending."</li>
+  <li><strong>Ask first.</strong> Actions that require human confirmation when triggered. Example: "Ask before issuing a refund over $200." Or: "Ask before sending more than 50 messages in a single broadcast."</li>
+  <li><strong>Never do.</strong> Hard prohibitions that no instruction in a chat can override. Example: "Never modify pricing in the CRM. Never delete a contact record."</li>
+</ul>
+
+<p>Why this format wins is partly a property of how language models read instructions. Bulleted, parallel, verb-first lines compress well into attention and survive across compaction. Long prose paragraphs explaining context and trade-offs do not. An AGENTS.md written as a memo gets ignored. An AGENTS.md written as a list of imperatives gets followed.</p>
+
+<p>A useful test: if you read your AGENTS.md aloud and any line takes more than five seconds to parse, rewrite it. The agent treats the file the way a tired pilot treats a checklist. It scans, it acts.</p>
+
+<h2>Step-by-step: writing your first AGENTS.md for a client agent</h2>
+
+<p>This walkthrough assumes you have a running OpenClaw container for a single client and you want to add a project-scoped AGENTS.md. The whole process takes about ten minutes for a well-scoped agent.</p>
+
+<p><strong>Step 1.</strong> Open your client's workspace directory in the OpenClaw control UI or over SSH. The default workspace path on a Kyra-provisioned VPS is <code>/opt/openclaw/clients/&lt;client-id&gt;/workspace/</code>.</p>
+
+<p><strong>Step 2.</strong> Create the file:</p>
+
+<pre><code>cd /opt/openclaw/clients/acme-dental/workspace/
+touch AGENTS.md
+chmod 644 AGENTS.md</code></pre>
+
+<p><strong>Step 3.</strong> Drop in a starter template. The skeleton below covers the four sections that earn their context cost.</p>
+
+<pre><code># AGENTS.md — Acme Dental Front Desk Worker
+
+## Role
+You are the front desk worker for Acme Dental. You answer patient
+questions, book appointments, and route urgent issues to the on-call.
+
+## Always do
+- Confirm the patient's full name and phone before booking.
+- Log every appointment to the CRM via the \`crm.book_appointment\` tool.
+- Escalate to the on-call queue if the patient mentions pain, bleeding,
+  or a knocked-out tooth.
+
+## Ask first
+- Cancellations within 24 hours of the appointment.
+- Any payment-related question over $300.
+- Any request to update insurance information.
+
+## Never do
+- Quote a price the patient did not ask for.
+- Modify or delete an existing appointment without confirmation.
+- Discuss medical advice. Defer to a clinician.
+
+## Tools
+Allowed: \`crm.*\`, \`calendar.book\`, \`calendar.read\`, \`escalate\`.
+Denied: \`crm.delete_*\`, \`payments.*\`, \`staff.*\`.
+
+## Tone
+Warm, brief, never clinical. Sentences under 18 words.</code></pre>
+
+<p><strong>Step 4.</strong> Reload the agent so the new file is picked up. From the OpenClaw control UI:</p>
+
+<pre><code>openclawctl session reload --client acme-dental</code></pre>
+
+<p><strong>Step 5.</strong> Test the boundaries. Send the agent a message that should trigger an "ask first" tier ("can you cancel my appointment in two hours?") and a message that should trigger a "never do" rule ("how much is a root canal?"). If the agent escalates correctly, the file is wired in. If it doesn't, check the session log for the workspace bundle line. It should show <code>AGENTS.md loaded (1.2 KB)</code> or similar.</p>
+
+<p><strong>Step 6.</strong> Commit the file. Even if your workspace is not under version control, copy the AGENTS.md into your agency's central template repo. Reuse and tune across clients instead of writing a new one for every account.</p>
+
+<h2>AGENTS.md vs SOUL.md vs MEMORY.md</h2>
+
+<p>The three files are often confused. They sit next to each other in every OpenClaw workspace, they all influence behavior, and they all get re-anchored on compaction. The difference is in timescale and authorship.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>What it defines</th>
+      <th>Who writes it</th>
+      <th>How often it changes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>SOUL.md</td>
+      <td>Identity, voice, brand alignment, personality.</td>
+      <td>Human (agency or client lead).</td>
+      <td>Almost never. Set once, edit on rebrand.</td>
+    </tr>
+    <tr>
+      <td>AGENTS.md</td>
+      <td>Operating rules, boundaries, workflow, tool policy.</td>
+      <td>Human (agency operator).</td>
+      <td>Monthly or after each policy incident.</td>
+    </tr>
+    <tr>
+      <td>MEMORY.md</td>
+      <td>Running facts the agent has learned during work.</td>
+      <td>The agent itself, via tool calls.</td>
+      <td>Continuously, capped at ~200 lines.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>If you remember nothing else: SOUL.md is who the agent is. AGENTS.md is how the agent behaves. MEMORY.md is what the agent has learned. Putting policy rules in MEMORY.md is the most common architectural mistake in 2026 agent deployments, because MEMORY.md is meant to be summarized and rotated. Rules in MEMORY.md will quietly drift.</p>
+
+<h2>Anti-patterns that quietly degrade your AGENTS.md</h2>
+
+<p>Across the agents that run on the OpenClaw stack today, six anti-patterns show up over and over. Each of them produces an agent that looks fine on day one and starts misbehaving by week two.</p>
+
+<ul>
+  <li><strong>The novel.</strong> An AGENTS.md that runs to 2,000 words explaining the company's history, brand voice, and edge cases. Compresses badly, crowds context, and gets skimmed by the model. Cap at 600 words for most agents.</li>
+  <li><strong>The auto-generation.</strong> Letting an LLM write the file from a transcript. The output reads well to humans and badly to other LLMs. Per the GitHub study, this performs worse than no file at all.</li>
+  <li><strong>The wishlist.</strong> Mixing aspirational behavior ("the agent should always be empathetic") with operational rules ("always confirm phone before booking"). Aspirational lines belong in SOUL.md.</li>
+  <li><strong>The forgotten file.</strong> Writing AGENTS.md once and never updating it. Operating rules reflect policy. Policy changes. The file should be reviewed monthly, ideally after each escalation.</li>
+  <li><strong>The contradicting layer.</strong> A workspace AGENTS.md that contradicts a project-level AGENTS.md. The agent picks one and gets the other wrong. Run a diff before merging.</li>
+  <li><strong>The stale tool list.</strong> Hard-coding tool names that have since been deprecated. The agent then attempts allowed-but-missing tools and produces confusing failures. Tie the tool section to a generated allowlist when possible.</li>
+</ul>
+
+<p>The pattern across all six is the same. AGENTS.md works only if it is short, current, and written for an agent rather than a human reader.</p>
+
+<h2>When AGENTS.md isn't for you</h2>
+
+<p>It is fair to say not every deployment needs an AGENTS.md, and a few do not benefit at all.</p>
+
+<p>If your agent is a one-shot chat widget answering FAQ from a fixed knowledge base, a system prompt does the same job and is easier to version. The marginal value of a separate AGENTS.md kicks in when the agent has multiple tools, multiple channels, or autonomous task execution. For a single-channel chatbot with three canned answers, skip it.</p>
+
+<p>If you are running on a closed platform that doesn't expose workspace files, AGENTS.md isn't even an option. Push your operating rules into the platform's system prompt and accept the constraint.</p>
+
+<p>And if you genuinely cannot articulate the agent's boundaries — what it should always do, what needs human approval, what is off limits — writing an AGENTS.md will not save you. Get the boundaries clear with the client first. The file is the artifact, not the work.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Does AGENTS.md replace the system prompt?</h3>
+<p>No. AGENTS.md is loaded into the system prompt by the agent harness at session start. In OpenClaw it is concatenated after SOUL.md and before tool definitions. You still control the outer system prompt at the gateway level. Think of AGENTS.md as the per-workspace layer of the system prompt, not a replacement for it.</p>
+
+<h3>How long should AGENTS.md be?</h3>
+<p>For most production agents, between 200 and 600 words. Files over 1,000 words show diminishing returns and start to crowd out user context. The rule of thumb is one screen of plain text in a standard editor.</p>
+
+<h3>Should I check AGENTS.md into git?</h3>
+<p>Yes, always. Treat it like any policy artifact. The most useful pattern is a central agency template repo that holds AGENTS.md skeletons per industry (dental, real estate, auto) and a per-client overlay folder with the specific rules for that client. The overlay file gets pulled into the client workspace at provisioning time.</p>
+
+<h3>Does AGENTS.md work outside OpenClaw?</h3>
+<p>Yes. The format is shared across Codex, Claude Code, GitHub Copilot, Cursor, Aider, Roo Code, and most OSS agent runners. The agents.md spec is deliberately tool-agnostic. The same file works in OpenClaw and in a local Codex session, with the obvious caveat that tool names will differ between platforms.</p>
+
+<h3>How does AGENTS.md interact with Anthropic's memory tool?</h3>
+<p>They sit on different layers. AGENTS.md is the operating rule set the agent reads at session start. Anthropic's memory tool, released April 23, 2026, lets the agent write Markdown notes into a /memories directory at runtime. AGENTS.md governs how the agent works. The memory tool stores what the agent has learned. They are complementary, and most production agents use both.</p>
+
+<h3>Should AGENTS.md include code snippets?</h3>
+<p>For coding agents, yes. For business agents (front desk, sales, support), almost never. Code snippets in a business agent's AGENTS.md tend to leak into the conversation and confuse non-technical users. Save them for the developer-focused files.</p>
+
+<h2>Where this leaves you</h2>
+
+<p>The cleanest mental model in May 2026 is to treat AGENTS.md as the SOP page pinned above an autonomous worker's desk. A new human hire on day one gets a short page of dos and donts pinned above their desk. They reference it without thinking, and it shapes every judgment call they make for the first month. AGENTS.md is that page, written for an agent that scans it before every task instead of glancing at it once.</p>
+
+<p>Agencies that take the file seriously tend to ship more reliable AI workers, take fewer escalations, and spend less time tuning system prompts after the fact. The file is small. The discipline of writing it well is not. If you want to skip the infrastructure work and have a tuned AGENTS.md plus the rest of the OpenClaw workspace bundled per client, <a href="/solo">Kyra Solo</a> ships with industry-specific templates already in place. For a deeper dive on the layer below — how the agent's memory works once AGENTS.md has shaped its behavior — read our companion piece on <a href="/blog/ai-agent-memory-systems-openclaw-2026">AI agent memory systems in OpenClaw</a>, and the architecture overview at <a href="/blog/what-is-openclaw-ai-gateway-explained">what OpenClaw actually is</a>. Vertical examples live at <a href="/ai-for/dental-practices">AI for dental practices</a>.</p>
+
+<p>For canonical references, the official AGENTS.md spec lives at <a href="https://agents.md/" target="_blank" rel="noopener">agents.md</a>, and the GitHub blog write-up of the 2,500-repository study is at <a href="https://github.blog/ai-and-ml/github-copilot/how-to-write-a-great-agents-md-lessons-from-over-2500-repositories/" target="_blank" rel="noopener">github.blog</a>. The OpenClaw release notes that document the workspace bundle order and ContextEngine plugin are at <a href="https://github.com/openclaw/openclaw/releases" target="_blank" rel="noopener">github.com/openclaw/openclaw/releases</a>, and Anthropic's memory tool reference is on <a href="https://docs.anthropic.com/" target="_blank" rel="noopener">docs.anthropic.com</a>.</p>
+`,
+  },
+  {
     slug: 'ai-agent-memory-systems-openclaw-2026',
     title: 'AI Agent Memory Systems in 2026: How OpenClaw Workspaces, SOUL.md, and Context Compaction Actually Work',
     description: 'AI agent memory in 2026 is three layers: workspace files like SOUL.md and MEMORY.md, runtime context with Sonnet 4.6 compaction, and Anthropic’s memory tool for long-term storage. Step-by-step setup, comparison tables, anti-patterns, and FAQ for agency operators.',
