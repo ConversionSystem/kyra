@@ -190,7 +190,17 @@ export async function checkStock(
   const token = await getAccessToken(creds);
   const base = getApiBase();
 
-  const url = new URL(`${base}/menu/v1/products`);
+  // Endpoint discovered 2026-05-05 via the live Swagger UI Allie pointed us
+  // at (https://api.iheartjane.com/jane-api-docs/index.html?urls.primaryName=Menu%20API%20V1%20Docs).
+  // The actual path is /roots/menu_api/v1/menu_products — three corrections
+  // from what we'd been guessing for two weeks:
+  //   - /roots/ prefix (we'd dropped this entirely)
+  //   - menu_api  (we'd been using "menu")
+  //   - menu_products (plural, underscore — we'd been using "products")
+  // Everything we'd been hitting (/menu/v1/products etc.) was a non-existent
+  // path on api.iheartjane.com, which is why Cloudflare returned its generic
+  // edge HTML 403 for every variant.
+  const url = new URL(`${base}/roots/menu_api/v1/menu_products`);
   url.searchParams.set('store_id', String(storeId));
   url.searchParams.set('ids', ids.join(','));
 

@@ -143,7 +143,9 @@ describe('checkStock — Menu API V1 freshness check', () => {
     }));
 
     const r = await checkStock(CREDS, [1, 2, 3], 4398);
-    expect(urls[1]).toContain('/menu/v1/products?');
+    // Path discovered via Jane's Swagger UI 2026-05-05:
+    // GET /roots/menu_api/v1/menu_products?store_id=…&ids=…
+    expect(urls[1]).toContain('/roots/menu_api/v1/menu_products?');
     expect(urls[1]).toContain('store_id=4398');
     expect(urls[1]).toContain('ids=1%2C2%2C3'); // url-encoded comma
     expect(bearer).toBe('Bearer STOCK-TOK');
