@@ -26,12 +26,13 @@ import { createClient as createSupabase } from '@supabase/supabase-js';
 // the scoring path below.
 const MAX_KNOWLEDGE_CHARS = 40000;
 
-// Window of each doc's content used by the relevance scorer. Was 2000
-// (with the old 6000-char budget) — too small for long training docs
-// where the most-asked topics (returns, rewards %s, escalation phone)
-// live deep in the file. 10000 is a reasonable bound that keeps scoring
-// fast while covering the bulk of typical training-doc bodies.
-const SCORING_CONTENT_WINDOW = 10000;
+// Window of each doc's content used by the relevance scorer. Was 2000,
+// then 10000 — bumped to 20000 (2026-05-06) after a Purple Lotus audit
+// found the return-policy section sits at position ~10,982 in the PDF,
+// just outside the 10K window, so "return policy on cartridges?"
+// scored low and lost the budget race to URL-scrape docs. 20K covers
+// the bulk of even comprehensive 25K-char concierge docs.
+const SCORING_CONTENT_WINDOW = 20000;
 
 const MIN_RELEVANCE_SCORE = 0.1;
 
@@ -96,17 +97,40 @@ export async function getKnowledgeContext(
     return empty;
   }
 
-  // Calculate total knowledge base size
+  // ── Doc partitioning: file-priority RAG ─────────────────────────────────
+  // User-uploaded training docs (source_type='file') are the canonical,
+  // hand-curated source — they should ALWAYS be included in full when
+  // there's any budget at all, even if a competing URL scrape happens
+  // to score higher on a given query. URL scrapes (auto-train) are
+  // auxiliary; they fill the remainder of the budget.
+  //
+  // This was added 2026-05-06 after a Purple Lotus audit: the agency's
+  // 26K-char training PDF was getting truncated below its return-policy
+  // section because URL-scrape duplicates of the same brand site were
+  // eating the budget when total exceeded 40K. File-priority fixes
+  // it without forcing agencies to manually delete every URL scrape.
+  const fileDocs = documents.filter(d => d.source_type === 'file');
+  const urlDocs = documents.filter(d => d.source_type !== 'file');
+  const fileTotalSize = fileDocs.reduce((sum, d) => sum + (d.char_count || d.content.length), 0);
   const totalSize = documents.reduce((sum, d) => sum + (d.char_count || d.content.length), 0);
 
   let selectedDocs: KnowledgeDoc[];
 
   if (totalSize <= MAX_KNOWLEDGE_CHARS) {
-    // Small knowledge base — inject everything
+    // Small knowledge base — inject everything in original order.
     selectedDocs = documents;
+  } else if (fileTotalSize >= MAX_KNOWLEDGE_CHARS) {
+    // File docs alone exceed budget — score among files only and pick
+    // top matches. Skip URL docs entirely (rare path, very large training
+    // sets only).
+    selectedDocs = scoreAndSelect(fileDocs, userMessage);
   } else {
-    // Larger knowledge base — score & select most relevant
-    selectedDocs = scoreAndSelect(documents, userMessage);
+    // Hybrid: include all file docs first, then score URL docs into the
+    // remaining budget. This guarantees the canonical training doc is
+    // never truncated below 100% as long as it fits under the budget.
+    const remainingBudget = MAX_KNOWLEDGE_CHARS - fileTotalSize;
+    const urlSelection = scoreAndSelectWithBudget(urlDocs, userMessage, remainingBudget);
+    selectedDocs = [...fileDocs, ...urlSelection];
   }
 
   if (selectedDocs.length === 0) return empty;
@@ -147,53 +171,78 @@ export async function getKnowledgeContext(
 }
 
 /**
- * Score documents by relevance to the user's message and select top-K.
+ * Score URL docs and select up to a custom budget (used by the file-priority
+ * path so that file docs claim the bulk of MAX_KNOWLEDGE_CHARS first and URL
+ * docs fill the remainder). Same scoring algorithm as scoreAndSelect.
  */
-function scoreAndSelect(documents: KnowledgeDoc[], userMessage: string): KnowledgeDoc[] {
+function scoreAndSelectWithBudget(
+  documents: KnowledgeDoc[],
+  userMessage: string,
+  budget: number,
+): KnowledgeDoc[] {
+  if (documents.length === 0 || budget <= 0) return [];
+  const ranked = rankDocsByRelevance(documents, userMessage);
+  const selected: KnowledgeDoc[] = [];
+  let charsUsed = 0;
+  for (const doc of ranked) {
+    if (charsUsed + doc.content.length > budget) {
+      // Try to fit one more if there's room (mirrors the original heuristic)
+      if (charsUsed < budget * 0.7) selected.push(doc);
+      break;
+    }
+    selected.push(doc);
+    charsUsed += doc.content.length;
+  }
+  return selected;
+}
+
+/**
+ * Rank documents by relevance to the user's message. Returns docs ordered
+ * by descending score, filtered by MIN_RELEVANCE_SCORE. Shared by both
+ * scoreAndSelect (full-budget path) and scoreAndSelectWithBudget
+ * (file-priority remainder path) so scoring stays consistent.
+ */
+function rankDocsByRelevance(documents: KnowledgeDoc[], userMessage: string): KnowledgeDoc[] {
   const messageLower = userMessage.toLowerCase();
   const messageWords = extractKeywords(messageLower);
+  const phrases = extractPhrases(messageLower);
 
   const scored = documents.map(doc => {
     const titleLower = doc.title.toLowerCase();
     const contentLower = doc.content.toLowerCase().slice(0, SCORING_CONTENT_WINDOW);
-
     let score = 0;
 
-    // Title match (weighted heavily)
     for (const word of messageWords) {
       if (titleLower.includes(word)) score += 3;
-    }
-
-    // Content keyword match
-    for (const word of messageWords) {
       if (contentLower.includes(word)) score += 1;
     }
-
-    // Exact phrase matches in content (bonus)
-    const phrases = extractPhrases(messageLower);
     for (const phrase of phrases) {
       if (contentLower.includes(phrase)) score += 5;
     }
 
-    // Boost client-specific docs
     if (doc.client_id) score *= 1.2;
-
-    // Normalize by message length
     score = score / Math.max(messageWords.length, 1);
 
     return { doc, score };
   });
 
-  // Sort by score descending, filter by minimum threshold
-  const relevant = scored
+  return scored
     .filter(s => s.score >= MIN_RELEVANCE_SCORE)
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => b.score - a.score)
+    .map(s => s.doc);
+}
+
+/**
+ * Score documents by relevance to the user's message and select top-K.
+ */
+function scoreAndSelect(documents: KnowledgeDoc[], userMessage: string): KnowledgeDoc[] {
+  const ranked = rankDocsByRelevance(documents, userMessage);
 
   // Select top docs that fit within character budget
   const selected: KnowledgeDoc[] = [];
   let totalChars = 0;
 
-  for (const { doc } of relevant) {
+  for (const doc of ranked) {
     if (totalChars + doc.content.length > MAX_KNOWLEDGE_CHARS) {
       // Try to fit one more if there's room
       if (totalChars < MAX_KNOWLEDGE_CHARS * 0.7) {

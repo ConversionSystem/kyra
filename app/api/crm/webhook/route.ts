@@ -239,7 +239,7 @@ async function forwardToContainer(
       Authorization: `Bearer ${clientGateway?.token || apiSecret}`,
     },
     body: JSON.stringify({
-      model: 'openrouter/anthropic/claude-haiku-4.5',
+      model: 'openrouter/anthropic/claude-sonnet-4.6',
       messages: chatMessages,
       stream: false,
     }),

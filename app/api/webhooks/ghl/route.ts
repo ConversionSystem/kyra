@@ -383,7 +383,7 @@ async function handleInboundMessage(
           await deductCredits(client.agency_id, 'channel.ghl_sms', {
             clientId: client.id,
             description: `GHL smart handler response (${smartResult.toolsUsed.length} tools)`,
-            override: getCreditsForModel('gpt-4o-mini'),
+            override: getCreditsForModel('openrouter/anthropic/claude-sonnet-4.6'),
           });
         } catch { /* non-fatal */ }
       }
@@ -667,7 +667,7 @@ async function forwardToContainer(
         Authorization: `Bearer ${clientGateway?.token || API_SECRET}`,
       },
       body: JSON.stringify({
-        model: 'openrouter/anthropic/claude-haiku-4.5',
+        model: 'openrouter/anthropic/claude-sonnet-4.6',
         messages: chatMessages,
         stream: false,
         tool_choice: 'none',  // Disable tool/function calls — GHL responses must be plain text
@@ -729,7 +729,7 @@ async function forwardToContainer(
       try {
         const { deductCredits } = await import('@/lib/billing/credit-engine');
         const { getCreditsForModel } = await import('@/lib/billing/model-credits');
-        const modelId = 'openrouter/anthropic/claude-haiku-4.5';
+        const modelId = 'openrouter/anthropic/claude-sonnet-4.6';
         const tokensUsed = (completion as { usage?: { total_tokens?: number } }).usage?.total_tokens ?? 0;
         const creditCost = getCreditsForModel(modelId);
         await deductCredits(agencyId, 'channel.ghl_sms', {

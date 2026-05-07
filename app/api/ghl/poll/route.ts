@@ -216,7 +216,7 @@ async function extractCRMUpdate(
         Authorization: `Bearer ${gatewayToken}`,
       },
       body: JSON.stringify({
-        model: 'openrouter/anthropic/claude-haiku-4.5',
+        model: 'openrouter/anthropic/claude-sonnet-4.6',
         messages: [
           {
             role: 'system',
@@ -791,7 +791,7 @@ export async function GET(request: NextRequest) {
           totalProcessed++;
 
           // Deduct model-aware credits (fire-and-forget — never blocks reply)
-          const ghlModel = (client as any).ai_model || 'gpt-4o-mini';
+          const ghlModel = (client as any).ai_model || 'openrouter/anthropic/claude-sonnet-4.6';
           const ghlCredits = getCreditsForModel(ghlModel);
           void deductCredits(
             client.agency_id as string,

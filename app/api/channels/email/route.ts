@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
         Authorization: `Bearer ${client.gateway_token}`,
       },
       body: JSON.stringify({
-        model: 'openrouter/anthropic/claude-haiku-4.5',
+        model: 'openrouter/anthropic/claude-sonnet-4.6',
         messages: [{ role: 'user', content: aiPrompt }],
         stream: false,
         max_tokens: 300,
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
           Authorization: `Bearer ${client.gateway_token}`,
         },
         body: JSON.stringify({
-          model: 'openrouter/anthropic/claude-haiku-4.5',
+          model: 'openrouter/anthropic/claude-sonnet-4.6',
           messages: [
             { role: 'user', content: `Write a concise, compelling email subject line (under 60 chars) for this email body. Return ONLY the subject, no quotes:\n\n${emailBody}` },
           ],
