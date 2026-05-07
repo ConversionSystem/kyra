@@ -5,6 +5,10 @@
  * 1. Checks "running" containers are actually healthy → marks failed ones as "error"
  * 2. Re-checks "error" containers → self-heals recovered ones back to "running"
  * 
+ * Uses consecutive-failure threshold to prevent flapping:
+ * - A container must fail CONSECUTIVE_FAILURES_THRESHOLD checks in a row before being marked "error"
+ * - This prevents intermittent timeouts from causing constant error→recovery→error cycles
+ * 
  * Sends Telegram alerts for new failures AND recoveries.
  */
 
@@ -15,7 +19,8 @@ import { requireCron } from '@/lib/auth/cron';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
-const HEALTH_TIMEOUT_MS = 5000;
+const HEALTH_TIMEOUT_MS = 10_000; // 10s — containers can be slow through Traefik+CSS proxy chain
+const CONSECUTIVE_FAILURES_THRESHOLD = 3; // Must fail 3 checks in a row (= 15 min) before marking error
 
 async function checkHealth(gatewayUrl: string): Promise<{ ok: boolean; reason?: string }> {
   try {
@@ -46,7 +51,7 @@ export async function GET(request: NextRequest) {
   // ── 1. Check "running" containers are still healthy ───────────────────────
   const { data: runningClients, error: runErr } = await supabase
     .from('agency_clients')
-    .select('id, name, gateway_status, gateway_url')
+    .select('id, name, gateway_status, gateway_url, settings')
     .eq('gateway_status', 'running');
 
   if (runErr) {
@@ -59,6 +64,7 @@ export async function GET(request: NextRequest) {
     await Promise.all(
       runningClients.map(async (client) => {
         const gatewayUrl = (client as Record<string, unknown>).gateway_url as string | undefined;
+        const settings = (client.settings || {}) as Record<string, unknown>;
 
         if (!gatewayUrl) {
           failures.push({ name: client.name, id: client.id, reason: 'No gateway_url configured' });
@@ -67,28 +73,57 @@ export async function GET(request: NextRequest) {
 
         const result = await checkHealth(gatewayUrl);
         if (!result.ok) {
-          failures.push({ name: client.name, id: client.id, reason: result.reason! });
+          // Increment consecutive failure counter
+          const prevFailures = (settings.health_consecutive_failures as number) || 0;
+          const newFailures = prevFailures + 1;
 
-          // Mark as error in DB so it gets re-checked for recovery
-          await supabase
-            .from('agency_clients')
-            .update({
-              gateway_status: 'error',
-              gateway_error: result.reason,
-            })
-            .eq('id', client.id)
-            .eq('gateway_status', 'running'); // guard against race
-          
-          console.warn(`[container-health] ${client.name} (${client.id}) failed → marked error: ${result.reason}`);
+          if (newFailures >= CONSECUTIVE_FAILURES_THRESHOLD) {
+            // Enough consecutive failures — mark as error
+            failures.push({ name: client.name, id: client.id, reason: result.reason! });
+
+            await supabase
+              .from('agency_clients')
+              .update({
+                gateway_status: 'error',
+                gateway_error: result.reason,
+                settings: { ...settings, health_consecutive_failures: newFailures },
+              })
+              .eq('id', client.id)
+              .eq('gateway_status', 'running');
+            
+            console.warn(`[container-health] ${client.name} (${client.id}) failed ${newFailures}x → marked error: ${result.reason}`);
+          } else {
+            // Below threshold — just bump counter, don't change status
+            await supabase
+              .from('agency_clients')
+              .update({
+                settings: { ...settings, health_consecutive_failures: newFailures },
+              })
+              .eq('id', client.id);
+            
+            console.log(`[container-health] ${client.name} (${client.id}) failed (${newFailures}/${CONSECUTIVE_FAILURES_THRESHOLD}), not marking error yet`);
+          }
+        } else {
+          // Healthy — reset failure counter if it was > 0
+          const prevFailures = (settings.health_consecutive_failures as number) || 0;
+          if (prevFailures > 0) {
+            await supabase
+              .from('agency_clients')
+              .update({
+                settings: { ...settings, health_consecutive_failures: 0 },
+              })
+              .eq('id', client.id);
+          }
         }
       }),
     );
   }
 
   // ── 2. Self-heal: re-check "error" containers for recovery ────────────────
+  // Require 2 consecutive healthy checks before marking recovered (prevents flapping)
   const { data: errorClients } = await supabase
     .from('agency_clients')
-    .select('id, name, gateway_status, gateway_url, gateway_error')
+    .select('id, name, gateway_status, gateway_url, gateway_error, settings')
     .eq('gateway_status', 'error');
 
   const recoveries: Array<{ name: string; id: string }> = [];
@@ -97,22 +132,47 @@ export async function GET(request: NextRequest) {
     await Promise.all(
       errorClients.map(async (client) => {
         const gatewayUrl = (client as Record<string, unknown>).gateway_url as string | undefined;
-        if (!gatewayUrl) return; // can't check without a URL
+        if (!gatewayUrl) return;
+        const settings = (client.settings || {}) as Record<string, unknown>;
 
         const result = await checkHealth(gatewayUrl);
         if (result.ok) {
-          // Container recovered! Update status back to running
-          await supabase
-            .from('agency_clients')
-            .update({
-              gateway_status: 'running',
-              gateway_error: null,
-            })
-            .eq('id', client.id)
-            .eq('gateway_status', 'error'); // guard against race
+          const recoveryChecks = ((settings.health_recovery_checks as number) || 0) + 1;
 
-          recoveries.push({ name: client.name, id: client.id });
-          console.log(`[container-health] ✅ ${client.name} (${client.id}) recovered → marked running`);
+          if (recoveryChecks >= 2) {
+            // 2 consecutive healthy checks — mark recovered
+            await supabase
+              .from('agency_clients')
+              .update({
+                gateway_status: 'running',
+                gateway_error: null,
+                settings: { ...settings, health_consecutive_failures: 0, health_recovery_checks: 0 },
+              })
+              .eq('id', client.id)
+              .eq('gateway_status', 'error');
+
+            recoveries.push({ name: client.name, id: client.id });
+            console.log(`[container-health] ✅ ${client.name} (${client.id}) recovered → marked running`);
+          } else {
+            // First healthy check — wait for one more
+            await supabase
+              .from('agency_clients')
+              .update({
+                settings: { ...settings, health_recovery_checks: recoveryChecks },
+              })
+              .eq('id', client.id);
+            console.log(`[container-health] ${client.name} (${client.id}) healthy (${recoveryChecks}/2), waiting for confirmation`);
+          }
+        } else {
+          // Still failing — reset recovery counter
+          if ((settings.health_recovery_checks as number) > 0) {
+            await supabase
+              .from('agency_clients')
+              .update({
+                settings: { ...settings, health_recovery_checks: 0 },
+              })
+              .eq('id', client.id);
+          }
         }
       }),
     );
