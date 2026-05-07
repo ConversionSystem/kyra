@@ -13,6 +13,7 @@ import { logConversationToCrm } from '@/lib/crm/conversation-logger';
 import { processWithSmartEngine } from './smart-handler';
 import { isReviewGateActive, queueForReview } from './review-gate';
 import { deductCredits } from '@/lib/billing/credit-engine';
+import { DEFAULT_CHAT_MODEL } from './default-chat-model';
 import { getCreditsForModel } from '@/lib/billing/model-credits';
 import type { GHLWebhookPayload, GHLMessageChannel } from './types';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
@@ -171,7 +172,7 @@ export async function processInboundMessage(
 
   // ── Deduct model-aware credits for this AI response ────────────────────
   // Fire-and-forget — never block message delivery on billing
-  const whModel = (client as any).ai_model || 'gpt-4o-mini';
+  const whModel = (client as any).ai_model || DEFAULT_CHAT_MODEL;
   const whCredits = getCreditsForModel(whModel);
   deductCredits(client.agency_id, 'channel.ghl_sms', {
     override: whCredits,
@@ -232,7 +233,7 @@ async function callBridge(bridgeUrl: string, req: BridgeRequest): Promise<string
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'openai/gpt-4o-mini',
+      model: DEFAULT_CHAT_MODEL,
       messages,
       stream: false,
     }),

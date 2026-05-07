@@ -44,6 +44,7 @@ const GHL_API_VERSION = '2021-04-15';
 // ── BYOK: Agency API key resolution ───────────────────────────────────────────
 
 import { BYOK_PROVIDER_PRIORITY, type BYOKProvider } from '@/lib/billing/byok';
+import { DEFAULT_CHAT_MODEL } from './default-chat-model';
 
 interface ResolvedApiKey {
   apiKey: string;
@@ -463,11 +464,15 @@ async function processConversation(
   // Augment system prompt with security reminder + customer memory + knowledge
   const secureSystemPrompt = systemPrompt + memoryContext + knowledgeContext + defense.systemPromptAddition;
 
-  // ── Smart model routing: pick cheapest model for this message ────────
-  // BYOK clients: route using their configured provider + model
-  // Platform credit clients: route using their configured model (or default)
-  //   — simple messages downgrade to gpt-4o-mini (1 credit), saving credits for the agency
-  const platformModel = (client as any).ai_model || 'gpt-4o-mini';
+  // ── Model routing ─────────────────────────────────────────────────────
+  // BYOK clients: still use their own provider routing (their costs, their
+  // call). Platform credit clients used to smart-downgrade simple messages
+  // to gpt-4o-mini for cost savings, but that produced inconsistent voice
+  // and weaker KB grounding on FAQ-style questions — same pattern we
+  // removed from the widget. As of 2026-05-06, every platform-credit
+  // GHL message uses the client-configured model (default DEFAULT_CHAT_MODEL
+  // = Sonnet 4.6), so the brand experience matches the widget.
+  const platformModel = (client as any).ai_model || DEFAULT_CHAT_MODEL;
   let routedModel: string | undefined = byokKey?.model ?? platformModel;
 
   if (byokKey?.provider && byokKey?.model) {
@@ -479,27 +484,10 @@ async function processConversation(
         `[ghl/poller] 🧠 BYOK routing: "${route.complexity}" → ${route.model} (saves ~${route.savingsPct}% vs top model)`,
       );
     }
-  } else {
-    // Platform credit client: smart downgrade to mini for simple messages
-    // Only downgrade if the configured model is NOT already mini-tier
-    const configuredCredits = getCreditsForModel(platformModel);
-    if (configuredCredits > 1) {
-      const SIMPLE_PATTERNS = [
-        /^(hi|hey|hello|yo|hola|sup|what'?s up|good morning|good afternoon|good evening)[?!.,]?$/i,
-        /^(yes|no|ok|okay|sure|nope|yep|yeah|nah|thanks?|thank you|thx|ty|bye|goodbye)[?!.,]?$/i,
-        /^\d{1,5}[?!.]?$/,
-      ];
-      const isSimple = SIMPLE_PATTERNS.some(p => p.test(latestInbound.body.trim()))
-        || latestInbound.body.trim().split(/\s+/).length <= 4;
-
-      if (isSimple) {
-        routedModel = 'openai/gpt-4o-mini';
-        console.log(
-          `[ghl/poller] 🧠 Platform routing: simple message → gpt-4o-mini (1cr vs ${configuredCredits}cr) for "${client.name}"`,
-        );
-      }
-    }
   }
+  // Per-request observability — surfaces in Vercel logs alongside the
+  // widget's [widget/chat] model= line for cross-channel auditing.
+  console.log(`[ghl/poller] model=${routedModel} client=${client.id?.slice(0, 8) ?? '?'}`);
 
   // ── Call AI with secure input (wrapped + delimited) ──────────────────
   let aiResponse = '';
@@ -728,7 +716,7 @@ async function processConversation(
   // ── Deduct model-aware credits per conversation ──────────────────────
   // Use routedModel (which may have been downgraded by smart routing above)
   try {
-    const pollerModel = routedModel || (client as any).ai_model || 'gpt-4o-mini';
+    const pollerModel = routedModel || (client as any).ai_model || DEFAULT_CHAT_MODEL;
     const pollerCredits = getCreditsForModel(pollerModel);
     const creditResult = await deductCredits(
       client.agency_id,
@@ -760,7 +748,7 @@ async function processConversation(
       bookingMade: firstResult.toolCalls?.some(tc => tc.name === 'book_appointment') ?? false,
       customerMessage: latestInbound.body,
       aiResponse,
-      creditsUsed: getCreditsForModel(routedModel || 'gpt-4o-mini'),
+      creditsUsed: getCreditsForModel(routedModel || DEFAULT_CHAT_MODEL),
     });
   } catch (perfErr) {
     // Non-fatal — never block a reply over performance tracking

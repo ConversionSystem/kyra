@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
   try {
     const { deductCredits } = await import('@/lib/billing/credit-engine');
     const { getCreditsForModel } = await import('@/lib/billing/model-credits');
-    const smsModel = (client as any).ai_model || 'gpt-4o-mini';
+    const smsModel = (client as any).ai_model || 'openrouter/anthropic/claude-sonnet-4.6';
     const smsCredits = getCreditsForModel(smsModel);
     await deductCredits(client.agency_id, 'channel.twilio_sms', {
       override: smsCredits,
