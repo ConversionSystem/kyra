@@ -11,6 +11,211 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'agents-md-explained-ai-operating-rules-2026',
+    title: 'AGENTS.md Explained: How AI Agents Read Their Operating Rules in 2026',
+    description: 'AGENTS.md is the open Markdown standard for telling AI agents how to behave in a repo or workspace. Adopted by 60,000+ projects and donated to the Linux Foundation in December 2025. Setup, comparison table, anti-patterns, FAQ for agency operators.',
+    date: '2026-05-09',
+    readMins: 12,
+    category: 'AI Infrastructure',
+    emoji: '📜',
+    content: `
+<p><em>Last updated: May 9, 2026</em></p>
+
+<p><strong>AGENTS.md</strong> is a Markdown file that lives at the root of a repository or workspace and tells AI coding agents the operating rules they must follow before touching any file. It defines build commands, test commands, code style, file ownership, banned patterns, and any constraint the agent cannot infer from the source itself. In 2026 the file has become the de facto standard for steering agents like Codex, Claude Code, Cursor, Devin, Factory, Gemini CLI, GitHub Copilot, Jules, and OpenClaw, with more than 60,000 public repositories carrying one. Donated to the Linux Foundation's Agentic AI Foundation on December 9, 2025, it is now an open governance project rather than a single-vendor convention.</p>
+
+<p>This guide explains what AGENTS.md is, how it differs from CLAUDE.md, SOUL.md, and a regular README, what to put in it, the anti-patterns that quietly degrade an agent's reliability, and how the file extends beyond coding to the operations files that ship with non-coding AI workers. The aim is to leave you able to write a strong AGENTS.md from a blank page in under thirty minutes.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>AGENTS.md is a single Markdown file at the repo root that ships project-specific operating rules to any AI agent that supports the format.</li>
+    <li>OpenAI introduced the convention in August 2025, donated it to the Linux Foundation's Agentic AI Foundation in December 2025, and it now ships in 60,000+ public repositories.</li>
+    <li>Repositories with a detailed AGENTS.md average 35 to 55 percent fewer agent-generated bugs in community leaderboards, per GitHub's analysis of 2,500+ open source repos.</li>
+    <li>Cap the file at roughly 150 lines. Files longer than that bury signal and slow the agent's first-token time on every session.</li>
+    <li>AGENTS.md, CLAUDE.md, and OpenClaw's SOUL.md address the same problem at different surfaces. AGENTS.md is the cross-tool standard; the other two are vendor files that complement it.</li>
+    <li>The pattern generalizes beyond coding: front-desk, sales, and ops AI workers benefit from the same kind of plain-Markdown operating rules at the workspace root.</li>
+  </ul>
+</div>
+
+<h2>What AGENTS.md actually is</h2>
+
+<p>AGENTS.md is plain Markdown. There is no JSON schema, no YAML front matter, no required sections, no validator that fails your build. The format is deliberately simple so any agent can parse it and any human can edit it without learning a new spec. The file lives at the root of the repository, the same directory as README.md, package.json, or pyproject.toml.</p>
+
+<p>The reason it exists is that agents need things humans do not. A new human contributor reads the README, opens the IDE, and infers half of the conventions from looking at neighboring files. An agent does not have that luxury. It has the system prompt, the tools, and whatever files it loads at session start. AGENTS.md is the file the agent loads at session start. Anything missing from it is missing from the agent's working knowledge.</p>
+
+<p>A typical AGENTS.md answers six questions in order:</p>
+
+<ol>
+  <li>What does this project do, in one sentence the agent can echo back?</li>
+  <li>Which exact commands run the build, the tests, the type checker, and the linter?</li>
+  <li>What style and structural rules does the codebase follow that an agent would not infer from the code alone?</li>
+  <li>Which files or directories are off-limits without explicit human review?</li>
+  <li>What is the commit, branch, and pull-request workflow?</li>
+  <li>Where do the deployable artifacts go, and how is a release shipped?</li>
+</ol>
+
+<p>If the agent can read AGENTS.md and answer those six questions correctly, the file is doing its job. Everything else is gravy.</p>
+
+<h2>The path from convention to standard</h2>
+
+<p>OpenAI introduced AGENTS.md in August 2025 as part of the Codex launch, framing it as a README for agents. The convention spread quickly because it was open, simple, and solved a real coordination problem across the ecosystem of competing AI coding tools. By late autumn 2025, support had landed in Amp, Codex, Cursor, Devin, Factory, Gemini CLI, GitHub Copilot, Jules, VS Code, and OpenClaw.</p>
+
+<p>On December 9, 2025, the Linux Foundation announced the formation of the Agentic AI Foundation (AAIF). Three founding contributions anchored the new body: Anthropic's Model Context Protocol, Block's goose framework, and OpenAI's AGENTS.md. With that donation the convention shifted from a vendor-driven idea to an open governance project, with platinum members including AWS, Anthropic, Block, Bloomberg, Cloudflare, Google, Microsoft, and OpenAI. That governance shift matters because it gives every agent vendor a credible reason to keep parity with the standard rather than splinter into a private dialect.</p>
+
+<p>By mid-2026 the file ships in more than 60,000 public repositories, according to GitHub's own analysis of the format. The same analysis flagged a striking effect on quality. Across more than 2,500 open source repositories with measurable agent contributions, projects with a detailed AGENTS.md averaged 35 to 55 percent fewer agent-generated bugs than projects without one. Detailed in this context meant scoped and example-driven, not long. Most of the high-quality files are under 150 lines.</p>
+
+<h2>How AGENTS.md, CLAUDE.md, and SOUL.md fit together</h2>
+
+<p>Anyone who has used multiple AI tools has seen the file zoo. Claude Code looks for CLAUDE.md. Cursor looks for .cursorrules. Codex and most other agents look for AGENTS.md. OpenClaw looks for SOUL.md, AGENTS.md, MEMORY.md, and several others. The good news is these files are mostly compatible by design, and the 2026 best practice is to lean on AGENTS.md as the canonical file and treat the others as thin pointers.</p>
+
+<table>
+<thead>
+<tr><th>File</th><th>Owned by</th><th>Scope</th><th>Best fit</th></tr>
+</thead>
+<tbody>
+<tr><td>AGENTS.md</td><td>Linux Foundation (AAIF)</td><td>Cross-vendor coding rules</td><td>The default. Read by every modern agent.</td></tr>
+<tr><td>CLAUDE.md</td><td>Anthropic</td><td>Claude Code session rules</td><td>Claude Code-specific overrides. Often a one-line pointer to AGENTS.md.</td></tr>
+<tr><td>.cursorrules</td><td>Cursor</td><td>Cursor IDE rules</td><td>Legacy. New Cursor projects use AGENTS.md.</td></tr>
+<tr><td>SOUL.md</td><td>OpenClaw workspace</td><td>Agent identity and persona</td><td>Non-coding agents. Defines who the agent is, not what code to ship.</td></tr>
+<tr><td>MEMORY.md</td><td>OpenClaw workspace</td><td>Running facts the agent learned</td><td>Mutable. The notebook the agent edits during work.</td></tr>
+<tr><td>USER.md</td><td>OpenClaw workspace</td><td>Information about the operator</td><td>Personal preferences, time zone, contact channels.</td></tr>
+</tbody>
+</table>
+
+<p>The right pattern in 2026 is one canonical AGENTS.md per repository or workspace, with vendor-specific files holding only what genuinely cannot live in the canonical file. A four-line CLAUDE.md that says "see AGENTS.md" is better than a 200-line CLAUDE.md that duplicates the same content and drifts.</p>
+
+<h2>How agents actually read AGENTS.md</h2>
+
+<p>Different agents load AGENTS.md at slightly different moments, but the basic flow is the same across the ecosystem.</p>
+
+<p>At session start the agent searches up the directory tree for AGENTS.md, beginning at the working directory and stopping at the repository root. The first file it finds is concatenated into the system prompt, usually after the agent's own baseline instructions. Some agents support layered AGENTS.md, where a file in a subdirectory adds rules that only apply when the agent is operating inside that subdirectory. Codex, Cursor, and OpenClaw all support this pattern.</p>
+
+<p>The contents are not parsed as data. They are read as natural language and folded into the model context window. That has two consequences worth internalizing.</p>
+
+<p>First, the file is just text. Tone matters. Concrete examples beat abstract principles. A line that says "always run <code>npx tsc --noEmit</code> before committing" outperforms "ensure type safety." Models are pattern matchers, and they pattern-match better against specific commands than against generic adjectives.</p>
+
+<p>Second, every line is paying for itself in tokens on every session. Files that grow past 150 lines start to crowd out the rest of the system prompt and cost real money at scale. A 1,000-line AGENTS.md across a multi-agent fleet routing to Sonnet 4.6 at $3 per million input tokens can quietly add tens of dollars a day to the bill, and that is before counting the slowdown from a longer prompt.</p>
+
+<h2>Step-by-step: writing your first AGENTS.md</h2>
+
+<p>Start with a blank file at the repository root and fill in the six sections in order. The whole exercise should take under thirty minutes for a project you already understand.</p>
+
+<pre><code>cd path/to/your/repo
+touch AGENTS.md
+git add AGENTS.md
+</code></pre>
+
+<p>Then open AGENTS.md and write the sections. A working template:</p>
+
+<pre><code># AGENTS.md - Operating rules for AI agents
+
+## What this project is
+One sentence. Plain English. The agent should be able to echo this back.
+
+## Build, test, lint
+- Install: &#96;npm ci&#96;
+- Build: &#96;npm run build&#96;
+- Test: &#96;npx vitest run&#96;
+- Type check: &#96;npx tsc --noEmit&#96;
+- Lint: &#96;npm run lint&#96;
+
+All of these must pass before any commit.
+
+## Style and structure
+- TypeScript strict, no &#96;any&#96; unless commented why
+- React function components, no class components
+- Tailwind classes only, do not introduce a CSS-in-JS library
+- Tests live next to the file under test, named &#96;*.test.ts&#96;
+
+## Off-limits without human review
+- &#96;infra/&#96;, &#96;scripts/deploy/&#96;, anything in &#96;.github/workflows/&#96;
+- &#96;package.json&#96; dependencies (request, do not add)
+- Any file containing API keys or &#96;.env*&#96;
+
+## Workflow
+- Branch off main, name &#96;feat/&lt;short-slug&gt;&#96; or &#96;fix/&lt;short-slug&gt;&#96;
+- One PR per logical change, target main, request review
+- Commit message: imperative, present tense, no Conventional Commits prefix
+
+## Release
+- Production deploys go through &#96;npx vercel --prod --yes&#96;
+- Never push directly to main
+</code></pre>
+
+<p>Commit the file. Open the project in whatever AI tool you use and watch the agent quote sections back when you ask "what are the rules in this repo?" If it cannot find the file, your tool may need its session restarted; AGENTS.md is loaded at session start, not on every prompt.</p>
+
+<p>Once that base is in place, iterate. Every time the agent gets something obviously wrong, ask whether the rule belongs in AGENTS.md. If yes, add a single line and move on. The file gets better through small, frequent edits, not through one upfront draft.</p>
+
+<h2>AGENTS.md anti-patterns that quietly degrade your agent</h2>
+
+<p>Most failed AGENTS.md files fail in predictable ways. Six patterns to avoid:</p>
+
+<ol>
+  <li><strong>The wall of text.</strong> A 600-line AGENTS.md that pastes the entire style guide of the company. The agent skims, misses the important parts, and the most-cited 30 percent of the file (the top) is wasted on background.</li>
+  <li><strong>The empty platitude.</strong> "Write clean, maintainable code." That is not a rule, it is a poster. Replace with a concrete check the agent can run.</li>
+  <li><strong>The rotting list.</strong> A list of "current priorities" that nobody updates. Within a quarter the agent is being told to focus on something that shipped last year.</li>
+  <li><strong>The duplicated README.</strong> AGENTS.md that copies README.md word for word. The two files have different audiences. The README is for humans, AGENTS.md is for agents, and they should diverge.</li>
+  <li><strong>The vendor-specific dialect.</strong> AGENTS.md filled with Codex-only commands, breaking when a teammate uses Claude Code. Use commands any agent can run.</li>
+  <li><strong>The missing examples.</strong> A rule with no example. Models learn from examples; a single concrete diff outweighs a paragraph of prose.</li>
+</ol>
+
+<p>The fix in every case is the same. Cut the file to roughly 150 lines, rewrite each rule as a check or a command, add one example per non-obvious rule, and treat the file like code. Review it in PRs. Run a quarterly purge.</p>
+
+<h2>AGENTS.md beyond coding: front desks, sales, and ops</h2>
+
+<p>The original AGENTS.md spec is framed for code. The pattern generalizes cleanly to non-coding agents, and that is exactly what OpenClaw's workspace files are doing.</p>
+
+<p>A front-desk AI worker for a dental practice does not need build commands. It needs the practice hours, the booking link format, the names of the dentists, the off-limits topics, the escalation path to a human, and the brand voice rules. That is an AGENTS.md, just with a different list of sections. OpenClaw's SOUL.md, USER.md, and AGENTS.md files in a non-coding workspace are exactly that adaptation: same convention, same Markdown surface, different fields.</p>
+
+<p>The architectural lesson is that "operating rules at the workspace root, in plain Markdown, loaded at session start" is the actual primitive. AGENTS.md is the most widespread instance of that primitive, but the pattern transfers. If you are building a sales AI worker, write the equivalent file. If you are building a customer-support worker, write the equivalent file. The model loves a short, concrete operating manual.</p>
+
+<h2>When AGENTS.md is not for you</h2>
+
+<p>AGENTS.md is not a universal fit. It is the wrong tool when:</p>
+
+<ul>
+  <li><strong>The agent is stateless and fully prompt-engineered.</strong> A one-shot classifier scoring a single email does not need a workspace file. Pass instructions in the system prompt and exit.</li>
+  <li><strong>You are in a regulated environment that audits every prompt token.</strong> AGENTS.md gets concatenated into the prompt at session start. If your auditors must approve every token, you may prefer a tightly controlled system prompt managed in code.</li>
+  <li><strong>Your agent stack predates the standard and works fine.</strong> If you are running a homegrown agent framework with bespoke configuration that already does the job, the migration tax outweighs the benefit. New projects should adopt AGENTS.md; legacy ones can wait.</li>
+  <li><strong>Your team has not agreed on conventions yet.</strong> AGENTS.md codifies decisions. If the decisions are not made, writing them down in AGENTS.md does not make them real, it just postpones the argument.</li>
+</ul>
+
+<p>For everything else, including the long tail of agency-deployed AI workers handling appointments, qualification, content, and support, AGENTS.md is the cheapest reliability investment available in 2026.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Is AGENTS.md a real standard or just an OpenAI convention?</h3>
+
+<p>It is now an open standard. OpenAI introduced it in August 2025, but on December 9, 2025, it was donated to the Linux Foundation's Agentic AI Foundation alongside MCP and goose. The Foundation governs the spec under a neutral, multi-vendor structure with platinum members including AWS, Anthropic, Block, Bloomberg, Cloudflare, Google, Microsoft, and OpenAI.</p>
+
+<h3>Do I still need a CLAUDE.md if I have AGENTS.md?</h3>
+
+<p>Usually no. Claude Code reads AGENTS.md when it is present. CLAUDE.md becomes useful only if you want Claude-specific overrides that should not apply to other agents. The recommended 2026 pattern is one canonical AGENTS.md plus a tiny CLAUDE.md that points to it for any Claude-only addenda.</p>
+
+<h3>How long should AGENTS.md be?</h3>
+
+<p>Aim for 150 lines or fewer. GitHub's analysis of more than 2,500 repositories found that the most effective files are scoped and example-driven, not long. Files past 150 lines bury signal, slow the agent's first-token time, and cost more at scale because every line goes into the prompt on every session.</p>
+
+<h3>Where does AGENTS.md live in a monorepo?</h3>
+
+<p>One canonical AGENTS.md at the monorepo root with global rules, plus optional AGENTS.md files in subprojects that add scope-specific rules. Most agents merge them in order, with the deeper file's rules taking precedence on conflicts. Keep the root file as small as possible and push specifics down into the subprojects that own them.</p>
+
+<h3>Can AGENTS.md be used for non-coding AI agents?</h3>
+
+<p>Yes, with adaptation. The format is plain Markdown, so the file structure transfers directly to non-coding workspaces. Replace "build" and "test" sections with whatever your agent's equivalent operations are: hours, booking link format, escalation rules, brand voice. OpenClaw uses this pattern across non-coding workspaces alongside SOUL.md and USER.md.</p>
+
+<h3>Does AGENTS.md replace MCP?</h3>
+
+<p>No. They solve different problems. MCP is a protocol for connecting agents to tools and data sources. AGENTS.md is a Markdown file that tells the agent how to behave when using those tools. Both were donated to the Linux Foundation's AAIF on the same day in December 2025, and they are designed to coexist.</p>
+
+<h2>Pulling it together</h2>
+
+<p>AGENTS.md is the smallest piece of agent infrastructure with the highest reliability return. A single Markdown file, under 150 lines, written by anyone on the team, read by every agent in the ecosystem. The 35 to 55 percent reduction in agent-generated bugs reported across 2,500 GitHub repositories is the kind of number you usually only see from a much bigger investment. The cost is one afternoon. The benefit compounds for as long as the project lives.</p>
+
+<p>If you are deploying AI workers for clients and want AGENTS.md plus the rest of the workspace files (SOUL.md, MEMORY.md, USER.md, TOOLS.md) wired into per-client containers without standing up the infrastructure yourself, <a href="/solo">Kyra</a> ships the architecture as the default. The same files run in self-hosted OpenClaw if you would rather own the stack. The official AGENTS.md spec lives at <a href="https://agents.md/">agents.md</a> and on <a href="https://github.com/agentsmd/agents.md">GitHub</a>. The Linux Foundation announcement is on the <a href="https://www.linuxfoundation.org/press/linux-foundation-announces-the-formation-of-the-agentic-ai-foundation">Linux Foundation press page</a>. Anthropic's deeper essay on context engineering is at <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">anthropic.com</a>, and the OpenClaw source is on <a href="https://github.com/openclaw/openclaw">GitHub</a>. For a companion read on how skill files extend the same plain-Markdown idea to agent capabilities, see <a href="/blog/write-your-first-claude-skill-openclaw-2026">writing your first Claude Skill</a>; for a deeper look at the gateway primitives the agent rules apply to, see <a href="/blog/what-is-openclaw-ai-gateway-explained">what OpenClaw is</a>; and for a vertical example of how operating rules look outside coding, see <a href="/ai-for/dental">AI for dental practices</a>.</p>
+`,
+  },
+  {
     slug: 'per-client-ai-container-isolation-2026',
     title: 'Per-Client AI Container Isolation in 2026: How Agencies Run 50+ AI Workers Without Cross-Contamination',
     description: 'Per-client AI container isolation is the deployment pattern that gives every AI worker its own filesystem, network, and credentials. Compare Docker, gVisor, and Firecracker for multi-tenant AI agents in 2026, with a step-by-step OpenClaw setup, threat model, and the real cost math for agencies running 50+ clients.',
