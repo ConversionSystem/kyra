@@ -2241,6 +2241,10 @@ openclaw mcp list my-first-agent</code></pre>
 
 <p>That's a business decision you control. The AI workers live in your agency account. You can transfer ownership of a client container, migrate it out, or keep it locked to your agency as part of the retainer. Most agencies keep it locked — that's the moat.</p>
 
+<h3>How should I structure monthly performance reports for AI worker clients?</h3>
+
+<p>Monthly reporting is the single strongest retention tool after the AI itself. The three numbers that matter most: conversations handled (total inbound messages the AI replied to), appointments booked by the AI without human intervention, and median response time. Present these alongside the previous month so the client sees a trend, not a snapshot. A dental practice that received 180 conversations and saw 8 bookings in month one — versus 5 before the AI went live — does not need a separate pitch to renew. The data does the work. Send the report before the invoice, not after, so the value is visible before the client sees the charge. Practices that receive the performance report first renew at significantly higher rates than those who see the invoice first.</p>
+
 <h2>When an AI worker isn't right for a client</h2>
 
 <p>Not every GHL client is a fit. Skip the offer if:</p>
@@ -2453,6 +2457,10 @@ openclaw mcp list my-first-agent</code></pre>
 <h3>Does it work for specialist practices (orthodontics, endodontics, oral surgery)?</h3>
 
 <p>Yes, with personality and knowledge-base customization. The standard dental template is tuned for general practice. Specialist templates are available for orthodontics (braces and Invisalign intake), endodontics (root canal inquiries), and oral surgery (extraction scheduling). Customization happens in the agent's personality file.</p>
+
+<h3>How does the AI handle patients who contact the practice in Spanish or another language?</h3>
+
+<p>AI workers built on Claude and similar large language models handle multilingual conversation natively. A patient who writes in Spanish receives a reply in Spanish without any configuration change. For practices in bilingual markets — South Texas, Southern California, South Florida, or any area with a significant non-English-speaking patient population — this removes the front-desk bottleneck of waiting for a bilingual staff member for routine scheduling and insurance questions. Before going live, test the AI with five to ten sample messages in the languages your patient base uses to confirm the reply quality meets your practice's standard. Most major languages work well out of the box; niche regional dialects may need additional instructions in the personality file.</p>
 
 <h2>When a dental AI worker isn't the right fit</h2>
 
@@ -2898,6 +2906,10 @@ openclaw mcp list my-first-agent</code></pre>
 <h3>What's the realistic upper limit of this service line?</h3>
 
 <p>We know agencies running 30+ clients on a single ops person managing the AI side. Beyond that, hiring a junior specialist to monitor alerts and tune personalities makes sense. The work scales sub-linearly with client count, which is what makes the margin work.</p>
+
+<h3>How does the AI handle contacts who were mid-conversation before the AI was activated?</h3>
+
+<p>The AI begins responding from the first new inbound message after activation. It does not re-send replies to existing messages or replay conversation history. For contacts who were already mid-thread before the AI went live, the agent reads the recent conversation history from GHL to understand context, then continues from where the thread left off. A contact who texted two days ago and received no reply will get a contextually appropriate response on their next message — not a generic greeting that ignores the prior thread. This means you can activate the AI on an account mid-week without disrupting ongoing conversations or requiring you to close open threads first.</p>
 
 <h2>When a GHL AI worker isn't the right fit</h2>
 
