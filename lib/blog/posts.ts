@@ -11,6 +11,186 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'agents-md-operating-rules-openclaw-2026',
+    title: 'AGENTS.md Operating Rules in 2026: How to Write Agent Instructions That OpenClaw, Claude Code, and Codex All Respect',
+    description: 'AGENTS.md is the open Markdown standard for telling AI coding agents how to behave inside a project. Learn how OpenClaw v2026.4.26 loads it, the 2026 research on what rules help or hurt, a working template with real CLI commands, the SOUL.md vs SKILL.md vs CLAUDE.md split, and the anti-patterns that quietly kill compliance.',
+    date: '2026-05-10',
+    readMins: 12,
+    category: 'AI Infrastructure',
+    emoji: '📜',
+    content: `
+<p><em>Last updated: May 10, 2026</em></p>
+
+<p><strong>AGENTS.md</strong> is a Markdown file at the root of a project that tells AI coding agents how to operate inside it. It is the runtime instruction set every compliant agent reads on its first turn. In 2026 it became the de facto standard across OpenAI Codex, Claude Code, Cursor, OpenClaw, and most multi-agent orchestrators. Writing it well is the difference between an agent that ships features and one that quietly produces broken pull requests for a week. The rules are short, but the ones that matter are not the ones most teams write.</p>
+
+<p>This post walks through what AGENTS.md actually controls, how OpenClaw v2026.4.26 loads it into the agent context, the 2026 research on what kinds of rules help or hurt, a working template you can paste into a workspace today, and the failure modes to avoid. The aim is a file you would be comfortable shipping to a real client deployment, not a kitchen-sink template that bloats the context window and slows every turn.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>AGENTS.md is a project-level Markdown file that AI coding agents read at session start. It is now the open standard backed by OpenAI, Cursor, Sourcegraph, Aider, Jules, and Factory, and OpenClaw treats it as a first-class workspace bootstrap file.</li>
+    <li>Research from Gloaguen and colleagues (2026) on 138 real-world repositories found that LLM-generated AGENTS.md files reduced agent task success rates while increasing inference cost by more than 20%. Length is not the metric. Specificity is.</li>
+    <li>OpenClaw injects bootstrap files into the system prompt on the first turn of every session, capped at 12,000 characters per file and 60,000 characters total. Anything past the cap is truncated with a marker.</li>
+    <li>OpenClaw reads bootstrap files only from the workspace root, not from per-agent directories. Sub-agents inherit AGENTS.md from the workspace, so per-agent overrides need a different mechanism today.</li>
+    <li>The instruction budget is roughly 150 to 200 rules before compliance drops sharply. The system prompt already uses about 50, so AGENTS.md should aim for 50 to 100 specific, verifiable rules, not 300 vague preferences.</li>
+    <li>Effective rules are command-first, verifiable, and project-specific. Rules the model already knows (write tests, do not commit secrets) waste tokens and lower compliance on the rules that matter.</li>
+  </ul>
+</div>
+
+<h2>What AGENTS.md actually is</h2>
+
+<p>AGENTS.md started in late 2025 as an open Markdown convention published at agents.md and quickly picked up by OpenAI, Sourcegraph, Cursor, Aider, Jules, and Factory. The format is intentionally trivial: a Markdown file at the root of a repository that any compliant agent reads before it touches code. By March 2026 the Stack Overflow blog called it the closest thing the industry had to a shared coding-guidelines layer for both agents and humans. Codex, Claude Code, and Cursor all read it natively. OpenClaw treats it as one of seven workspace bootstrap files alongside SOUL.md, IDENTITY.md, USER.md, MEMORY.md, TOOLS.md, and HEARTBEAT.md.</p>
+
+<p>The split between AGENTS.md and the other workspace files is functional, not historical. SOUL.md owns identity. IDENTITY.md owns metadata. MEMORY.md owns running facts. AGENTS.md owns operating rules: what commands the agent runs, what it must verify before declaring a task complete, what files it must not touch, and what it must escalate to a human. If a rule answers the question "how does this project actually want me to behave?", it belongs in AGENTS.md. If it answers "who am I?" or "what have I learned?", it belongs somewhere else. The taxonomy keeps each file small enough to stay inside the bootstrap caps and predictable enough that an agent can be reasoned about without reading every file.</p>
+
+<h2>Why operating rules degrade silently</h2>
+
+<p>The single most counterintuitive 2026 finding on agent instructions came from Gloaguen and colleagues, who studied 138 real-world repositories and measured what happened when teams generated AGENTS.md with an LLM rather than writing it themselves. The generated files were longer and looked more comprehensive. They also reduced agent task success rates and pushed inference cost up by more than 20% on average. The rules were not wrong. They were redundant with what the model already knew, and the redundancy crowded out the rules that mattered.</p>
+
+<p>A second finding from the AMBIG-SWE benchmark presented at ICLR 2026 made the point sharper. Without explicit encouragement, agents default to non-interactive behavior. They proceed silently rather than ask clarifying questions. The benchmark resolve rate dropped from 48.8% to 28% the moment task ambiguity was introduced. The implication for AGENTS.md is direct: if the file does not say "ask before assuming X", the agent will not ask. The best AGENTS.md files in 2026 are short, specific, and explicitly tell the agent when to stop and ask.</p>
+
+<p>Empirical guidance from teams running coding agents in production puts a number on the limit. Compliance drops sharply once an agent is carrying more than 150 to 200 instructions, and the system prompt already uses around 50 of them. That leaves a working budget of roughly 100 to 150 rules in AGENTS.md before the model starts ignoring half of them. Aim well under the budget, not at it.</p>
+
+<h2>How OpenClaw loads AGENTS.md</h2>
+
+<p>OpenClaw v2026.4.26 loads bootstrap files through the resolveBootstrapContextForRun() pipeline. The behavior is deterministic and documented in the agent workspace concept page. The mechanics that matter for AGENTS.md authors:</p>
+
+<ul>
+  <li>Bootstrap files are read only from the workspace root, typically <code>~/.openclaw/workspace/</code>. Files placed in a sub-agent's <code>agentDir</code> are silently ignored. This is tracked in OpenClaw issue #29387 and is by design.</li>
+  <li>On the first turn of a new session, the contents of every present bootstrap file are concatenated and injected into the system prompt before any user message. Subsequent turns reuse the cached prompt, which means changes to AGENTS.md require a session reload to take effect.</li>
+  <li>Each file is capped at 12,000 characters by <code>agents.defaults.bootstrapMaxChars</code>. The total bootstrap budget is capped at 60,000 characters by <code>agents.defaults.bootstrapTotalMaxChars</code>. Files past the cap are truncated and a marker is inserted so the agent knows content was clipped.</li>
+  <li>If a bootstrap file is missing, OpenClaw injects a "missing file" marker and continues. Blank files are skipped entirely so an empty AGENTS.md is the same as no AGENTS.md.</li>
+  <li><code>BOOTSTRAP.md</code> is generated only for a brand-new workspace. Once it is deleted after the first run, OpenClaw does not regenerate it on later restarts.</li>
+</ul>
+
+<p>The May 2026 documentation update (correction #79470 on the OpenClaw repo) clarified what sub-agents actually inherit. Sub-agent runs now formally pull SOUL.md, IDENTITY.md, USER.md, and AGENTS.md from the workspace root. Per-agent overrides remain a feature request, tracked in issue #19620. For multi-agent setups today, all agents share one AGENTS.md. If different operating rules are needed per agent, encode them as named sections inside the same file and let each agent select its section by name in its system prompt prefix.</p>
+
+<h2>A working AGENTS.md template, step by step</h2>
+
+<p>The fastest way to a usable AGENTS.md is to start from a workspace seed and prune. Run the OpenClaw onboard command to scaffold the workspace, then edit the file in place. The commands below are real and idempotent.</p>
+
+<pre><code># Install or update OpenClaw to the May 2026 release
+npm install -g openclaw@2026.4.26
+
+# Create the workspace and seed bootstrap files (idempotent)
+openclaw onboard
+
+# Open AGENTS.md in your editor
+code ~/.openclaw/workspace/AGENTS.md
+
+# After editing, reload bootstrap into the active session
+openclaw session reload --workspace
+
+# Verify the file size is under the per-file cap
+wc -c ~/.openclaw/workspace/AGENTS.md
+</code></pre>
+
+<p>The template below is a starting point that obeys the instruction-budget research. It assumes a Next.js plus Supabase project. Replace project-specific lines, delete any rule that the model would already follow without being told, and stop once the file reaches roughly 80 rules.</p>
+
+<pre><code># AGENTS.md
+
+## Stack
+- Next.js 15 App Router on Vercel
+- Supabase (Postgres) for persistence
+- Stripe for billing, GoHighLevel for CRM
+- Pricing tiers: Lite \$99, Pro \$299, Scale \$499
+
+## Build and verify before declaring done
+- "npx tsc --noEmit" must pass with zero errors
+- "npm run lint" must pass with zero warnings
+- For UI changes, start the dev server and verify in a browser
+
+## Database rules
+- Always await Supabase calls. Unawaited writes silently drop on serverless
+- Use resolveClientGateway() not raw gateway_status from the database
+- New columns require a migration in supabase/migrations/ and a manual run in the SQL editor
+
+## API route rules
+- Every route under /api/widget/* sets Access-Control-Allow-Origin on every response path including errors
+- Unauthenticated routes call isRateLimited() from lib/rate-limit.ts
+- Auth helpers: requireAgencyMember(), requireAgencyAdmin(), requireClientAccess()
+
+## Style
+- TypeScript strict, no any unless you justify it in the PR description
+- No comments unless they explain a non-obvious why
+- "AI workers" not "AI employees" in user-facing copy
+
+## When to stop and ask
+- Database schema changes outside supabase/migrations/
+- Anything touching Stripe webhooks or billing math
+- Deletes of more than five files in one PR
+</code></pre>
+
+<p>That template is roughly 30 rules. It is short on purpose. Add to it only after watching the agent fail at a specific task and confirming the failure is reproducible. The same approach scales from a one-person agency to a multi-team SaaS: fewer rules, written tighter, beats more rules every time. For the broader picture on what else lives in the workspace, the companion guide on <a href="/blog/ai-agent-memory-systems-openclaw-2026">AI agent memory systems</a> covers the file-level layout in detail.</p>
+
+<h2>AGENTS.md vs SOUL.md vs SKILL.md vs CLAUDE.md</h2>
+
+<p>Four file conventions cover overlapping ground in 2026. The differences are about scope and activation, not syntax. Each is plain Markdown. What changes is when it loads and what it controls.</p>
+
+<table>
+<thead>
+<tr><th>File</th><th>Owned by</th><th>Activation</th><th>Purpose</th><th>Typical length</th></tr>
+</thead>
+<tbody>
+<tr><td>AGENTS.md</td><td>agents.md open spec</td><td>Always loaded at session start</td><td>Project-level operating rules</td><td>50-200 lines</td></tr>
+<tr><td>SOUL.md</td><td>OpenClaw workspace</td><td>Always loaded at session start</td><td>Agent identity and personality</td><td>20-80 lines</td></tr>
+<tr><td>SKILL.md</td><td>Anthropic Agent Skills</td><td>Loaded only when a task matches the skill description</td><td>Specialized task playbook</td><td>30-300 lines per skill</td></tr>
+<tr><td>CLAUDE.md</td><td>Claude Code project memory</td><td>Always loaded inside Claude Code</td><td>Same job as AGENTS.md, scoped to Claude Code</td><td>50-200 lines</td></tr>
+</tbody>
+</table>
+
+<p>Two practical implications. First, AGENTS.md and CLAUDE.md should be a symlink in projects that target both Claude Code and other agents, because keeping one source of truth is faster than reconciling two. Second, anything that could live in a SKILL.md should live in a SKILL.md, because skills load only on demand and do not consume the bootstrap budget. Use AGENTS.md for rules that apply to every turn. Use SKILL.md for capabilities that apply to a slice of work. The walkthrough on <a href="/blog/write-your-first-claude-skill-openclaw-2026">writing your first Claude Skill</a> covers the SKILL.md side of the split.</p>
+
+<h2>Five anti-patterns that quietly kill operating rules</h2>
+
+<ol>
+  <li><strong>Restating model knowledge.</strong> "Write clean code. Use descriptive variable names. Handle errors gracefully." The model already does these. Every line of restatement crowds out a project-specific rule the model needs.</li>
+  <li><strong>Vague verbs.</strong> "Try to keep functions small." There is no test for "try". Replace with a verifiable rule: "Functions over 50 lines require a comment explaining why."</li>
+  <li><strong>Instruction sprawl past the cap.</strong> AGENTS.md grows over time as every bug becomes a new rule. Past 12,000 characters per file, OpenClaw truncates. Past 150 rules total, compliance falls. Prune monthly. Delete any rule the agent has not violated in 30 days.</li>
+  <li><strong>Hidden contradictions.</strong> Rule 17 says "always run tests before commit." Rule 84 says "skip tests on docs-only changes." Conflicting rules produce unpredictable behavior. Search for "always" and "never" once a quarter and reconcile.</li>
+  <li><strong>No stop-and-ask clauses.</strong> The AMBIG-SWE finding is direct. Without explicit permission to pause and ask, the agent will not pause. Every AGENTS.md needs a "when to stop and ask" section. Without it, the agent will guess on schema changes, billing math, and destructive deletes.</li>
+</ol>
+
+<h2>How to evolve AGENTS.md without bloating it</h2>
+
+<p>Operating rules age. A rule that mattered six months ago may now be the default behavior of a newer model, or a workaround for a bug that has been fixed upstream. Treating AGENTS.md as a living document, not a one-time setup file, is the difference between a stack that gets sharper over time and one that drowns in legacy.</p>
+
+<p>The pattern that holds up across teams is a 30-day review cadence. Once a month, open AGENTS.md and ask three questions of every rule. First, has the agent violated this rule in the last 30 days? If not, it is either redundant with model behavior or no longer relevant; delete it. Second, is the rule verifiable by a command, a test, or a code-review check? If not, rewrite it as a verifiable rule or delete it. Third, does the rule contradict another rule in the same file? If yes, reconcile in place. The discipline is a tighter file, not a longer one.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Does OpenClaw read AGENTS.md, CLAUDE.md, or both?</h3>
+<p>OpenClaw reads AGENTS.md from the workspace root by default. CLAUDE.md is read only by Claude Code itself. If your project targets both stacks, symlink the two files so you maintain one source of truth. The agents.md project recommends the same approach for Codex, Cursor, and Aider.</p>
+
+<h3>How long should AGENTS.md be?</h3>
+<p>Short enough that the model can hold every rule in working memory. The instruction-budget data suggests roughly 100 to 150 rules total in AGENTS.md once you account for the 50 already in the system prompt. Most well-tuned files are between 50 and 200 lines of Markdown. If a file is past 12,000 characters, OpenClaw is silently truncating it and the agent is reading half a rulebook.</p>
+
+<h3>Can different sub-agents have different AGENTS.md files?</h3>
+<p>Not yet, on OpenClaw. Bootstrap files are read only from the workspace root, and per-agent <code>agentDir</code> bootstrap files are silently ignored. This is tracked in OpenClaw issue #19620 as a feature request. For now, encode per-agent rules as named sections inside one shared AGENTS.md and let each agent select the right section by name in its run config.</p>
+
+<h3>Should I let an LLM write my AGENTS.md?</h3>
+<p>Carefully. The 2026 study from Gloaguen and colleagues found that fully LLM-generated AGENTS.md files reduced task success rates and raised inference cost by over 20% on a sample of 138 real repositories. Use an LLM to draft, then prune ruthlessly. Anything the model would already know should be deleted. Anything that is not project-specific should be deleted.</p>
+
+<h3>What is the difference between AGENTS.md and an Agent Skill?</h3>
+<p>AGENTS.md is loaded on every turn. A Skill is loaded only when its description matches the current task. AGENTS.md is the rulebook for how the agent behaves at all times. Skills are specialized playbooks for one slice of work, like spreadsheet manipulation or PR review. Use Skills for anything that does not need to be in context on every single turn.</p>
+
+<h3>What happens if AGENTS.md is missing or empty?</h3>
+<p>OpenClaw injects a "missing file" marker for missing files and skips empty files entirely. The agent runs with whatever is left in SOUL.md, IDENTITY.md, USER.md, and the system prompt. Behavior becomes generic-model behavior, which is rarely what a client deployment wants.</p>
+
+<h2>When AGENTS.md is not for you</h2>
+
+<p>AGENTS.md is overkill for one-off prompts, throwaway scripts, and projects where the agent is only ever invoked through a single tightly-scoped Skill. If the agent does one thing, on one channel, with one customer, the rules are better expressed inline in the Skill itself. The bootstrap path adds latency on every cold start, and pays off only when there are enough projects, sub-agents, or recurring tasks that the rules need to be shared across runs.</p>
+
+<p>It is also a poor fit for teams that have not done the work of writing down their own development conventions. AGENTS.md is a transcription tool, not a discovery tool. If a team disagrees on the build commands, the test cadence, or the deploy process, the agent will reproduce the contradictions in code until the humans agree. The right time to write AGENTS.md is the day after the team aligns on its conventions, not the day before.</p>
+
+<h2>The bottom line</h2>
+
+<p>Operating rules are the highest-impact piece of the agent stack in 2026. The model can write code. Skills give it capabilities. AGENTS.md tells it which capabilities to use, which conventions to obey, and when to stop. Write it short. Write it specific. Prune it monthly. Treat any rule the agent has not violated in 30 days as a candidate for deletion.</p>
+
+<p>If maintaining bootstrap files for every client by hand is not where an agency wants to spend its operator time, this is exactly the layer Kyra automates. Each client deployed through <a href="/solo">Kyra</a> ships with a tuned AGENTS.md, SOUL.md, and SKILL.md set out of the box, scoped to the industry template the agency picked. The <a href="/ai-for/dental">dental practice AI worker template</a> is a worked example of what a client-ready bootstrap looks like in production. The rules update automatically when OpenClaw bumps the bootstrap caps or adds a new file type. To go deeper on the moving parts behind a Kyra deployment, the open-source <a href="https://github.com/openclaw/openclaw">OpenClaw repository on GitHub</a> publishes its own AGENTS.md as a reference, the <a href="https://agents.md/">agents.md open specification</a> remains the canonical source for the format itself, and Anthropic’s <a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview">Agent Skills documentation</a> covers the SKILL.md side of the same picture.</p>
+`,
+  },
+  {
     slug: 'per-client-ai-container-isolation-2026',
     title: 'Per-Client AI Container Isolation in 2026: How Agencies Run 50+ AI Workers Without Cross-Contamination',
     description: 'Per-client AI container isolation is the deployment pattern that gives every AI worker its own filesystem, network, and credentials. Compare Docker, gVisor, and Firecracker for multi-tenant AI agents in 2026, with a step-by-step OpenClaw setup, threat model, and the real cost math for agencies running 50+ clients.',
