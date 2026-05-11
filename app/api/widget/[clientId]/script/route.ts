@@ -790,66 +790,185 @@ export async function GET(
     addMessage('user', text);
     showTyping();
 
+    var jane = readJaneContext();
+    // Session override (set by tapping the pivot CTA) wins over the
+    // storefront cookie. Reset on page refresh.
+    var effectiveOrderType = sessionOrderTypeOverride || jane.orderType;
+    var requestBody = JSON.stringify({
+      clientId: CLIENT_ID,
+      message: text,
+      sessionId: sessionId,
+      history: history.slice(-10),
+      sourceUrl: window.location.href,
+      storeId: jane.janeStore || window.__kyraStoreId || selectedStoreId || STORE_ID,
+      orderType: effectiveOrderType,
+      cart: jane.cart,
+    });
+
+    // ── Streaming state ─────────────────────────────────────────────────────
+    // botMsgEl / botBubbleEl materialize on the FIRST 'token' frame so the
+    // typing indicator stays visible until the bot actually starts replying.
+    // botFullText is the accumulator for incremental markdown re-render.
+    var botMsgEl = null;
+    var botBubbleEl = null;
+    var botFullText = '';
+    var leadCaptured = false;
+
+    function ensureBotBubble() {
+      if (botMsgEl) return;
+      hideTyping();
+      botMsgEl = addMessage('bot', '');
+      botBubbleEl = botMsgEl.querySelector('.kyra-msg-bubble');
+    }
+    function appendToken(t) {
+      ensureBotBubble();
+      botFullText += t;
+      // Re-render markdown on every chunk. Cheap (~few hundred chars total)
+      // and gives bold/italic the streaming-typewriter effect Claude.ai +
+      // ChatGPT use. Edge case where a half-emitted "**bold" briefly shows
+      // as raw text resolves once the closing "**" lands a token later.
+      botBubbleEl.innerHTML = formatMsg(botFullText);
+      scrollToBottom();
+    }
+    function replaceBotText(t) {
+      ensureBotBubble();
+      botFullText = t;
+      botBubbleEl.innerHTML = formatMsg(botFullText);
+      scrollToBottom();
+    }
+
     try {
-      var jane = readJaneContext();
-      // Session override (set by tapping the pivot CTA) wins over the
-      // storefront cookie. Reset on page refresh.
-      var effectiveOrderType = sessionOrderTypeOverride || jane.orderType;
       var res = await fetch(API_BASE + '/api/widget/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId: CLIENT_ID,
-          message: text,
-          sessionId: sessionId,
-          history: history.slice(-10),
-          sourceUrl: window.location.href,
-          // Cookie-derived store id wins over the user's earlier pick (which
-          // wins over the embed default). This means if the customer changed
-          // stores on plpcsanjose.com, the widget follows them automatically.
-          storeId: jane.janeStore || window.__kyraStoreId || selectedStoreId || STORE_ID,
-          orderType: effectiveOrderType,  // "pickup" | "delivery" — narrows in-stock filter
-          cart: jane.cart,                // current bag, lets the AI reason about complements
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
+        body: requestBody,
         signal: AbortSignal.timeout(40000),
       });
-      var data = await res.json();
-      hideTyping();
-      if (data.response) {
-        if (data.sessionId && !sessionId) {
-          sessionId = data.sessionId;
-          try { localStorage.setItem(STORAGE_KEY, sessionId); } catch(e) {}
+
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+
+      var contentType = res.headers.get('content-type') || '';
+      var isStream = contentType.indexOf('text/event-stream') >= 0;
+
+      if (!isStream) {
+        // ── Backward-compat JSON path ───────────────────────────────────
+        // Server returned a single JSON blob (older deploy, or the route
+        // chose not to stream for some reason). Render in one shot.
+        var data = await res.json();
+        hideTyping();
+        if (data.response) {
+          if (data.sessionId && !sessionId) {
+            sessionId = data.sessionId;
+            try { localStorage.setItem(STORAGE_KEY, sessionId); } catch(e) {}
+          }
+          history.push({ role: 'user', content: text });
+          history.push({ role: 'assistant', content: data.response });
+          if (history.length > 20) history = history.slice(-20);
+          addMessage('bot', data.response);
+          try { renderCards(data.cards, data.browseMore, data.fallbackNotice); } catch(e) {}
+          try { renderSupportLinks(data.supportLinks); } catch(e) {}
+          if (data.pivotAction && sessionOrderTypeOverride !== data.pivotAction.toChannel) {
+            try { renderPivotAction(data.pivotAction); } catch(e) {}
+          }
+          if (data.leadCaptured) leadCaptured = true;
+        } else {
+          addMessage('bot', 'Sorry, something went wrong. Please try again.');
         }
-        // Track history for context continuity
-        history.push({ role: 'user', content: text });
-        history.push({ role: 'assistant', content: data.response });
-        if (history.length > 20) history = history.slice(-20);
-        addMessage('bot', data.response);
-        // Render live-inventory product cards + browse-more + fallback notice, if any
-        try { renderCards(data.cards, data.browseMore, data.fallbackNotice); } catch(e) {}
-        // Render support-link pill chips (ordering, delivery, hours, etc.) — server
-        // guarantees these for informational questions regardless of LLM output.
-        try { renderSupportLinks(data.supportLinks); } catch(e) {}
-        // Auto-pivot CTA — only renders when the server returned a pivotAction.
-        // Suppress when override already matches (avoids "Switch to Pickup"
-        // appearing when the user is already on pickup mode).
-        if (data.pivotAction && sessionOrderTypeOverride !== data.pivotAction.toChannel) {
-          try { renderPivotAction(data.pivotAction); } catch(e) {}
+      } else if (res.body) {
+        // ── SSE streaming path ──────────────────────────────────────────
+        var reader = res.body.getReader();
+        var decoder = new TextDecoder();
+        var buffer = '';
+        var streamDone = false;
+
+        while (!streamDone) {
+          var chunk = await reader.read();
+          if (chunk.done) break;
+          buffer += decoder.decode(chunk.value, { stream: true });
+
+          // SSE frames are separated by a blank line (\n\n). Process every
+          // complete frame; whatever remains stays in the buffer for the
+          // next chunk.
+          var parts = buffer.split('\n\n');
+          buffer = parts.pop() || '';
+
+          for (var i = 0; i < parts.length; i++) {
+            var raw = parts[i];
+            if (!raw) continue;
+            var evName = '';
+            var dataStr = '';
+            var lines = raw.split('\n');
+            for (var j = 0; j < lines.length; j++) {
+              var line = lines[j];
+              if (line.indexOf('event:') === 0) evName = line.slice(6).trim();
+              else if (line.indexOf('data:') === 0) dataStr = line.slice(5).trim();
+            }
+            if (!evName || !dataStr) continue;
+            var payload;
+            try { payload = JSON.parse(dataStr); } catch(e) { continue; }
+
+            switch (evName) {
+              case 'meta':
+                if (payload.sessionId && !sessionId) {
+                  sessionId = payload.sessionId;
+                  try { localStorage.setItem(STORAGE_KEY, sessionId); } catch(e) {}
+                }
+                break;
+              case 'results':
+                try { renderCards(payload.cards || [], payload.browseMore || null, payload.fallbackNotice || null); } catch(e) {}
+                break;
+              case 'chips':
+                try { renderSupportLinks(payload.supportLinks); } catch(e) {}
+                break;
+              case 'pivotAction':
+                if (sessionOrderTypeOverride !== payload.toChannel) {
+                  try { renderPivotAction(payload); } catch(e) {}
+                }
+                break;
+              case 'token':
+                appendToken(payload.text || '');
+                break;
+              case 'correction':
+                replaceBotText(payload.text || '');
+                break;
+              case 'error':
+                replaceBotText(payload.message || 'Sorry, something went wrong. Please try again.');
+                break;
+              case 'done':
+                streamDone = true;
+                break;
+            }
+          }
         }
-        // If lead was captured, show a subtle confirmation
-        if (data.leadCaptured) {
-          var noteEl = document.createElement('div');
-          noteEl.style.cssText = 'text-align:center;font-size:10px;color:#9ca3af;padding:4px 0;';
-          noteEl.textContent = '✓ We\\'ll follow up with you';
-          messagesEl.appendChild(noteEl);
-          scrollToBottom();
-        }
-      } else {
-        addMessage('bot', 'Sorry, something went wrong. Please try again.');
+        // Stream may close mid-frame in rare cases (server crashed, network
+        // dropped). Make sure the typing indicator is gone either way.
+        hideTyping();
       }
     } catch(e) {
       hideTyping();
-      addMessage('bot', 'Sorry, that took too long. Please try again or ask a different question.');
+      if (!botMsgEl) {
+        addMessage('bot', 'Sorry, that took too long. Please try again or ask a different question.');
+      } else if (!botFullText.trim()) {
+        replaceBotText('Sorry, something went wrong mid-reply. Please try again.');
+      }
+    }
+
+    // Track history for context continuity (post-stream).
+    if (botFullText.trim()) {
+      history.push({ role: 'user', content: text });
+      history.push({ role: 'assistant', content: botFullText });
+      if (history.length > 20) history = history.slice(-20);
+    }
+
+    if (leadCaptured) {
+      var noteEl = document.createElement('div');
+      noteEl.style.cssText = 'text-align:center;font-size:10px;color:#9ca3af;padding:4px 0;';
+      noteEl.textContent = '✓ We\\'ll follow up with you';
+      messagesEl.appendChild(noteEl);
+      scrollToBottom();
     }
 
     isLoading = false;

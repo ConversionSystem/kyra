@@ -11,8 +11,23 @@
 // - Auto-creates CRM contacts + web_chat_leads
 // - Fires webhook notifications for new leads
 //
+// ✨ NEW (2026-05-08): Streaming responses (SSE)
+// - Widget script sends `Accept: text/event-stream` → response streams
+//   token-by-token via Server-Sent Events. Frames (in order):
+//     event: meta          (sessionId)
+//     event: results       (cards + browseMore + fallbackNotice bundled)
+//     event: chips         (resolved support-link chips)
+//     event: pivotAction   (auto-pivot CTA, if any)
+//     event: token         (LLM delta chunks — streamed as they arrive)
+//     event: correction    (output-scan rewrote the reply, replace text)
+//     event: error         (LLM unavailable / timeout — render as bot bubble)
+//     event: done          (sessionId)
+// - Old widget scripts (no Accept header / Accept: application/json) still
+//   get the legacy single-blob JSON response. Both paths coexist forever.
+//
 // Body: { clientId, message, sessionId?, history?, sourceUrl? }
-// Returns: { response, sessionId, leadCaptured? }
+// Returns: { response, sessionId, leadCaptured? }  (JSON path)
+//   OR a text/event-stream of SSE frames                   (streaming path)
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -871,6 +886,182 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
       }
       // Continue without extra product context — cards / supportLinks already populated if relevant
     }
+  }
+
+  // ── Streaming response (SSE) branch ──────────────────────────────────────
+  // Widget scripts updated to the streaming protocol send
+  // `Accept: text/event-stream`. We emit structured frames so the widget
+  // can render product cards + chips IMMEDIATELY (we have them before
+  // generation starts), then stream LLM tokens as they arrive.
+  //
+  // Old widget scripts (no Accept header) fall through to the JSON path
+  // below. Both paths run the same pre-LLM work, same save/credits/lead
+  // capture/CRM log code — only the response shape differs.
+  const wantsStream = (request.headers.get('accept') || '').includes('text/event-stream');
+  if (wantsStream) {
+    const encoder = new TextEncoder();
+    const llmMessages = [
+      { role: 'system' as const, content: systemPrompt + storeContext + productContext },
+      ...sessionHistory,
+      ...(Array.isArray(history) ? (history as Array<{role: 'user'|'assistant', content: string}>).slice(-10) : []),
+      { role: 'user' as const, content: safeMessage },
+    ];
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const sendFrame = (event: string, data: unknown) => {
+          try {
+            controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+          } catch {
+            // Client disconnected — stop trying to write.
+          }
+        };
+
+        // 1. Ship structured content first — we have all of this before the
+        //    LLM call even starts. Cards + chips render in the widget while
+        //    the bot's text is still being generated.
+        sendFrame('meta', { sessionId: resolvedSessionId });
+        // Bundle cards + browseMore + fallbackNotice in a single `results`
+        // frame so the widget makes ONE renderCards() call (the renderer
+        // composes them into a single visual block — separate frames would
+        // produce a flicker).
+        const hasResults = productCards.length > 0 || !!browseMore || !!fallbackNotice;
+        if (hasResults) {
+          sendFrame('results', {
+            cards: productCards,
+            browseMore: browseMore || null,
+            fallbackNotice: fallbackNotice || null,
+          });
+        }
+        if (supportLinksOut.length) sendFrame('chips', { supportLinks: supportLinksOut });
+        if (pivotAction) sendFrame('pivotAction', pivotAction);
+
+        // 2. Stream LLM tokens
+        let aiResponse = '';
+        try {
+          const llm = getDirectLLMClient();
+          const completion = await llm.chat.completions.create({
+            model: routedModel,
+            messages: llmMessages,
+            stream: true,
+          }, { signal: AbortSignal.timeout(25000) });
+
+          for await (const chunk of completion) {
+            const delta = chunk.choices?.[0]?.delta?.content || '';
+            if (delta) {
+              aiResponse += delta;
+              sendFrame('token', { text: delta });
+            }
+          }
+        } catch (err: unknown) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError')) {
+            console.error(`[widget/chat] LLM timeout (stream) for client ${clientId}`);
+            sendFrame('error', { message: "Thanks for your message! Our team is a bit busy right now. We'll get back to you shortly." });
+          } else {
+            console.error(`[widget/chat] LLM error (stream) for ${clientId} (model=${routedModel}): ${errMsg}`);
+            sendFrame('error', { message: 'Thanks for your message! Our team will get back to you shortly.' });
+          }
+          sendFrame('done', { sessionId: resolvedSessionId });
+          controller.close();
+          return;
+        }
+
+        // 3. Output scan (we have the full text now — emit `correction` if
+        //    the scanner rewrote anything; the widget replaces the streamed
+        //    text with the sanitized version).
+        const outputScan = scanOutput(aiResponse);
+        if (!outputScan.safe) {
+          console.warn(`[widget/chat] Output flagged (stream) for client ${clientId}: ${outputScan.leaks.join(', ')}`);
+          sendFrame('correction', { text: outputScan.sanitizedOutput });
+          aiResponse = outputScan.sanitizedOutput;
+        }
+
+        if (!aiResponse.trim()) {
+          sendFrame('error', { message: "I didn't quite catch that. Could you rephrase your question?" });
+          sendFrame('done', { sessionId: resolvedSessionId });
+          controller.close();
+          return;
+        }
+
+        // 4. Persist + bill — awaited inside the stream lifecycle so Vercel
+        //    doesn't kill the function before the writes commit. Same
+        //    requirement as the JSON path (per CLAUDE.md: never fire-and-
+        //    forget DB writes on serverless).
+        try {
+          await saveConversation({
+            clientId: client.id,
+            agencyId: client.agency_id,
+            sessionId: resolvedSessionId,
+            userMessage: message.trim(),
+            aiResponse,
+            sourceUrl: sourceUrl || null,
+          });
+          await checkAndDeductCredits(client.agency_id, routedModel, preflightAction, {
+            clientId: client.id,
+            description: `Web chat (${routedModel}, stream): ${message.trim().slice(0, 50)}`,
+          });
+        } catch (err) {
+          console.error('[widget/chat] persist error (stream):', err);
+        }
+
+        // 5. Lead capture + CRM log — true fire-and-forget. The widget already
+        //    has everything it needs in the prior frames; these run in the
+        //    background and don't block the `done` frame.
+        const fullHistory = [
+          ...(Array.isArray(history) ? history : []),
+          { role: 'user' as const, content: message.trim() },
+          { role: 'assistant' as const, content: aiResponse },
+        ];
+        void (async () => {
+          try {
+            const userMsgCount = fullHistory.filter(m => m.role === 'user').length;
+            if (userMsgCount < 2) return;
+            const extracted = extractLeadFromConversation(fullHistory);
+            if (!extracted || (!extracted.email && !extracted.phone)) return;
+            const result = await saveWebChatLead(
+              client.agency_id, client.id, resolvedSessionId, extracted, fullHistory, sourceUrl,
+            );
+            if (result) void notifyLeadWebhook(client.agency_id, extracted, result.leadId);
+          } catch (err) {
+            console.error('[widget/chat] Lead capture error (stream):', err);
+          }
+        })();
+        void (async () => {
+          try {
+            const { logConversationToCrm } = await import('@/lib/crm/conversation-logger');
+            await logConversationToCrm(client.agency_id, {
+              type: 'InboundMessage', body: message.trim(),
+              messageType: 'web_chat', direction: 'inbound',
+              name: `Web Visitor (${ip})`,
+            });
+            await logConversationToCrm(client.agency_id, {
+              type: 'OutboundMessage', body: aiResponse,
+              messageType: 'web_chat', direction: 'outbound',
+              name: 'AI Worker',
+            });
+          } catch (err) {
+            console.error('[widget/chat] CRM log error (stream):', err);
+          }
+        })();
+
+        sendFrame('done', { sessionId: resolvedSessionId });
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        ...CORS,
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        // Disables proxy buffering (nginx/Cloudflare/Vercel) so tokens
+        // flush to the client incrementally rather than batching into
+        // chunks of N kilobytes. Critical for the streaming feel.
+        'X-Accel-Buffering': 'no',
+      },
+    });
   }
 
   // ── Call LLM directly (bypasses OpenClaw gateway + agency persona) ─────────
