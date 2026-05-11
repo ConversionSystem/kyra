@@ -11,6 +11,217 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'openclaw-hooks-event-driven-automation-2026',
+    title: 'OpenClaw Hooks in 2026: The Event-Driven Layer That Makes AI Agents Run on Their Own',
+    description: 'OpenClaw hooks are event-driven handlers that fire on commands, messages, sessions, and gateway lifecycle. Fourteen documented event types, the synchronous tool_result_persist transform, step-by-step setup, comparison vs cron and background tasks, and a comparison with Claude Code hooks for 2026.',
+    date: '2026-05-11',
+    readMins: 13,
+    category: 'AI Infrastructure',
+    emoji: '🪝',
+    content: `
+<p><em>Last updated: May 11, 2026</em></p>
+
+<p><strong>OpenClaw hooks</strong> are event-driven handlers that fire automatically when something happens inside the gateway. A new command. A message arriving on WhatsApp. A session starting. A workspace booting. The hook system is the difference between an AI agent that sits waiting for a prompt and an AI worker that reacts on its own. In 2026 it has become the most important automation primitive in the OpenClaw stack, and the one most agencies still ignore.</p>
+
+<p>This post walks through what hooks actually are, the fourteen documented event types the gateway exposes, how to write your first hook, three real automation patterns agencies are running in production, and where hooks stop being the right tool. The aim is a clear mental model for anyone deploying AI workers for clients, not a tour of every CLI flag.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>OpenClaw hooks subscribe to gateway events and run a handler function when those events fire. They live on disk in <code>~/.openclaw/hooks/</code> and are managed through the <code>openclaw hooks</code> CLI.</li>
+    <li>The current spec exposes fourteen event types across five categories: command, session, agent, gateway, and message. Each event passes a typed context object the handler can read or mutate.</li>
+    <li>Hooks are not the same as cron jobs or background tasks. Hooks react to events. Cron jobs run on a schedule. Background tasks orchestrate longer multi-step work. Pick the one that matches the trigger.</li>
+    <li>Bundled hooks like <code>session-memory</code>, <code>command-logger</code>, and <code>boot-md</code> are the fastest way to see hooks in action. Most agency deployments start there and write custom hooks later.</li>
+    <li>The most useful 2026 addition is <code>tool_result_persist</code>, a synchronous hook that lets plugins rewrite tool results before they are written into the session transcript. This is how you sanitise PII or redact credentials before they ever reach the model context.</li>
+    <li>Claude Code hooks and OpenClaw hooks share the same idea but run in different processes. Claude Code hooks fire inside the IDE. OpenClaw hooks fire inside the gateway daemon. Production agency deployments live on the OpenClaw side.</li>
+  </ul>
+</div>
+
+<h2>What an OpenClaw hook actually is</h2>
+
+<p>A hook in OpenClaw is a piece of code that registers interest in one or more event types. When the gateway fires that event, every enabled hook for it runs. The hook receives a typed context object describing what happened, and may read it, mutate it, log it, or call out to an external system before returning.</p>
+
+<p>Mechanically, a hook is a folder under <code>~/.openclaw/hooks/&lt;hook-name&gt;</code> containing two things. A <code>hook.json</code> manifest that names the hook and lists the events it subscribes to. And a handler script (TypeScript, JavaScript, or Python depending on the runtime profile) that exports a function the gateway will call.</p>
+
+<p>The gateway discovers hooks on startup, validates each manifest, and registers the enabled ones with the event bus. Enabling and disabling hooks is a one-line CLI call. There is no recompile, no daemon restart for most events, and no centralised registry. Every hook is local to the workspace.</p>
+
+<p>That matters for agencies running multiple clients. A hook deployed in one workspace does not bleed into another. Per-client containers each carry their own hook directory, and what you ship to a dental practice is provably separate from what you ship to a law firm. The gateway boundary is the isolation boundary.</p>
+
+<h2>The five hook event families in 2026</h2>
+
+<p>The current spec on <a href="https://docs.openclaw.ai/automation/hooks">docs.openclaw.ai</a> groups events into five families. Each family covers a different layer of the gateway's lifecycle, and each event passes a different context shape.</p>
+
+<table>
+  <thead>
+    <tr><th>Family</th><th>Event</th><th>Fires when</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>command</td><td>command:new</td><td>A <code>/new</code> command starts a fresh session.</td></tr>
+    <tr><td>command</td><td>command:reset</td><td>A <code>/reset</code> clears the current session state.</td></tr>
+    <tr><td>command</td><td>command:stop</td><td>A <code>/stop</code> halts the running turn.</td></tr>
+    <tr><td>command</td><td>command</td><td>Generic listener that catches any command event.</td></tr>
+    <tr><td>session</td><td>session:compact:before</td><td>Just before history is summarised for compaction.</td></tr>
+    <tr><td>session</td><td>session:compact:after</td><td>After the compacted summary replaces older turns.</td></tr>
+    <tr><td>session</td><td>session:patch</td><td>When any session property is modified at runtime.</td></tr>
+    <tr><td>agent</td><td>agent:bootstrap</td><td>Before workspace bootstrap files are injected into the prompt.</td></tr>
+    <tr><td>gateway</td><td>gateway:startup</td><td>After channels start and hooks are loaded.</td></tr>
+    <tr><td>gateway</td><td>gateway:shutdown</td><td>When the gateway begins to shut down.</td></tr>
+    <tr><td>gateway</td><td>gateway:pre-restart</td><td>Before a planned restart cycle begins.</td></tr>
+    <tr><td>message</td><td>message:received</td><td>An inbound message arrives on any channel.</td></tr>
+    <tr><td>message</td><td>message:transcribed</td><td>After voice input is converted to text.</td></tr>
+    <tr><td>message</td><td>message:preprocessed</td><td>After media and link previews are resolved.</td></tr>
+    <tr><td>message</td><td>message:sent</td><td>After an outbound message is delivered to the channel.</td></tr>
+  </tbody>
+</table>
+
+<p>Beyond the event stream, OpenClaw also exposes a synchronous hook point called <code>tool_result_persist</code>. It is not part of the event bus. It runs inline before tool results are written to the transcript, and the handler can transform or drop the result entirely. This is the right place to sanitise PII, strip credentials, or redact phone numbers before the model sees them on the next turn.</p>
+
+<p>The split between asynchronous event hooks and synchronous transform hooks is deliberate. Event hooks should be cheap and side-effect shaped: log, notify, queue. Transform hooks block the gateway, so they must be fast and pure.</p>
+
+<h2>Step by step: writing your first hook</h2>
+
+<p>The smallest useful hook in 2026 is a single-file handler that logs every inbound message to a JSONL file you can later replay or audit. Here is the entire setup.</p>
+
+<p><strong>1. Create the hook folder.</strong></p>
+
+<pre><code>mkdir -p ~/.openclaw/hooks/inbound-logger
+cd ~/.openclaw/hooks/inbound-logger</code></pre>
+
+<p><strong>2. Write the manifest.</strong> The manifest tells the gateway what events to wire up and where the handler lives.</p>
+
+<pre><code>// hook.json
+{
+  "name": "inbound-logger",
+  "version": "1.0.0",
+  "events": ["message:received"],
+  "handler": "./handler.ts",
+  "enabled": true
+}</code></pre>
+
+<p><strong>3. Write the handler.</strong> The handler is a default export. It receives the event name and a typed context object.</p>
+
+<pre><code>// handler.ts
+import { appendFile } from 'node:fs/promises';
+
+export default async function handler(_event: string, ctx: any) {
+  const line = JSON.stringify({
+    ts: new Date().toISOString(),
+    channel: ctx.channelId,
+    from: ctx.from,
+    body: ctx.message?.body ?? '',
+  });
+  await appendFile(
+    \`\${process.env.HOME}/.openclaw/logs/inbound.jsonl\`,
+    line + '\\n',
+  );
+}</code></pre>
+
+<p><strong>4. Register and enable it.</strong></p>
+
+<pre><code>openclaw hooks list
+openclaw hooks enable inbound-logger
+openclaw hooks status inbound-logger</code></pre>
+
+<p><strong>5. Send a test message.</strong> Send any message into a channel the gateway is listening on. Then tail the log.</p>
+
+<pre><code>tail -f ~/.openclaw/logs/inbound.jsonl</code></pre>
+
+<p>That is the entire loop. Manifest, handler, enable, observe. Every other hook follows the same shape, with a different event name and a richer context object.</p>
+
+<h2>Three real automation patterns agencies are running</h2>
+
+<p><strong>1. PII redaction at the gateway edge.</strong> A dental practice in California cannot send unredacted phone numbers and email addresses into a third-party model. A <code>message:received</code> hook runs a regex sweep on every inbound message, replaces matches with stable tokens, and stores the mapping in a workspace file. A second <code>message:sent</code> hook reverses the mapping on the outbound side. The model never sees raw PII, but the conversation reads naturally to the human on the other end. Pair this with the architecture in the <a href="/blog/ai-agent-memory-systems-openclaw-2026">memory systems guide</a> and the audit trail covers both regulatory and operational review.</p>
+
+<p><strong>2. Session memory on every /new.</strong> The bundled <code>session-memory</code> hook subscribes to <code>command:new</code>, takes a snapshot of the previous session's last twenty turns, and writes a Markdown summary into <code>MEMORY.md</code>. The agent boots its next session already aware of what happened in the previous one. Most agencies start with the bundled hook, then customise the summary template to fit their client's vocabulary.</p>
+
+<p><strong>3. On-failure escalation.</strong> A <code>session:compact:after</code> hook compares pre and post compaction token counts and posts a Slack alert when the compaction summary feels too short. The handler does not block the agent's turn; it queues a notification and returns. Operationally this lets a small ops team monitor twenty live AI workers without watching twenty dashboards.</p>
+
+<p>The pattern across all three is the same. The hook is small. It does one thing. It either annotates context or fires a side effect. The agent itself stays focused on the conversation.</p>
+
+<h2>Hooks vs cron jobs vs background tasks</h2>
+
+<p>OpenClaw ships three automation primitives, and confusing them is the most common reason teams reach for the wrong tool.</p>
+
+<table>
+  <thead>
+    <tr><th>Primitive</th><th>Triggered by</th><th>Best for</th><th>Persisted at</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Hook</td><td>Gateway event firing</td><td>Reacting to commands, messages, lifecycle, transforms</td><td><code>~/.openclaw/hooks/</code></td></tr>
+    <tr><td>Cron job</td><td>Wall-clock schedule (at, every, cron)</td><td>Daily standups, hourly checks, scheduled outreach</td><td><code>~/.openclaw/cron/jobs.json</code></td></tr>
+    <tr><td>Background task</td><td>Long-running orchestration</td><td>Multi-step work that outlives a single turn</td><td>Background task ledger</td></tr>
+  </tbody>
+</table>
+
+<p>The trigger is the deciding factor. If the work needs to happen because the user typed a command or sent a message, you want a hook. If the work needs to happen because it is 9am Tuesday, you want a cron job. If the work is a multi-step plan that needs to keep running while the user is away, you want a background task.</p>
+
+<p>Cron jobs and background tasks both rely on hooks under the hood. The gateway uses <code>gateway:startup</code> to rehydrate persisted cron schedules from <code>~/.openclaw/cron/jobs.json</code>, and uses <code>session:patch</code> to track background task progress. The three primitives compose: a cron job can dispatch work that runs inside a hooked session.</p>
+
+<h2>How OpenClaw hooks compare to Claude Code hooks</h2>
+
+<p>Anthropic's <a href="https://code.claude.com/docs/en/changelog">Claude Code</a> also has a hook system, and they look similar enough to confuse the unfamiliar. The difference is where they run.</p>
+
+<p>Claude Code hooks fire inside the IDE process while a developer is working. They are great for stopping a commit, blocking a tool call, or rewriting a file before the model touches it. The May 2026 Claude Code release added the ability for hooks to invoke MCP tools directly via a <code>type: "mcp_tool"</code> declaration, which closes the loop between hooks and external systems running in the same workspace.</p>
+
+<p>OpenClaw hooks fire inside the gateway daemon while an AI worker is talking to a real channel. WhatsApp. Slack. The web widget. Whatever the gateway is listening on. They are great for shaping the live conversation, isolating tenants, and reacting to channel events. The two systems do not compete; many production agency deployments use Claude Code hooks during build and OpenClaw hooks during run.</p>
+
+<p>If you want the conceptual underpinnings, the <a href="https://modelcontextprotocol.io/specification/2025-11-25">Model Context Protocol specification</a> describes how both systems wire tool invocations into a shared standard, which is why an MCP server you wrote for Claude Code can be reused under an OpenClaw hook with no rewrite.</p>
+
+<h2>Common mistakes that turn hooks into incidents</h2>
+
+<p><strong>1. Doing heavy work inside a synchronous hook.</strong> The <code>tool_result_persist</code> handler blocks the turn until it returns. A 400ms HTTP call inside that handler is 400ms the user is waiting. Move heavy work to <code>message:received</code> or to a cron-driven background task instead.</p>
+
+<p><strong>2. Mutating context you did not mean to mutate.</strong> Several hook contexts (including <code>agent:bootstrap</code> with its <code>bootstrapFiles</code> array) are passed by reference. A handler that pushes the wrong file in is a handler that ships a different system prompt to every client. Treat mutation as a deliberate act; default to reading.</p>
+
+<p><strong>3. Hooks that swallow errors.</strong> A hook that throws and is silently caught will keep being called for every event, with no signal to the operator. Always log on the failure path, and consider gating heavy hooks behind a feature flag so you can disable them without a redeploy.</p>
+
+<p><strong>4. Forgetting per-client isolation.</strong> Hooks deployed at the gateway level fire for every client running on that gateway. If you want a hook to apply only to one tenant, scope it to a workspace and load it from inside the per-client container described in the <a href="/blog/what-is-openclaw-ai-gateway-explained">gateway architecture</a> piece.</p>
+
+<p><strong>5. Confusing event order.</strong> <code>message:transcribed</code> fires before <code>message:preprocessed</code>, which fires before <code>message:received</code> reaches the model. If your handler depends on link previews being resolved, do not subscribe to the wrong event.</p>
+
+<h2>When hooks are not for you</h2>
+
+<p>Hooks are powerful and they are not free. If you are running a single workspace for a single team and the agent handles everything the user wants, you do not need hooks at all. The whole point of OpenClaw is that the model can call tools directly through MCP, and most workflows do not need a parallel event-driven layer.</p>
+
+<p>You should reach for hooks when you have at least one of these in play:</p>
+
+<ul>
+  <li>You need to enforce a policy the model cannot be trusted to enforce (PII redaction, content filtering, compliance gates).</li>
+  <li>You need to react to events the model does not see (channel lifecycle, tenant changes, system notifications).</li>
+  <li>You are running production for multiple clients and need observability the model cannot provide on its own.</li>
+  <li>You are integrating with external systems that need to be notified independent of what the model decides to do.</li>
+</ul>
+
+<p>If none of those apply, you are better off keeping the stack thin. A simpler agent is a more reliable agent.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>How many hook event types does OpenClaw support in 2026?</h3>
+<p>Fourteen documented event types across five families (command, session, agent, gateway, message), plus the synchronous <code>tool_result_persist</code> transform hook. The current list is maintained in the <a href="https://docs.openclaw.ai/automation/hooks">official hooks reference</a> and is versioned with the gateway.</p>
+
+<h3>Where are hooks stored and how are they discovered?</h3>
+<p>Each hook lives in its own folder under <code>~/.openclaw/hooks/&lt;name&gt;</code> with a <code>hook.json</code> manifest and a handler script. The gateway discovers them on startup, validates the manifest, and registers the enabled ones with the event bus. The <code>openclaw hooks</code> CLI manages enabling, disabling, and inspecting status.</p>
+
+<h3>Are hooks the same as cron jobs?</h3>
+<p>No. Hooks are triggered by gateway events. Cron jobs are triggered by the wall clock. Both persist on disk so they survive restarts, but the trigger is different. Use the comparison table above if you are unsure which one fits a given automation.</p>
+
+<h3>Can I run a hook in Python instead of TypeScript?</h3>
+<p>Yes. The handler script can be any language the gateway runtime profile supports. The default profile ships with Node and Python out of the box. Production agencies usually pick one runtime per workspace to keep dependency installs predictable.</p>
+
+<h3>How are hooks different from Claude Code hooks?</h3>
+<p>Claude Code hooks fire inside the IDE during development. OpenClaw hooks fire inside the gateway during run. The shapes are similar but the process and lifecycle are different. The May 2026 Claude Code release added direct MCP tool invocation from hooks, which is the most useful new bridging primitive.</p>
+
+<h3>Do hooks slow down the agent?</h3>
+<p>Event hooks do not slow down the live turn because they run on the event bus. Synchronous transform hooks like <code>tool_result_persist</code> do, because they block the persistence step. Keep transform hooks pure and fast, and push everything else onto the event bus.</p>
+
+<h2>Where to go from here</h2>
+
+<p>If you want the hook layer, the cron scheduler, and the per-client isolation already wired up rather than wired by hand, <a href="/solo">Kyra</a> deploys the OpenClaw stack with these defaults turned on from day one. The same primitives are open source under OpenClaw, and the canonical sources for going deeper are the <a href="https://docs.openclaw.ai/automation/hooks">hooks reference</a> on docs.openclaw.ai and the <a href="https://github.com/openclaw/openclaw">openclaw/openclaw repository</a> on GitHub. For the runtime that complements the gateway side, Anthropic's <a href="https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7">Claude Opus 4.7 release notes</a> from April 16, 2026 cover the model upgrades that make event-driven automation cheaper than it was a year ago, and the <a href="https://modelcontextprotocol.io/specification/2025-11-25">Model Context Protocol specification</a> describes how hooks and MCP tools compose at the protocol layer.</p>
+
+<p>For companion reading in the rest of this series, the <a href="/blog/what-is-openclaw-ai-gateway-explained">OpenClaw gateway explainer</a> covers the daemon hooks fire inside, the <a href="/blog/mcp-connectors-openclaw-guide-2026">MCP connectors guide</a> shows what hooks can wire into externally, and the <a href="/blog/write-your-first-claude-skill-openclaw-2026">first Claude Skill</a> walkthrough shows how to package the work into something a client deployment can reuse. Vertical examples live at <a href="/ai-for/dental">AI for dental practices</a>. Hooks are the quiet primitive that turns a chat-shaped agent into a workforce that runs on its own; build them small, keep them isolated, and the rest of the stack stays calm.</p>
+`,
+  },
+  {
     slug: 'ai-agent-memory-systems-openclaw-2026',
     title: 'AI Agent Memory Systems in 2026: How OpenClaw Workspaces, SOUL.md, and Context Compaction Actually Work',
     description: 'AI agent memory in 2026 is three layers: workspace files like SOUL.md and MEMORY.md, runtime context with Sonnet 4.6 compaction, and Anthropic’s memory tool for long-term storage. Step-by-step setup, comparison tables, anti-patterns, and FAQ for agency operators.',
