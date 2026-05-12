@@ -889,10 +889,16 @@ export async function GET(
           if (chunk.done) break;
           buffer += decoder.decode(chunk.value, { stream: true });
 
-          // SSE frames are separated by a blank line (\n\n). Process every
-          // complete frame; whatever remains stays in the buffer for the
-          // next chunk.
-          var parts = buffer.split('\n\n');
+          // SSE frames are separated by a blank line (double newline).
+          // Process every complete frame; whatever remains stays in the
+          // buffer for the next chunk.
+          //
+          // IMPORTANT: this whole script body is a backtick template literal
+          // in script/route.ts — single-backslash escape sequences like \\n
+          // would be interpreted at template-build time and emitted as actual
+          // newlines, breaking string literals on the wire. We escape twice
+          // (\\\\n -> \\n in the rendered JS -> newline at browser runtime).
+          var parts = buffer.split('\\n\\n');
           buffer = parts.pop() || '';
 
           for (var i = 0; i < parts.length; i++) {
@@ -900,7 +906,7 @@ export async function GET(
             if (!raw) continue;
             var evName = '';
             var dataStr = '';
-            var lines = raw.split('\n');
+            var lines = raw.split('\\n');
             for (var j = 0; j < lines.length; j++) {
               var line = lines[j];
               if (line.indexOf('event:') === 0) evName = line.slice(6).trim();
