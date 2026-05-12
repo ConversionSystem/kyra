@@ -29,7 +29,13 @@ function getIndustryQuickReplies(industry: string, cfg: Record<string, unknown>)
 
   // Cannabis / Dispensary — Terpli-style effect buttons
   if (lower.includes('cannabis') || lower.includes('dispensary')) {
-    return ['😌 Products for relaxation', '😴 Products for sleep', '⚡ Energizing products', '💆 Pain relief products', '🎨 Products for creativity'];
+    // 2026-05-12: trimmed from 5 → 3 default chips. With the Trending strip
+    // also rendering in the welcome state, 5 vertical chips + 3 product
+    // cards consumed the entire 580px panel before any conversation could
+    // happen. Three covers the highest-intent buckets; users who want
+    // pain-relief or creativity-focused products can still type or use
+    // the trending strip below.
+    return ['😌 Products for relaxation', '😴 Products for sleep', '⚡ Energizing products'];
   }
   // Dental
   if (lower.includes('dental') || lower.includes('dentist')) {
@@ -355,12 +361,27 @@ export async function GET(
     '#kyra-age-gate .no { background:#f3f4f6; color:#374151; }',
     '#kyra-age-gate .no:hover { background:#e5e7eb; }',
     '#kyra-age-gate .disclaimer { margin-top:18px; font-size:11px; color:#9ca3af; max-width:260px; line-height:1.4; }',
-    /* Trending / Best-sellers section — proactive discovery surface shown on
-       widget open once welcome + quick-replies have rendered. Uses the same
-       card styling as in-conversation product results (.kyra-cards/.kyra-card)
-       so renderTrending() can share the row builder; only the header is new. */
+    /* Trending / Best-sellers — proactive discovery surface shown on widget
+       open. Rendered as a HORIZONTAL scrollable strip of compact mini-cards
+       instead of full-width product rows. This was a 2026-05-12 UX redesign:
+       the original 3 vertical cards (~360px) plus the greeting + 5 quick
+       replies blew past the 580px panel height. The strip variant takes ~140px
+       total, swipeable for the second+ card, and matches the trending/popular
+       pattern customers know from Amazon / Instacart / Doordash. */
     '.kyra-trending-header { display:flex; align-items:center; gap:6px; padding:14px 16px 6px; font-size:13px; font-weight:700; color:#111827; font-family:system-ui,-apple-system,sans-serif; letter-spacing:0.01em; }',
     '.kyra-trending-header .pulse { width:8px; height:8px; border-radius:50%; background:#ef4444; animation:kyra-pulse 2s infinite; flex-shrink:0; }',
+    '.kyra-trending-strip { display:flex; gap:10px; padding:4px 16px 10px; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; }',
+    '.kyra-trending-strip::-webkit-scrollbar { display:none; }',
+    '.kyra-trending-card { flex:0 0 168px; scroll-snap-align:start; background:#fff; border:1px solid #eef0f4; border-radius:14px; padding:10px; box-shadow:0 1px 3px rgba(0,0,0,0.04); display:flex; flex-direction:column; gap:6px; text-decoration:none; color:inherit; transition:transform 0.15s, box-shadow 0.15s, border-color 0.15s; }',
+    '.kyra-trending-card:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.08); border-color:' + COLOR + '40; }',
+    '.kyra-trending-card .img { width:100%; height:96px; border-radius:10px; object-fit:cover; background:linear-gradient(135deg, #f3f4f6, #e5e7eb); }',
+    '.kyra-trending-card .img.placeholder { display:flex; align-items:center; justify-content:center; font-size:32px; color:' + COLOR + '99; }',
+    '.kyra-trending-card .name { font-weight:700; font-size:12.5px; color:#111827; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }',
+    '.kyra-trending-card .meta { display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:11px; }',
+    '.kyra-trending-card .rating { display:inline-flex; align-items:center; gap:2px; color:#6b7280; font-weight:500; }',
+    '.kyra-trending-card .rating .star { color:#f59e0b; font-size:12px; line-height:1; }',
+    '.kyra-trending-card .rating .score { color:#1f2937; font-weight:700; }',
+    '.kyra-trending-card .price { font-weight:700; font-size:13px; color:#111827; }',
   ].join('');
   document.head.appendChild(style);
 
@@ -539,16 +560,45 @@ export async function GET(
     header.id = 'kyra-trending-header';
     header.innerHTML = '<span class="pulse"></span><span>' + escHtml(label) + '</span>';
     messagesEl.appendChild(header);
-    // Cards — reuse renderCards which handles the full card grid, ratings,
-    // OOS flags, "Add to Bag" CTA, etc. The trending list maps to its
-    // cards arg cleanly because algoliaHitToProduct + endpoint stamping
-    // produce the same shape the chat endpoint emits.
-    try {
-      renderCards(products, null, null);
-      // Tag the cards container so we don't double-render on reopen
-      var lastContainer = messagesEl.querySelector('.kyra-cards:last-of-type');
-      if (lastContainer) lastContainer.id = 'kyra-trending';
-    } catch(e) { header.remove(); }
+    // Horizontal compact strip — each card is image + name + rating + price
+    // only. Strain chips, THC %, brand line and "View" buttons are dropped
+    // because (a) the whole card is clickable now, and (b) those details
+    // already live on the in-conversation cards the bot returns when the
+    // user asks something specific. Strip mode is for FAST discovery, not
+    // detailed comparison.
+    var strip = document.createElement('div');
+    strip.className = 'kyra-trending-strip';
+    strip.id = 'kyra-trending';
+    for (var i = 0; i < products.length; i++) {
+      var p = products[i];
+      var url = p.cartUrl || p.url || '#';
+      var name = p.name || '';
+      var price = p.price || '';
+      // Image w/ emoji fallback (same convention as in-conversation cards)
+      var imgHtml;
+      if (p.imageUrl) {
+        imgHtml = '<img class="img" src="' + escHtml(p.imageUrl) + '" alt="' + escHtml(name) + '" loading="lazy" />';
+      } else {
+        imgHtml = '<div class="img placeholder">\\ud83c\\udf3f</div>';
+      }
+      // Rating row only if we have real signal — same filter as full cards
+      var ratingHtml = '';
+      if (typeof p.rating === 'number' && p.rating > 0 && typeof p.reviewCount === 'number' && p.reviewCount > 0) {
+        var rounded = (Math.round(p.rating * 10) / 10).toFixed(1);
+        ratingHtml = '<span class="rating"><span class="star">\\u2605</span><span class="score">' + escHtml(rounded) + '</span></span>';
+      }
+      var card = document.createElement('a');
+      card.className = 'kyra-trending-card';
+      card.href = url;
+      card.target = '_blank';
+      card.rel = 'noopener';
+      card.innerHTML =
+        imgHtml +
+        '<div class="name">' + escHtml(name) + '</div>' +
+        '<div class="meta">' + ratingHtml + '<span class="price">' + escHtml(price) + '</span></div>';
+      strip.appendChild(card);
+    }
+    messagesEl.appendChild(strip);
     scrollToBottom();
   }
 
