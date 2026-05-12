@@ -390,8 +390,14 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Lead Capture Prompt ────────────────────────────────────────────────────
+  // Operators can disable per-client via container_config.widget_lead_capture=false
+  // (toggle in Settings → Chat Widget → Behavior). When off, the system prompt
+  // doesn't ask for contact info AND the extraction loop below short-circuits
+  // — important for dispensaries that don't want lead-capture friction in
+  // a high-trust browsing flow.
+  const leadCaptureEnabled = cfg.widget_lead_capture !== false;
   const exchangeCount = Array.isArray(history) ? Math.floor(history.length / 2) : 0;
-  const leadCapturePrompt = getLeadCapturePrompt(exchangeCount);
+  const leadCapturePrompt = leadCaptureEnabled ? getLeadCapturePrompt(exchangeCount) : '';
 
   // ── Build System Prompt ────────────────────────────────────────────────────
   const systemPrompt = [
@@ -1015,6 +1021,9 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
         ];
         void (async () => {
           try {
+            // Per-client lead-capture toggle (Settings → Behavior). Mirrors
+            // the JSON-path gate above so SSE and non-SSE behave identically.
+            if (!leadCaptureEnabled) return;
             const userMsgCount = fullHistory.filter(m => m.role === 'user').length;
             if (userMsgCount < 2) return;
             const extracted = extractLeadFromConversation(fullHistory);
@@ -1144,6 +1153,9 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
 
   void (async () => {
     try {
+      // Honor the per-client toggle (Settings → Chat Widget → Behavior →
+      // Smart Lead Capture). When disabled, never extract or persist.
+      if (!leadCaptureEnabled) return;
       // Only try extraction after at least 2 user messages
       const userMsgCount = fullHistory.filter(m => m.role === 'user').length;
       if (userMsgCount < 2) return;

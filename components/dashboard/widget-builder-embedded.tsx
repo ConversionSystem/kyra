@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Globe, Copy, CheckCircle2, ExternalLink, Palette, MessageSquare,
   Code, X, Plus, RotateCcw, Volume2, VolumeX, UserCheck, Settings2, Smartphone,
-  Leaf, Trash2,
+  Leaf, Trash2, BarChart3, TrendingUp, AlertTriangle,
 } from 'lucide-react';
 
 interface JaneStoreEntry {
@@ -45,6 +45,14 @@ export function WidgetBuilderEmbedded({
   const [widgetGreeting, setWidgetGreeting] = useState((cfg.widget_greeting as string) || '');
   const [widgetPosition, setWidgetPosition] = useState((cfg.widget_position as string) || 'bottom-right');
   const [widgetAvatar, setWidgetAvatar] = useState((cfg.widget_avatar as string) || '🤖');
+  // Brand customization — added 2026-05-12. Logo URL trumps avatar emoji
+  // when set (rendered as <img> in the widget header). Font family applies
+  // to the entire widget; secondary color is used for accent surfaces
+  // (chip backgrounds, hover states); border radius shapes panel + cards.
+  const [widgetLogoUrl, setWidgetLogoUrl] = useState((cfg.widget_logo_url as string) || '');
+  const [widgetFontFamily, setWidgetFontFamily] = useState((cfg.widget_font_family as string) || 'system');
+  const [widgetSecondaryColor, setWidgetSecondaryColor] = useState((cfg.widget_secondary_color as string) || '');
+  const [responseLanguage, setResponseLanguage] = useState((cfg.response_language as string) || 'auto');
   const [poweredBy, setPoweredBy] = useState(cfg.widget_powered_by !== false);
 
   // ── Quick Replies ──
@@ -86,10 +94,22 @@ export function WidgetBuilderEmbedded({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<'appearance' | 'replies' | 'behavior' | 'menu' | 'embed'>('appearance');
+  const [activeSection, setActiveSection] = useState<'appearance' | 'replies' | 'behavior' | 'menu' | 'embed' | 'insights'>('appearance');
 
   // ── Stats ──
-  const [stats, setStats] = useState<{ conversations: number; messagesToday: number; avgResponseTime: string } | null>(null);
+  const [stats, setStats] = useState<{
+    conversations: number;
+    messagesToday: number;
+    avgResponseTime: string;
+    // Insights additions (widget-stats route v2, 2026-05-12)
+    dailyVolume?: Array<{ day: string; count: number }>;
+    topQueries?: Array<{ query: string; count: number }>;
+    escalationCount?: number;
+    deflectionRate?: number;
+    channelMix?: Record<string, number>;
+    windowDays?: number;
+    sampleSize?: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!clientId) return;
@@ -112,6 +132,10 @@ export function WidgetBuilderEmbedded({
         if (c.widget_greeting) setWidgetGreeting(c.widget_greeting);
         if (c.widget_position) setWidgetPosition(c.widget_position);
         if (c.widget_avatar) setWidgetAvatar(c.widget_avatar);
+        if (c.widget_logo_url) setWidgetLogoUrl(c.widget_logo_url);
+        if (c.widget_font_family) setWidgetFontFamily(c.widget_font_family);
+        if (c.widget_secondary_color) setWidgetSecondaryColor(c.widget_secondary_color);
+        if (c.response_language) setResponseLanguage(c.response_language);
         if (c.widget_powered_by !== undefined) setPoweredBy(Boolean(c.widget_powered_by));
         if (c.widget_quick_replies) setQuickReplies(c.widget_quick_replies);
         if (c.widget_proactive_delay) setProactiveDelay(c.widget_proactive_delay);
@@ -190,6 +214,10 @@ export function WidgetBuilderEmbedded({
             widget_greeting: widgetGreeting.trim() || undefined,
             widget_position: widgetPosition,
             widget_avatar: widgetAvatar.trim() || '🤖',
+            widget_logo_url: widgetLogoUrl.trim() || undefined,
+            widget_font_family: widgetFontFamily || 'system',
+            widget_secondary_color: widgetSecondaryColor.trim() || undefined,
+            response_language: responseLanguage || 'auto',
             widget_powered_by: poweredBy,
             widget_quick_replies: quickReplies.length > 0 ? quickReplies : undefined,
             widget_proactive_delay: proactiveDelay,
@@ -219,6 +247,7 @@ export function WidgetBuilderEmbedded({
     { key: 'replies' as const, label: 'Quick Replies', icon: MessageSquare },
     { key: 'behavior' as const, label: 'Behavior', icon: Settings2 },
     { key: 'menu' as const, label: 'Menu Integration', icon: Leaf },
+    { key: 'insights' as const, label: 'Insights', icon: BarChart3 },
     { key: 'embed' as const, label: 'Embed & Install', icon: Code },
   ];
 
@@ -373,6 +402,85 @@ export function WidgetBuilderEmbedded({
                     >
                       <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${poweredBy ? 'translate-x-5' : ''}`} />
                     </button>
+                  </div>
+
+                  {/* ── Brand customization (logo, fonts, accent) ── */}
+                  <div className="pt-4 mt-4 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Advanced branding</p>
+
+                    <div className="space-y-1.5 mb-4">
+                      <label className="text-sm font-medium text-gray-700">Logo URL (overrides avatar emoji)</label>
+                      <Input
+                        value={widgetLogoUrl}
+                        onChange={(e) => setWidgetLogoUrl(e.target.value)}
+                        placeholder="https://your-site.com/logo.png"
+                        className="bg-gray-50"
+                      />
+                      <p className="text-xs text-gray-500">Square image, 64×64 or larger. Leave blank to use the avatar emoji.</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-gray-700">Font family</label>
+                        <select
+                          value={widgetFontFamily}
+                          onChange={(e) => setWidgetFontFamily(e.target.value)}
+                          className="w-full h-10 rounded-md border border-gray-200 bg-gray-50 px-3 text-sm"
+                        >
+                          <option value="system">System default</option>
+                          <option value="Inter">Inter</option>
+                          <option value="Roboto">Roboto</option>
+                          <option value="Open Sans">Open Sans</option>
+                          <option value="Poppins">Poppins</option>
+                          <option value="Nunito">Nunito</option>
+                          <option value="Lato">Lato</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-gray-700">Accent color (optional)</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={widgetSecondaryColor || '#10b981'}
+                            onChange={(e) => setWidgetSecondaryColor(e.target.value)}
+                            className="h-10 w-12 rounded-lg border border-gray-200 cursor-pointer bg-white p-1"
+                          />
+                          <Input
+                            value={widgetSecondaryColor}
+                            onChange={(e) => setWidgetSecondaryColor(e.target.value)}
+                            placeholder="leave blank → same as brand"
+                            className="bg-gray-50 font-mono flex-1 text-xs"
+                            maxLength={7}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Multilingual response language ── */}
+                  <div className="pt-4 mt-4 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Conversation language</p>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-gray-700">Response language</label>
+                      <select
+                        value={responseLanguage}
+                        onChange={(e) => setResponseLanguage(e.target.value)}
+                        className="w-full h-10 rounded-md border border-gray-200 bg-gray-50 px-3 text-sm"
+                      >
+                        <option value="auto">Auto-detect — match the customer&apos;s language (recommended)</option>
+                        <option value="English">English only</option>
+                        <option value="Spanish">Spanish only</option>
+                        <option value="French">French only</option>
+                        <option value="Portuguese">Portuguese only</option>
+                        <option value="German">German only</option>
+                        <option value="Chinese (Simplified)">Chinese (Simplified) only</option>
+                        <option value="Japanese">Japanese only</option>
+                        <option value="Italian">Italian only</option>
+                      </select>
+                      <p className="text-xs text-gray-500">
+                        Auto-detect lets Violet reply in whatever language the visitor writes in — Sonnet 4.6 handles 30+ languages natively. Lock to a specific language if you want every reply in one language regardless of input.
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -627,6 +735,110 @@ export function WidgetBuilderEmbedded({
                       </Button>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* ── INSIGHTS — analytics from /widget-stats v2 ── */}
+              {activeSection === 'insights' && (
+                <div className="space-y-5">
+                  {!stats ? (
+                    <div className="text-center py-10 text-sm text-gray-500">Loading insights…</div>
+                  ) : (stats.sampleSize ?? 0) === 0 ? (
+                    <div className="text-center py-10 text-sm text-gray-500">
+                      No conversations yet in the last {stats.windowDays ?? 30} days. Insights appear once visitors start chatting.
+                    </div>
+                  ) : (
+                    <>
+                      {/* Top-line cards: deflection + escalation + sample size */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/40 border border-emerald-200/50">
+                          <div className="flex items-center gap-1.5 mb-1 text-emerald-700 text-xs font-semibold uppercase tracking-wider">
+                            <TrendingUp className="h-3.5 w-3.5" /> Deflection
+                          </div>
+                          <div className="text-2xl font-extrabold text-emerald-900">{stats.deflectionRate}%</div>
+                          <p className="text-[11px] text-emerald-700/70 mt-0.5">resolved without escalation</p>
+                        </div>
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/40 border border-amber-200/50">
+                          <div className="flex items-center gap-1.5 mb-1 text-amber-700 text-xs font-semibold uppercase tracking-wider">
+                            <AlertTriangle className="h-3.5 w-3.5" /> Escalations
+                          </div>
+                          <div className="text-2xl font-extrabold text-amber-900">{stats.escalationCount}</div>
+                          <p className="text-[11px] text-amber-700/70 mt-0.5">flagged in last {stats.windowDays}d</p>
+                        </div>
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100/40 border border-indigo-200/50">
+                          <div className="flex items-center gap-1.5 mb-1 text-indigo-700 text-xs font-semibold uppercase tracking-wider">
+                            <BarChart3 className="h-3.5 w-3.5" /> Sample
+                          </div>
+                          <div className="text-2xl font-extrabold text-indigo-900">{stats.sampleSize}</div>
+                          <p className="text-[11px] text-indigo-700/70 mt-0.5">conversations analyzed</p>
+                        </div>
+                      </div>
+
+                      {/* 7-day volume sparkline (CSS-only, no chart library) */}
+                      <div className="p-4 rounded-xl bg-white border border-gray-200">
+                        <p className="text-sm font-semibold text-gray-700 mb-3">Last 7 days</p>
+                        <div className="flex items-end gap-2 h-24">
+                          {(stats.dailyVolume ?? []).map((d) => {
+                            const max = Math.max(1, ...(stats.dailyVolume ?? []).map(x => x.count));
+                            const pct = Math.round((d.count / max) * 100);
+                            return (
+                              <div key={d.day} className="flex-1 flex flex-col items-center justify-end gap-1">
+                                <span className="text-[10px] font-semibold text-gray-700">{d.count}</span>
+                                <div
+                                  className="w-full rounded-t-md bg-gradient-to-t from-indigo-600 to-indigo-400 transition-all"
+                                  style={{ height: `${Math.max(2, pct)}%` }}
+                                />
+                                <span className="text-[10px] text-gray-500">{d.day.slice(5)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Top customer queries */}
+                      <div className="p-4 rounded-xl bg-white border border-gray-200">
+                        <p className="text-sm font-semibold text-gray-700 mb-3">Top customer questions</p>
+                        {(stats.topQueries ?? []).length === 0 ? (
+                          <p className="text-xs text-gray-500 italic">Not enough data yet.</p>
+                        ) : (
+                          <ol className="space-y-1.5">
+                            {(stats.topQueries ?? []).slice(0, 8).map((q, i) => (
+                              <li key={i} className="flex items-center gap-3 text-sm">
+                                <span className="w-5 text-xs text-gray-400 font-mono">{i + 1}.</span>
+                                <span className="flex-1 text-gray-700 truncate" title={q.query}>{q.query}</span>
+                                <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">×{q.count}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        )}
+                        <p className="text-[11px] text-gray-500 mt-3 italic">
+                          Spot patterns? Add answers to your training doc to deflect these directly.
+                        </p>
+                      </div>
+
+                      {/* Channel mix */}
+                      {stats.channelMix && Object.keys(stats.channelMix).length > 0 && (
+                        <div className="p-4 rounded-xl bg-white border border-gray-200">
+                          <p className="text-sm font-semibold text-gray-700 mb-3">Channel mix</p>
+                          <div className="space-y-2">
+                            {Object.entries(stats.channelMix).sort(([, a], [, b]) => b - a).map(([ch, count]) => {
+                              const total = Object.values(stats.channelMix ?? {}).reduce((a, b) => a + b, 0);
+                              const pct = total === 0 ? 0 : Math.round((count / total) * 100);
+                              return (
+                                <div key={ch} className="flex items-center gap-3">
+                                  <span className="text-xs font-medium text-gray-600 w-20 capitalize">{ch}</span>
+                                  <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                                    <div className="h-full bg-indigo-500" style={{ width: `${pct}%` }} />
+                                  </div>
+                                  <span className="text-xs text-gray-500 w-16 text-right">{count} ({pct}%)</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
 

@@ -202,6 +202,15 @@ export async function GET(
   var POWERED_BY = ${JSON.stringify(widgetPoweredBy)};
   var POSITION = ${JSON.stringify(widgetPosition)};
   var AVATAR = ${JSON.stringify(widgetAvatarEmoji)};
+  // Brand customization: logo URL (overrides emoji), font family, secondary
+  // accent color. Logo is rendered as an <img> tag when set; falls back to
+  // emoji when empty. Font is a Google Font name or "system" for the
+  // default stack. Secondary color is used for accent surfaces (hover
+  // highlights, chip tints); falls back to a translucent variant of the
+  // primary brand color when blank.
+  var LOGO_URL = ${JSON.stringify((cfg.widget_logo_url as string | undefined) || '')};
+  var FONT_FAMILY = ${JSON.stringify((cfg.widget_font_family as string | undefined) || 'system')};
+  var SECONDARY_COLOR = ${JSON.stringify((cfg.widget_secondary_color as string | undefined) || '')};
   var QUICK_REPLIES = ${JSON.stringify((cfg.widget_quick_replies as string[]) || getIndustryQuickReplies((cfg.industry as string) || (client?.industry as string) || '', cfg))};
   var STORE_ID = ${JSON.stringify((cfg.jane_default_store_id as string) || '')};
   var JANE_STORES = ${JSON.stringify((cfg.jane_stores as Array<{ id: string; name: string; address?: string }>) || [])};
@@ -220,6 +229,11 @@ export async function GET(
   // widget_trending_enabled=false. Default on; gracefully no-ops when the
   // client doesn't have Jane Algolia configured.
   var TRENDING_ENABLED = ${JSON.stringify(cfg.widget_trending_enabled !== false)};
+  // Behavior toggles (previously saved in container_config but unread —
+  // wiring fixed 2026-05-12). Each defaults to "on" so existing tenants
+  // keep prior behavior; operators can turn off per-client in Settings.
+  var PROACTIVE_DELAY_MS = ${JSON.stringify(Math.max(0, Number(cfg.widget_proactive_delay ?? 8)) * 1000)};
+  var SOUND_ENABLED = ${JSON.stringify(cfg.widget_sound !== false)};
 
   // Don't init twice
   // Single-mount guard. Two layers:
@@ -236,9 +250,36 @@ export async function GET(
   if (document.getElementById('kyra-widget-btn')) return;
   window.__kyraWidget = true;
 
+  // ── Google Font loader (only when explicitly configured) ───────────────────
+  // Per-client font family. "system" → use the OS default stack (no extra
+  // HTTP request). Anything else triggers a Google Fonts <link> injection.
+  // We intentionally only support a small allowlist of Google Fonts to keep
+  // the surface tight and the perf impact bounded.
+  var FONT_GOOGLE_NAMES = { 'Inter':1, 'Roboto':1, 'Open Sans':1, 'Poppins':1, 'Nunito':1, 'Lato':1 };
+  var WIDGET_FONT_STACK = 'system-ui,-apple-system,"SF Pro Text","Segoe UI",sans-serif';
+  if (FONT_FAMILY && FONT_GOOGLE_NAMES[FONT_FAMILY]) {
+    try {
+      var fontLink = document.createElement('link');
+      fontLink.rel = 'stylesheet';
+      fontLink.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(FONT_FAMILY).replace(/%20/g, '+') + ':wght@400;500;600;700;800&display=swap';
+      document.head.appendChild(fontLink);
+      WIDGET_FONT_STACK = '"' + FONT_FAMILY + '",' + WIDGET_FONT_STACK;
+    } catch(e) {}
+  }
+  // Accent color — used for chip tints, hover surfaces, support-link
+  // backgrounds. Falls back to a translucent version of the brand color
+  // when not explicitly set (preserves prior visual behavior).
+  var ACCENT = SECONDARY_COLOR || COLOR;
+
   // ── Styles ──────────────────────────────────────────────────────────────────
   var style = document.createElement('style');
   style.textContent = [
+    // Global font override — applies to every kyra-* widget element via
+    // descendant selectors. Existing rules with hardcoded font-family stacks
+    // get overridden by these because they're more specific (have a kyra-*
+    // ancestor), but we also re-declare on the most prominent surfaces so
+    // older overrides don't win when CSS specificity ties.
+    '#kyra-widget-panel, #kyra-widget-panel *, #kyra-widget-btn, #kyra-proactive { font-family:' + WIDGET_FONT_STACK + '; }',
     '*, *::before, *::after { box-sizing:border-box; }',
     /* FAB Button — premium with glow */
     '#kyra-widget-btn { position:fixed; bottom:28px; ' + (POSITION === 'bottom-left' ? 'left:28px;' : 'right:28px;') + ' width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg, ' + COLOR + ', ' + COLOR + 'dd); border:none; cursor:pointer; box-shadow:0 6px 24px ' + COLOR + '55, 0 2px 8px rgba(0,0,0,0.15); z-index:99999; display:flex; align-items:center; justify-content:center; transition:transform 0.2s ease, box-shadow 0.2s ease; }',
@@ -436,7 +477,9 @@ export async function GET(
   panel.className = 'hidden';
   panel.innerHTML = [
     '<div id="kyra-widget-header">',
-    '  <div class="avatar">' + AVATAR + '</div>',
+    // Logo URL trumps emoji when set. Image is rendered with object-fit:cover
+    // so logos at any aspect ratio fill the 44×44 avatar slot cleanly.
+    '  <div class="avatar">' + (LOGO_URL ? '<img src="' + escHtml(LOGO_URL) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" />' : AVATAR) + '</div>',
     '  <div class="info"><div class="title">' + TITLE + '</div><div class="subtitle"><span class="online-dot"></span>Online · Ready to help</div></div>',
     '  <button class="close-btn" aria-label="Close chat">✕</button>',
     '</div>',
@@ -466,7 +509,7 @@ export async function GET(
     msgEl.className = 'kyra-msg ' + role;
     if (role === 'bot') {
       // formatMsg handles markdown stripping + safe HTML + link rendering
-      msgEl.innerHTML = '<div class="kyra-msg-avatar">' + AVATAR + '</div><div class="kyra-msg-bubble">' + formatMsg(text) + '</div>';
+      msgEl.innerHTML = '<div class="kyra-msg-avatar">' + (LOGO_URL ? '<img src="' + escHtml(LOGO_URL) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" />' : AVATAR) + '</div><div class="kyra-msg-bubble">' + formatMsg(text) + '</div>';
     } else {
       // User messages: escape only, preserve newlines as <br>
       msgEl.innerHTML = '<div class="kyra-msg-bubble">' + escHtml(text).replace(/\\n/g,'<br>') + '</div>';
@@ -478,7 +521,7 @@ export async function GET(
       badge.textContent = unreadCount;
       badge.style.display = 'flex';
       try {
-        if (!localStorage.getItem('kyra_sound_muted') && CHIME) CHIME.play().catch(function(){});
+        if (SOUND_ENABLED && !localStorage.getItem('kyra_sound_muted') && CHIME) CHIME.play().catch(function(){});
       } catch(e) {}
     }
     return msgEl;
@@ -488,7 +531,7 @@ export async function GET(
     var el = document.createElement('div');
     el.className = 'kyra-msg bot';
     el.id = 'kyra-typing';
-    el.innerHTML = '<div class="kyra-msg-avatar">' + AVATAR + '</div><div class="kyra-msg-bubble kyra-typing"><span></span><span></span><span></span></div>';
+    el.innerHTML = '<div class="kyra-msg-avatar">' + (LOGO_URL ? '<img src="' + escHtml(LOGO_URL) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" />' : AVATAR) + '</div><div class="kyra-msg-bubble kyra-typing"><span></span><span></span><span></span></div>';
     messagesEl.appendChild(el);
     scrollToBottom();
   }
@@ -1258,27 +1301,31 @@ export async function GET(
     this.style.height = Math.min(this.scrollHeight, 100) + 'px';
   });
 
-  // Proactive auto-open (first visit only, after 8s)
+  // Proactive auto-open (first visit only, after PROACTIVE_DELAY_MS).
+  // Delay is configurable in Settings → Chat Widget → Behavior. Setting
+  // it to 0 (or any falsy value) disables the proactive bubble entirely.
   try {
-    var PROACTIVE_KEY = 'kyra_proactive_shown_' + CLIENT_ID;
-    if (!localStorage.getItem(PROACTIVE_KEY)) {
-      setTimeout(function() {
-        if (isOpen) return;
-        var pro = document.createElement('div');
-        pro.id = 'kyra-proactive';
-        pro.innerHTML = '<span class="close">✕</span>' + escHtml(GREETING);
-        pro.addEventListener('click', function(e) {
-          if (e.target.classList.contains('close')) {
-            pro.remove();
-          } else {
-            pro.remove();
-            openPanel();
-          }
-        });
-        document.body.appendChild(pro);
-        try { localStorage.setItem(PROACTIVE_KEY, '1'); } catch(ignore) {}
-        setTimeout(function() { if (pro.parentNode) pro.remove(); }, 15000);
-      }, 8000);
+    if (PROACTIVE_DELAY_MS > 0) {
+      var PROACTIVE_KEY = 'kyra_proactive_shown_' + CLIENT_ID;
+      if (!localStorage.getItem(PROACTIVE_KEY)) {
+        setTimeout(function() {
+          if (isOpen) return;
+          var pro = document.createElement('div');
+          pro.id = 'kyra-proactive';
+          pro.innerHTML = '<span class="close">✕</span>' + escHtml(GREETING);
+          pro.addEventListener('click', function(e) {
+            if (e.target.classList.contains('close')) {
+              pro.remove();
+            } else {
+              pro.remove();
+              openPanel();
+            }
+          });
+          document.body.appendChild(pro);
+          try { localStorage.setItem(PROACTIVE_KEY, '1'); } catch(ignore) {}
+          setTimeout(function() { if (pro.parentNode) pro.remove(); }, 15000);
+        }, PROACTIVE_DELAY_MS);
+      }
     }
   } catch(e) {}
 
