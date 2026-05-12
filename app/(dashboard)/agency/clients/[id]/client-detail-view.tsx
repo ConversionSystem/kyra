@@ -61,6 +61,7 @@ import DeliverySmsTab from '@/components/dashboard/client-tabs/delivery-sms-tab'
 import CrmTab from '@/components/dashboard/client-tabs/crm-tab';
 import SecretsTab from '@/components/dashboard/client-tabs/secrets-tab';
 import ChannelsLiveTab from '@/components/dashboard/client-tabs/channels-live-tab';
+import { WidgetBuilderEmbedded } from '@/components/dashboard/widget-builder-embedded';
 import { AutopilotClient } from '@/app/(dashboard)/agency/autopilot/autopilot-client';
 import TrainTab from '@/components/dashboard/client-tabs/train-tab';
 import InsightsTab from '@/components/dashboard/client-tabs/insights-tab';
@@ -1626,10 +1627,16 @@ function VoiceSmsTab({
 
 // ── Settings Tab Merged (General + Channels + Autopilot) ──
 
-type SettingsSubTab = 'general' | 'channels' | 'autopilot' | 'sharing';
+type SettingsSubTab = 'general' | 'chat-widget' | 'channels' | 'autopilot' | 'sharing';
 
 const SETTINGS_SUB_TABS: { id: SettingsSubTab; label: string }[] = [
   { id: 'general', label: 'General' },
+  // Chat Widget gets its own top-level tab as of 2026-05-12 — customer
+  // feedback was that burying it inside Channels (alongside SMS / Telegram /
+  // WhatsApp etc.) made it hard to find and gave the impression that the
+  // widget config was secondary. It's a flagship product surface; it gets
+  // a dedicated tab.
+  { id: 'chat-widget', label: 'Chat Widget' },
   { id: 'channels', label: 'Channels' },
   { id: 'autopilot', label: 'Autopilot' },
   { id: 'sharing', label: 'Sharing' },
@@ -1674,8 +1681,16 @@ function SettingsTabMerged({
       {activeSubTab === 'general' && (
         <SettingsTab client={client} role={role} onRefresh={onRefresh} />
       )}
+      {activeSubTab === 'chat-widget' && (
+        <WidgetBuilderEmbedded
+          clientId={client.id}
+          clientName={client.name}
+          clientIndustry={client.industry as string | undefined}
+          initialConfig={client.container_config ?? undefined}
+        />
+      )}
       {activeSubTab === 'channels' && (
-        <ChannelsLiveTab clientId={client.id} client={client} />
+        <ChannelsLiveTab clientId={client.id} client={client} hideChatWidget />
       )}
       {activeSubTab === 'autopilot' && (
         <AutopilotClient />

@@ -123,7 +123,7 @@ export async function GET(
         // Same Cache-Control as the 200 path so intermediaries treat
         // both alike; otherwise the 304 could end up cached longer than
         // a 200 and stall future revalidations.
-        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+        'Cache-Control': 'public, max-age=0, must-revalidate',
         'Access-Control-Allow-Origin': '*',
       },
     });
@@ -200,6 +200,15 @@ export async function GET(
   var STORE_ID = ${JSON.stringify((cfg.jane_default_store_id as string) || '')};
   var JANE_STORES = ${JSON.stringify((cfg.jane_stores as Array<{ id: string; name: string; address?: string }>) || [])};
   var STORAGE_KEY = 'kyra_session_' + CLIENT_ID;
+  // Age gate: required on cannabis dispensary widgets for state-law compliance.
+  // The 21+ check fires the first time a visitor opens the widget; verified
+  // status is stored in localStorage so returning visitors aren't re-prompted
+  // every page load. Disable on non-regulated industries by leaving INDUSTRY
+  // empty / non-cannabis. Operators can hard-disable per-client via
+  // widget_age_gate=false in container_config if they have their own gate.
+  var INDUSTRY = ${JSON.stringify((cfg.industry as string) || (client?.industry as string) || '')};
+  var AGE_GATE_ENABLED = ${JSON.stringify(cfg.widget_age_gate !== false && /cannabis|dispensary/i.test((cfg.industry as string) || (client?.industry as string) || ''))};
+  var AGE_GATE_KEY = 'kyra_age_verified_' + CLIENT_ID;
 
   // Don't init twice
   // Single-mount guard. Two layers:
@@ -290,6 +299,13 @@ export async function GET(
     '.kyra-card-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }',
     '.kyra-card-name { font-weight:700; font-size:14px; color:#111827; line-height:1.3; }',
     '.kyra-card-brand { font-size:12px; color:#6b7280; font-weight:500; }',
+    // Reviews + ratings — Jane already exposes aggregate_rating and review_count
+    // on every menu product; surfacing them is a textbook conversion lever
+    // (10-20% lift in typical e-commerce A/B tests). Star is unicode so no
+    // image asset; amber color matches industry convention (Amazon, Yelp, etc.).
+    '.kyra-card-rating { display:inline-flex; align-items:center; gap:3px; font-size:11px; color:#6b7280; font-weight:500; margin-top:1px; }',
+    '.kyra-card-rating .star { color:#f59e0b; font-size:12px; line-height:1; }',
+    '.kyra-card-rating .score { color:#1f2937; font-weight:700; }',
     '.kyra-card-meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }',
     '.kyra-card-chip { font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; background:' + COLOR + '14; color:' + COLOR + '; letter-spacing:0.01em; }',
     // Strain-type chip colors are INTENTIONALLY semantic, not branded: cannabis UX
@@ -320,6 +336,20 @@ export async function GET(
     '#kyra-proactive .close { position:absolute; top:6px; right:10px; cursor:pointer; color:#b0b5c0; font-size:14px; transition:color 0.15s; }',
     '#kyra-proactive .close:hover { color:#6b7280; }',
     '@keyframes kyra-fade-in { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }',
+    /* Age gate — cannabis compliance modal, shown over the chat panel on first
+       open until the visitor confirms they're 21+. Independent overlay so it
+       blocks all chat interaction until verified. */
+    '#kyra-age-gate { position:absolute; inset:0; background:rgba(255,255,255,0.97); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:10; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; text-align:center; border-radius:24px; }',
+    '#kyra-age-gate .icon { font-size:42px; margin-bottom:12px; }',
+    '#kyra-age-gate h3 { font-family:system-ui,-apple-system,sans-serif; font-weight:800; font-size:20px; color:#111827; margin:0 0 8px; }',
+    '#kyra-age-gate p { font-family:system-ui,-apple-system,sans-serif; font-size:14px; color:#4b5563; line-height:1.5; margin:0 0 24px; max-width:280px; }',
+    '#kyra-age-gate .buttons { display:flex; gap:10px; width:100%; max-width:280px; }',
+    '#kyra-age-gate button { flex:1; padding:12px 16px; border-radius:12px; font-size:14px; font-weight:700; font-family:system-ui,-apple-system,sans-serif; cursor:pointer; transition:transform 0.15s, box-shadow 0.15s; border:none; }',
+    '#kyra-age-gate .yes { background:linear-gradient(135deg, ' + COLOR + ', ' + COLOR + 'dd); color:#fff; box-shadow:0 2px 8px ' + COLOR + '33; }',
+    '#kyra-age-gate .yes:hover { transform:translateY(-1px); box-shadow:0 4px 12px ' + COLOR + '44; }',
+    '#kyra-age-gate .no { background:#f3f4f6; color:#374151; }',
+    '#kyra-age-gate .no:hover { background:#e5e7eb; }',
+    '#kyra-age-gate .disclaimer { margin-top:18px; font-size:11px; color:#9ca3af; max-width:260px; line-height:1.4; }',
   ].join('');
   document.head.appendChild(style);
 
@@ -551,11 +581,25 @@ export async function GET(
             (c.cartUrl ? '<a class="kyra-card-cta secondary" href="' + escHtml(c.url) + '" target="_blank" rel="noopener">Details</a>' : '') +
             '<a class="kyra-card-cta" href="' + escHtml(primaryUrl) + '" target="_blank" rel="noopener">' + primaryLabel + '</a>' +
           '</div>';
+        // Build rating row — only shown if Jane returns a non-zero rating
+        // with at least 1 review (filters out brand-new SKUs that have no
+        // signal yet, where "★ 0.0 (0 reviews)" would look bad).
+        var ratingHtml = '';
+        if (typeof c.rating === 'number' && c.rating > 0 && typeof c.reviewCount === 'number' && c.reviewCount > 0) {
+          var roundedRating = (Math.round(c.rating * 10) / 10).toFixed(1);
+          var reviewLabel = c.reviewCount === 1 ? '1 review' : c.reviewCount.toLocaleString() + ' reviews';
+          ratingHtml = '<div class="kyra-card-rating">' +
+            '<span class="star">\\u2605</span>' +
+            '<span class="score">' + escHtml(roundedRating) + '</span>' +
+            '<span>(' + escHtml(reviewLabel) + ')</span>' +
+          '</div>';
+        }
         card.innerHTML =
           imgHtml +
           '<div class="kyra-card-body">' +
             '<div class="kyra-card-name">' + escHtml(c.name) + '</div>' +
             (c.brand ? '<div class="kyra-card-brand">by ' + escHtml(c.brand) + '</div>' : '') +
+            ratingHtml +
             (chips.length ? '<div class="kyra-card-meta">' + chips.join('') + '</div>' : '') +
             actionsHtml +
           '</div>';
@@ -627,6 +671,50 @@ export async function GET(
     return s;
   }
 
+  // ── Age gate (cannabis compliance) ──────────────────────────────────────────
+  // Returns true when the visitor has confirmed 21+ (either now or previously
+  // via localStorage). Returns false while the modal is up. When false, the
+  // caller should bail out of further panel-opening work; the user clicking
+  // "Yes" inside the modal will re-trigger openPanel().
+  function isAgeVerified() {
+    if (!AGE_GATE_ENABLED) return true;
+    try { return localStorage.getItem(AGE_GATE_KEY) === 'true'; } catch(e) { return false; }
+  }
+  function showAgeGate() {
+    if (document.getElementById('kyra-age-gate')) return;
+    var modal = document.createElement('div');
+    modal.id = 'kyra-age-gate';
+    modal.innerHTML = [
+      '<div class="icon">\\ud83c\\udf3f</div>',
+      '<h3>Are you 21 or older?</h3>',
+      '<p>California state law requires us to verify your age before showing cannabis products.</p>',
+      '<div class="buttons">',
+      '  <button type="button" class="no">No, exit</button>',
+      '  <button type="button" class="yes">Yes, I am 21+</button>',
+      '</div>',
+      '<p class="disclaimer">By selecting "Yes" you confirm you are at least 21 years of age and agree to our terms.</p>',
+    ].join('');
+    panel.appendChild(modal);
+    modal.querySelector('.yes').addEventListener('click', function() {
+      try { localStorage.setItem(AGE_GATE_KEY, 'true'); } catch(e) {}
+      modal.remove();
+      // Re-enter the post-gate flow: greeting + quick replies.
+      if (!greeted && messagesEl.children.length === 0) {
+        greeted = true;
+        addMessage('bot', GREETING);
+        if (JANE_STORES.length > 1 && !selectedStoreId) {
+          showStoreSelection();
+        } else {
+          showQuickReplies();
+        }
+      }
+    });
+    modal.querySelector('.no').addEventListener('click', function() {
+      modal.remove();
+      closePanel();
+    });
+  }
+
   // ── Toggle ───────────────────────────────────────────────────────────────────
   function openPanel() {
     isOpen = true;
@@ -641,7 +729,12 @@ export async function GET(
     unreadCount = 0;
     badge.style.display = 'none';
     badge.textContent = '';
-    if (!greeted && messagesEl.children.length === 0) {
+    // Cannabis-vertical age gate: block the greeting + product flow until
+    // the visitor confirms 21+. After they click Yes, showAgeGate() will
+    // run the same greeting/store/quick-reply sequence below.
+    if (!isAgeVerified()) {
+      showAgeGate();
+    } else if (!greeted && messagesEl.children.length === 0) {
       greeted = true;
       addMessage('bot', GREETING);
       // Multi-store dispensary: show store selection first, then quick replies after selection
@@ -1051,10 +1144,15 @@ export async function GET(
     status: 200,
     headers: {
       'Content-Type': 'application/javascript; charset=utf-8',
-      // 2026-05-12: lowered from 300s → 60s + stale-while-revalidate. With
-      // the ETag above, saves invalidate the cache on the very next request;
-      // SWR keeps the customer's edge fast even under traffic spikes.
-      'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+      // 2026-05-12 final: must-revalidate. Every request to the script
+      // validates with origin via If-None-Match. 304 when unchanged (cheap
+      // — no body, ~50B response), 200 with fresh script when the
+      // dashboard saves and updated_at advances. This makes save→site
+      // propagation effectively INSTANT (limited only by the network
+      // round-trip) at the cost of one revalidation request per page
+      // load. For a chat widget this is the right tradeoff: customer
+      // sees every config change immediately, no "did it save?" anxiety.
+      'Cache-Control': 'public, max-age=0, must-revalidate',
       ETag: etag,
       'Access-Control-Allow-Origin': '*',
     },
