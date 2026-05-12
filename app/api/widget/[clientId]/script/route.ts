@@ -368,20 +368,24 @@ export async function GET(
        replies blew past the 580px panel height. The strip variant takes ~140px
        total, swipeable for the second+ card, and matches the trending/popular
        pattern customers know from Amazon / Instacart / Doordash. */
-    '.kyra-trending-header { display:flex; align-items:center; gap:6px; padding:14px 16px 6px; font-size:13px; font-weight:700; color:#111827; font-family:system-ui,-apple-system,sans-serif; letter-spacing:0.01em; }',
-    '.kyra-trending-header .pulse { width:8px; height:8px; border-radius:50%; background:#ef4444; animation:kyra-pulse 2s infinite; flex-shrink:0; }',
-    '.kyra-trending-strip { display:flex; gap:10px; padding:4px 16px 10px; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; }',
+    '.kyra-trending-header { display:flex; align-items:center; gap:6px; padding:10px 16px 4px; font-size:12px; font-weight:700; color:#111827; font-family:system-ui,-apple-system,sans-serif; letter-spacing:0.01em; }',
+    '.kyra-trending-header .pulse { width:7px; height:7px; border-radius:50%; background:#ef4444; animation:kyra-pulse 2s infinite; flex-shrink:0; }',
+    /* 2026-05-12 v2: hard-cap the strip at 150px tall so even a 580px panel
+       (greeting + 3 chips + header + strip + input area) never overflows.
+       Cards are now image-forward 132px wide × ~130px tall, image 70px,
+       single-line name, inline price + rating. Whole card is the click. */
+    '.kyra-trending-strip { display:flex; gap:8px; padding:2px 16px 10px; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; max-height:148px; }',
     '.kyra-trending-strip::-webkit-scrollbar { display:none; }',
-    '.kyra-trending-card { flex:0 0 168px; scroll-snap-align:start; background:#fff; border:1px solid #eef0f4; border-radius:14px; padding:10px; box-shadow:0 1px 3px rgba(0,0,0,0.04); display:flex; flex-direction:column; gap:6px; text-decoration:none; color:inherit; transition:transform 0.15s, box-shadow 0.15s, border-color 0.15s; }',
+    '.kyra-trending-card { flex:0 0 132px; scroll-snap-align:start; background:#fff; border:1px solid #eef0f4; border-radius:12px; padding:7px; box-shadow:0 1px 3px rgba(0,0,0,0.04); display:flex; flex-direction:column; gap:4px; text-decoration:none; color:inherit; transition:transform 0.15s, box-shadow 0.15s, border-color 0.15s; }',
     '.kyra-trending-card:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.08); border-color:' + COLOR + '40; }',
-    '.kyra-trending-card .img { width:100%; height:96px; border-radius:10px; object-fit:cover; background:linear-gradient(135deg, #f3f4f6, #e5e7eb); }',
-    '.kyra-trending-card .img.placeholder { display:flex; align-items:center; justify-content:center; font-size:32px; color:' + COLOR + '99; }',
-    '.kyra-trending-card .name { font-weight:700; font-size:12.5px; color:#111827; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }',
-    '.kyra-trending-card .meta { display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:11px; }',
+    '.kyra-trending-card .img { width:100%; height:70px; border-radius:8px; object-fit:cover; background:linear-gradient(135deg, #f3f4f6, #e5e7eb); display:block; }',
+    '.kyra-trending-card .img.placeholder { display:flex; align-items:center; justify-content:center; font-size:24px; color:' + COLOR + '99; }',
+    '.kyra-trending-card .name { font-weight:700; font-size:11.5px; color:#111827; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }',
+    '.kyra-trending-card .meta { display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:10.5px; }',
     '.kyra-trending-card .rating { display:inline-flex; align-items:center; gap:2px; color:#6b7280; font-weight:500; }',
-    '.kyra-trending-card .rating .star { color:#f59e0b; font-size:12px; line-height:1; }',
+    '.kyra-trending-card .rating .star { color:#f59e0b; font-size:11px; line-height:1; }',
     '.kyra-trending-card .rating .score { color:#1f2937; font-weight:700; }',
-    '.kyra-trending-card .price { font-weight:700; font-size:13px; color:#111827; }',
+    '.kyra-trending-card .price { font-weight:700; font-size:12px; color:#111827; }',
   ].join('');
   document.head.appendChild(style);
 
@@ -599,7 +603,12 @@ export async function GET(
       strip.appendChild(card);
     }
     messagesEl.appendChild(strip);
-    scrollToBottom();
+    // Don't scrollToBottom() here — on small viewports, scrolling past the
+    // greeting hides the welcome chips. The natural top alignment puts the
+    // greeting at the top of the panel; the trending strip is the last
+    // welcome element and either fits in remaining viewport or the user
+    // can scroll down to swipe. Calling scrollToBottom would push greeting
+    // off the top on a sub-450px panel (iPhone SE territory).
   }
 
   function showStoreSelection() {
