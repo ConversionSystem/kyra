@@ -360,13 +360,15 @@ function OverviewView({
             )}
             Redeploy
           </button>
-          <Link
-            href="/agency/widget"
-            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-colors"
-          >
-            <Send className="h-3.5 w-3.5" />
-            Chat Widget
-          </Link>
+          {site.client_id ? (
+            <Link
+              href={`/agency/clients/${site.client_id}?tab=channels`}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-colors"
+            >
+              <Send className="h-3.5 w-3.5" />
+              Chat Widget
+            </Link>
+          ) : null}
           <Link
             href={`/agency/website/${site.id}/settings`}
             className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-colors"

@@ -26,10 +26,14 @@ const NAV_LINKS: NavLink[] = [
   { label: 'AI Teams',      href: '/agency/agents',      icon: Bot,           desc: 'Route messages to the right agent', section: 'ai' },
   { label: 'Premium',       href: '/agency/templates',   icon: Star,          desc: 'Paid specialist workers',           section: 'ai' },
 
-  // ── Channels (includes Chat Widget) ──
+  // ── Channels ──
+  // 2026-05-12: removed the standalone "/agency/widget" entry. The
+  // Chat Widget configuration lives per-client under
+  // /agency/clients/[id]?tab=channels — having a cross-client view too
+  // was duplicate UX surface, customers reported "I save here, look
+  // there, see no change." Single source of truth wins.
   { label: 'Channels',      href: '/agency/channels',    icon: Radio,         desc: 'SMS, Telegram, WhatsApp & more',    section: 'channels' },
   { label: 'Voice AI',      href: '/agency/voice',       icon: Phone,         desc: 'AI phone calls',                    section: 'channels' },
-  { label: 'Chat Widget',   href: '/agency/widget',      icon: MessageCircle, desc: 'Web chat embed code',               section: 'channels' },
 
   // ── Automation ──
   { label: 'Automations',   href: '/agency/automations', icon: ZapIcon,       desc: 'Scheduled actions & triggers',      section: 'automation' },
