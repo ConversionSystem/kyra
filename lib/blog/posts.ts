@@ -11,6 +11,265 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'openclaw-automation-types-hooks-cron-heartbeat-webhooks-2026',
+    title: 'The Four Automation Types in OpenClaw: Hooks, Cron, Heartbeat, and Webhooks (2026 Guide)',
+    description: 'OpenClaw automation in 2026 has four shapes: hooks fire on events, cron fires on a clock, heartbeat fires on an interval, webhooks fire on outside HTTP. Step-by-step setup, Task Brain ledger, Claude Code Routines comparison, and FAQ for agencies.',
+    date: '2026-05-12',
+    readMins: 15,
+    category: 'AI Infrastructure',
+    emoji: '⚙️',
+    content: `
+<p><em>Last updated: May 12, 2026</em></p>
+
+<p><strong>OpenClaw automation</strong> is the set of primitives that lets an AI agent act without a human typing the next prompt. In 2026 it has four shapes. Hooks fire on events. Cron fires on a clock. Heartbeat fires on a regular interval. Webhooks fire when an outside system sends a request. The four answer the same question from four directions: when should the agent act on its own? Confusing them is the most common reason an autonomous OpenClaw deployment quietly turns into an expensive chatbot.</p>
+
+<p>This guide walks through each of the four, what they share, where they diverge, when to use which, and how the Task Brain ledger introduced in OpenClaw v2026.3.31 unifies them under one observable surface. Real CLI examples, a comparison table you can hand to a junior operator, and a short FAQ for the questions agencies actually ask when they wire their first one up.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>OpenClaw exposes four ways an agent can run without a human prompt: hooks (event-driven), cron (time-driven), heartbeat (interval-driven), and webhooks (externally-driven).</li>
+    <li>Hooks cover the agent lifecycle: gateway startup, message received, session compaction, tool calls, and roughly two dozen more events that all fire inside the gateway process.</li>
+    <li>Cron handles wall-clock schedules like "every weekday at 7am" with full session context, while heartbeat is the simpler "wake every 30 minutes and check" pattern that powers the proactive feel of a long-running worker.</li>
+    <li>Webhooks accept HTTP POSTs from outside the gateway: GitHub, Stripe, GHL, IoT sensors, anything that can hit <code>POST /hooks/wake</code> with a bearer token.</li>
+    <li>The Task Brain SQLite ledger added in v2026.3.31 puts all four entity types (hooks, cron, ACP tasks, background processes) on one queryable surface, so you can finally answer "what is this agent doing right now?"</li>
+    <li>Claude Code Routines (launched April 14, 2026) are the cloud equivalent for coding agents; OpenClaw's four primitives are the self-hosted equivalent for non-coding agents.</li>
+  </ul>
+</div>
+
+<h2>What "automation" actually means inside an AI agent</h2>
+
+<p>Automation is overloaded. In the AI worker world it usually means one of three things, and the framing matters because they have different failure modes.</p>
+
+<p>The first is "the agent answered a message." That is not automation. That is the normal request-response loop. A human sends a message, the model responds. Nothing fires until the human acts.</p>
+
+<p>The second is "a deterministic pipeline calls the model." That is Make.com or n8n in front of an LLM. Useful, but not what we mean here. The model is one node in a pipeline somebody else built.</p>
+
+<p>The third is "the agent decides to act on its own initiative." That is the version that matters. The agent is woken up by a non-human signal (an event, a clock, a timer, an external system) and runs a turn with full session context. It can read its workspace files, check its memory, call tools, and produce an output without a user message ever arriving. This is what OpenClaw automation is for, and the four primitives below are the four front doors into it.</p>
+
+<h2>The four automation types at a glance</h2>
+
+<p>Before drilling into each, the comparison most operators want to see first.</p>
+
+<table>
+<thead>
+<tr><th>Type</th><th>Triggered by</th><th>Typical cadence</th><th>Best for</th><th>Use it when</th></tr>
+</thead>
+<tbody>
+<tr><td><code>Hook</code></td><td>An event inside the gateway (session start, message received, tool call)</td><td>Sub-second, fires on the event</td><td>Reactive policies, validation, audit, scripted side effects</td><td>You want code to run reliably whenever <em>thing X happens</em>, regardless of who or what caused it</td></tr>
+<tr><td><code>Cron</code></td><td>A wall-clock schedule (cron expression)</td><td>Daily, weekly, hourly, anything cron supports</td><td>Deterministic recurring agent runs, reports, batch jobs</td><td>You want the agent to run at a specific time, e.g. 7am every weekday</td></tr>
+<tr><td><code>Heartbeat</code></td><td>A simple interval timer</td><td>Default every 30 minutes</td><td>Proactive check-ins, batched inbox sweeps, low-friction long-running tasks</td><td>You want the agent to feel "always on" without writing a cron expression</td></tr>
+<tr><td><code>Webhook</code></td><td>An HTTP POST from outside the gateway</td><td>Whenever the external system fires</td><td>Bridging GitHub, Stripe, GHL, sensors, forms</td><td>Another system already knows when the agent should act</td></tr>
+</tbody>
+</table>
+
+<p>Read down the "Triggered by" column. That is the whole map. Hooks are inside-the-gateway events. Cron is the clock. Heartbeat is a timer. Webhooks are outside HTTP. The agent itself is identical in all four cases; only the wake-up signal changes.</p>
+
+<h2>Hooks: event-driven automation inside the gateway</h2>
+
+<p>Hooks are scripts, JavaScript modules, or HTTP handlers the gateway runs at specific points in the agent's lifecycle. In OpenClaw they fire on roughly two dozen distinct events. The headline ones:</p>
+
+<ul>
+  <li><code>gateway:startup</code> — after channels start and hooks are loaded</li>
+  <li><code>message:received</code> — an inbound message arrived from any channel</li>
+  <li><code>message:before-send</code> — the agent is about to send a response, last chance to redact</li>
+  <li><code>session:start</code> and <code>session:reset</code> — a session began or was wiped</li>
+  <li><code>session:compact:before</code> and <code>session:compact:after</code> — compaction is about to run, or just finished</li>
+  <li><code>tool:before</code> and <code>tool:after</code> — a tool call is about to run, or completed</li>
+  <li><code>tool:denied</code> — a tool call hit the denylist</li>
+  <li><code>channel:connected</code> and <code>channel:disconnected</code> — a messaging channel came up or went down</li>
+</ul>
+
+<p>The mental model: a hook is the gateway saying "this thing happened, do you care?" If yes, you write a script that runs on that event. If no, you ignore it.</p>
+
+<p>Real uses agencies ship in week one:</p>
+
+<ul>
+  <li>On <code>message:received</code>, log the inbound message to a database for audit.</li>
+  <li>On <code>tool:before</code> for the <code>send_sms</code> tool, validate the destination number against a denylist of known scammers.</li>
+  <li>On <code>session:compact:before</code>, write a snapshot of the conversation to S3 so you keep the pre-compaction transcript even after summarization.</li>
+  <li>On <code>gateway:startup</code>, post a "system online" message to a Slack ops channel.</li>
+</ul>
+
+<p>Hooks are configured in <code>settings.json</code> under the <code>hooks</code> key. The HTTP variant was the major addition of February 2026: instead of running a shell command, the gateway POSTs the event payload to a URL and treats the response as the hook output. That single change made it practical to attach hooks to serverless functions and external services without writing custom plugins.</p>
+
+<p>The full event catalog and configuration syntax live at <a href="https://docs.openclaw.ai/automation/hooks">docs.openclaw.ai/automation/hooks</a>.</p>
+
+<h2>Cron: wall-clock scheduled agent runs</h2>
+
+<p>Cron is the type most operators reach for first. The semantics are familiar: a cron expression, a session reference, a prompt, and the gateway runs the prompt against the named session at the scheduled time.</p>
+
+<p>The unique thing about OpenClaw cron is that the run happens inside the agent's full session context. The model loads SOUL.md, AGENTS.md, MEMORY.md, and the rest of the workspace before the prompt runs. That means "every weekday at 7am, draft today's outreach list" is not a stateless model call. It is a full agent turn that knows yesterday's outreach, this week's targets, and the operating rules. The output goes wherever the agent's delivery channel is configured to send it.</p>
+
+<p>A minimal cron entry:</p>
+
+<pre><code>openclaw cron add \\
+  --name daily-outreach \\
+  --session acme-dental \\
+  --schedule "0 7 * * 1-5" \\
+  --prompt "Draft today's outreach list using the rules in AGENTS.md and yesterday's results in MEMORY.md."</code></pre>
+
+<p>From the 2026.5 release line, <code>cron list --json</code> and <code>cron show --json</code> now include a computed status field (<code>disabled</code>, <code>running</code>, <code>ok</code>, <code>error</code>, <code>skipped</code>, <code>idle</code>) so dashboards can reflect cron state without re-deriving it. The same release closed a long-standing footgun: if a cron's delivery channel is set to <code>last</code> and the target session has no prior route, the run now fails before any model tokens are spent, instead of burning a turn just to hit a delivery error.</p>
+
+<p>The official cron reference: <a href="https://docs.openclaw.ai/automation/cron-jobs">docs.openclaw.ai/automation/cron-jobs</a>.</p>
+
+<h2>Heartbeat: interval-driven keepalive</h2>
+
+<p>Heartbeat is the gentler cousin of cron. Instead of a cron expression, you give the gateway a simple interval. The agent wakes up every interval, executes a single turn with full session context, and decides whether anything needs to happen.</p>
+
+<p>The default is 30 minutes. The point is not the exact cadence; it is that the agent gets a chance to do "anything that needs doing" without you having to encode every possible trigger as a cron job. A typical heartbeat run reads HEARTBEAT.md, scans an inbox folder for new tasks, checks pending appointments, then either acts or goes back to sleep.</p>
+
+<p>The big behavioral difference between heartbeat and cron:</p>
+
+<ul>
+  <li><strong>Cron is committed.</strong> The schedule says "every weekday at 7am" and the agent runs at 7am, full stop. Use it when the action is non-negotiable.</li>
+  <li><strong>Heartbeat is opportunistic.</strong> The schedule says "wake every 30 minutes" but the agent decides whether to do anything that turn. Use it when the action depends on whatever is in the queue at wake-up time.</li>
+</ul>
+
+<p>One operational note worth flagging: long-running heartbeat sessions can accrete "silent memory pollution" if MEMORY.md is unbounded. The fix is the same as for normal sessions: cap MEMORY.md at 200 lines and run a weekly summarization. The full discussion is in the <a href="https://docs.openclaw.ai/concepts/memory">memory concepts</a> docs.</p>
+
+<h2>Webhooks: bringing the outside world in</h2>
+
+<p>Webhooks are the outward face of the gateway. Where hooks fire on internal events and cron fires on the clock, webhooks fire when something on the public internet POSTs to the gateway. OpenClaw exposes a few well-defined endpoints, the simplest being <code>POST /hooks/wake</code>: a fire-and-forget trigger that wakes the agent with a JSON payload.</p>
+
+<p>Authentication is via bearer token in the <code>Authorization</code> header or the <code>x-openclaw-token</code> header. Query-string tokens are rejected by design. This matters because tokens that leak via query strings end up in HTTP access logs, reverse-proxy logs, and browser histories.</p>
+
+<p>The canonical uses:</p>
+
+<ul>
+  <li>GitHub posts a webhook on every PR open, and the agent triages it.</li>
+  <li>Stripe posts a webhook on a failed charge, and the agent emails the customer.</li>
+  <li>GoHighLevel posts a webhook on a new lead, and the agent kicks off a qualification flow.</li>
+  <li>An IoT temperature sensor crosses a threshold and pings <code>/hooks/wake</code> with the reading.</li>
+</ul>
+
+<p>The most common mistake is treating webhooks as one-way events. They are not. The agent receives the payload, runs a turn with that payload as input, and is free to call any tool in its allowlist (send an SMS, write a row to a database, fire another webhook). The webhook is just the trigger; the agent run is where everything actually happens.</p>
+
+<h2>How Task Brain unites the four under one ledger</h2>
+
+<p>Before March 2026, each of these four primitives ran in its own corner. Hooks logged to the hooks log. Cron logged to the cron log. Background CLI processes logged to whatever stdout file the agent decided to write to. There was no single answer to "what is this agent currently doing?"</p>
+
+<p>The v2026.3.31 release introduced Task Brain: a SQLite-backed ledger that consolidates four execution entity types (Agent Control Protocol tasks, sub-agents, cron jobs, and background CLI processes) into one queryable table. Hooks and webhook-triggered runs feed into the same ledger via their resulting tasks.</p>
+
+<p>The practical implication for an agency:</p>
+
+<ul>
+  <li>One <code>openclaw tasks list</code> command shows every running and recent task across all four automation types.</li>
+  <li>One filter on <code>status</code> shows what failed, what is queued, what is running, and what just finished.</li>
+  <li>The same ledger is exposed in the Task Brain control panel UI, so a non-technical operator can see the queue without SSH.</li>
+</ul>
+
+<p>This was the biggest reliability change of 2026. Automation that you can observe is automation you can fix. Automation that runs in four separate log files is automation that quietly fails for a week before anyone notices.</p>
+
+<h2>Step-by-step: wire up your first daily cron job</h2>
+
+<p>The 10-minute version, starting from a running OpenClaw gateway and a provisioned client workspace at <code>/opt/openclaw/workspaces/acme-dental</code>.</p>
+
+<p><strong>1. Decide what the cron should produce.</strong> Write the action into HEARTBEAT.md so it is also visible to the agent during normal sessions.</p>
+
+<pre><code>cat &gt;&gt; /opt/openclaw/workspaces/acme-dental/HEARTBEAT.md &lt;&lt; 'EOF'
+
+## Daily outreach
+
+Every weekday at 7am, draft today's outreach list using the rules
+in AGENTS.md and yesterday's results in MEMORY.md. Deliver via the
+default channel.
+EOF</code></pre>
+
+<p><strong>2. Add the cron entry.</strong></p>
+
+<pre><code>openclaw cron add \\
+  --name acme-daily-outreach \\
+  --session acme-dental \\
+  --schedule "0 7 * * 1-5" \\
+  --prompt "Run today's outreach as defined in HEARTBEAT.md."</code></pre>
+
+<p><strong>3. Verify it registered.</strong></p>
+
+<pre><code>openclaw cron list --json | jq '.[] | {name, status, nextRun}'</code></pre>
+
+<p>You should see <code>status: "idle"</code> and a <code>nextRun</code> timestamp pointing at the next 7am weekday.</p>
+
+<p><strong>4. Dry-run it once.</strong> Do not wait until tomorrow to find out you got the prompt wrong.</p>
+
+<pre><code>openclaw cron run acme-daily-outreach --once</code></pre>
+
+<p><strong>5. Watch the Task Brain ledger.</strong></p>
+
+<pre><code>openclaw tasks list --recent 1h</code></pre>
+
+<p>You should see the run appear with status <code>running</code>, then <code>ok</code> a minute or two later. If it shows <code>error</code>, run <code>openclaw tasks show &lt;id&gt;</code> for the full transcript and stack trace.</p>
+
+<p><strong>6. Add a notification hook (optional but recommended).</strong> Drop a small hook on the <code>tasks:after</code> event that posts a one-line status to Slack when the cron finishes. The agency operations team should never have to SSH to learn whether yesterday's outreach actually ran.</p>
+
+<h2>How this compares to Claude Code Routines</h2>
+
+<p>Anthropic launched Claude Code Routines on April 14, 2026 as the cloud-scheduled equivalent for coding agents. A routine is a saved prompt with connected repositories and tools that can fire on a schedule, an API call, or a GitHub webhook. Plan limits are five routines per day on Pro, fifteen on Max, and twenty-five on Team or Enterprise. A single session can hold up to fifty scheduled tasks.</p>
+
+<p>For coding agents working inside a repo, routines are excellent. They run on Anthropic infrastructure, no server to manage, with quota-bounded daily runs. But three constraints make them a poor fit for the kind of always-on multi-channel worker an agency typically deploys.</p>
+
+<table>
+<thead>
+<tr><th>Concern</th><th>Claude Code Routines</th><th>OpenClaw automation</th></tr>
+</thead>
+<tbody>
+<tr><td>Frequency cap</td><td>5 to 25 runs per day per plan</td><td>Unbounded; bounded only by your hardware and API spend</td></tr>
+<tr><td>Trigger types</td><td>Schedule, API call, GitHub webhook</td><td>Hooks (24+ events), cron, heartbeat, generic webhooks</td></tr>
+<tr><td>Channels</td><td>Engineering surfaces (Git, terminal, CI)</td><td>24+ messaging channels (WhatsApp, SMS, Slack, web, Discord, and more)</td></tr>
+<tr><td>Hosting</td><td>Anthropic-managed cloud</td><td>Self-hosted, your VPS or container</td></tr>
+<tr><td>Data residency</td><td>Anthropic regions</td><td>Wherever you put the gateway</td></tr>
+</tbody>
+</table>
+
+<p>For a coding agent that pings a PR every hour, use Routines. For an AI worker that answers WhatsApp, drafts SMS at 7am, reacts to a GHL webhook at 2pm, and runs a heartbeat every 30 minutes to clear the inbox, use OpenClaw. They are not the same product and they are not really competing.</p>
+
+<h2>When OpenClaw automation isn't for you</h2>
+
+<p>Automation is a tax. If you do not need the agent to act on its own, do not turn it on. Specific cases where the four primitives above are the wrong choice:</p>
+
+<ul>
+  <li><strong>Pure request-response chatbots.</strong> If every interaction starts with a human typing, you do not need any of this. The normal channel handlers cover you.</li>
+  <li><strong>Deterministic pipelines.</strong> If the flow is "after X, do Y, then Z, every time, with no model judgment in the middle," that is a Zapier or n8n job. The model adds cost and variance you do not need.</li>
+  <li><strong>Sub-second latency-critical paths.</strong> Hook scripts run synchronously inside the gateway and can add tens of milliseconds. For trade-execution latency budgets, hook into a sidecar process instead.</li>
+  <li><strong>Compliance regimes that forbid autonomous actions.</strong> Some regulated environments require explicit human approval before any outbound message. Use the agent only in suggestion mode and gate every send behind a human click.</li>
+</ul>
+
+<p>For everything else (the long tail of agency clients running appointment booking, lead qualification, after-hours support, daily outreach, and ops monitoring), the four primitives are the default. They are why an AI worker feels different from a chatbot.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>What is the difference between an OpenClaw hook and an OpenClaw webhook?</h3>
+
+<p>A hook fires on an internal gateway event (a tool call, a session start, a compaction) and runs inside the gateway process. A webhook is an HTTP endpoint the gateway exposes that accepts POSTs from outside systems. Both can trigger an agent turn; the distinction is direction. Hooks listen inwards, webhooks listen outwards.</p>
+
+<h3>Can I have heartbeat and cron jobs running on the same agent?</h3>
+
+<p>Yes, and most production deployments do. Heartbeat covers the "wake every 30 minutes and check whatever needs checking" pattern. Cron covers specific commitments like "draft Monday's report at 9am sharp." They share the same Task Brain ledger so observability is unified, and they cannot collide because each run is a single agent turn that completes before the next one starts.</p>
+
+<h3>How are OpenClaw hooks different from Claude Code hooks?</h3>
+
+<p>Same primitive, different surface. Claude Code's hooks system (which expanded to twenty-one lifecycle events in March 2026 with the addition of InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove, PostCompact, and Elicitation events) sits inside the Claude Code coding agent. OpenClaw hooks sit inside the OpenClaw gateway and fire on its lifecycle (channel connections, message flow, compaction, tool calls). They are conceptually identical and tactically different, because the host agent and the events it emits are different.</p>
+
+<h3>How many cron jobs can I run on one gateway?</h3>
+
+<p>Practically, hundreds. The Task Brain ledger is SQLite-backed and queryable, and a single gateway can comfortably host the cron entries for many client sessions. The real limits show up in API budget (every cron run is a full agent turn) and in delivery channel rate limits. Plan cron jobs the way you plan database queries: cheap individually, expensive in aggregate.</p>
+
+<h3>How do I make sure a webhook is not spammed?</h3>
+
+<p>Three layers. First, require a bearer token in the <code>Authorization</code> header (never query-string). Second, validate the payload signature when the upstream system supports it (GitHub, Stripe, and GHL all do). Third, rate-limit at the gateway level and at the reverse proxy if you sit one in front. The OpenClaw webhook docs at <a href="https://docs.openclaw.ai/automation/webhook">docs.openclaw.ai/automation/webhook</a> cover the canonical token setup.</p>
+
+<h3>What happens if a cron job fails halfway through?</h3>
+
+<p>The Task Brain ledger records the failure with status <code>error</code> and the full transcript. Cron does not auto-retry by default. If you want retries, wrap the prompt in agent instructions that handle their own retry logic (the agent decides whether to try again, with a backoff). For idempotency-sensitive jobs like "send today's report," check the ledger for a prior <code>ok</code> run on the same date inside the agent prompt before sending.</p>
+
+<h2>Pulling it together</h2>
+
+<p>The four automation types are the answer to "when should the agent act?" Hooks answer with "when an event fires inside the gateway." Cron answers with "when the clock hits this time." Heartbeat answers with "every thirty minutes, check." Webhooks answer with "when an outside system says so." Wire all four into the same SOUL.md + AGENTS.md workspace and the Task Brain ledger, and you have an AI worker that looks proactive to the client without you babysitting the dashboard.</p>
+
+<p>If you want this stack already configured per client (workspace, hooks, cron, heartbeat, webhook endpoints, Task Brain UI, all behind a single dashboard), <a href="/solo">Kyra</a> ships it as the default for agencies running OpenClaw at scale. The underlying primitives are open source under <a href="https://github.com/openclaw/openclaw">OpenClaw on GitHub</a>; the automation reference is at <a href="https://docs.openclaw.ai/automation">docs.openclaw.ai/automation</a>, and Anthropic's parallel scheduled-tasks docs live at <a href="https://code.claude.com/docs/en/scheduled-tasks">code.claude.com/docs/en/scheduled-tasks</a>. For deeper companion reads, the <a href="/blog/ai-agent-memory-systems-openclaw-2026">memory systems</a> guide covers what the agent reads at every wake-up, the <a href="/blog/openclaw-session-keys-explained-2026">session keys</a> piece covers which sessions cron and webhooks target, and the vertical example at <a href="/ai-for/dental-practices">AI for dental practices</a> shows what an agency-run automated worker actually does day to day.</p>
+`,
+  },
+  {
     slug: 'ai-agent-memory-systems-openclaw-2026',
     title: 'AI Agent Memory Systems in 2026: How OpenClaw Workspaces, SOUL.md, and Context Compaction Actually Work',
     description: 'AI agent memory in 2026 is three layers: workspace files like SOUL.md and MEMORY.md, runtime context with Sonnet 4.6 compaction, and Anthropic’s memory tool for long-term storage. Step-by-step setup, comparison tables, anti-patterns, and FAQ for agency operators.',
