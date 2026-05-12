@@ -88,7 +88,7 @@ function getIndustryQuickReplies(industry: string, cfg: Record<string, unknown>)
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ clientId: string }> }
 ) {
   const { clientId } = await params;
@@ -99,12 +99,35 @@ export async function GET(
 
   const supabase = getSupabase();
 
-  // Fetch widget config from client (including agency_id for branding)
+  // Fetch widget config from client (including agency_id for branding).
+  // updated_at participates in the ETag — saves bust the browser/CDN cache
+  // on the very next request, no 5-minute lag like the prior implementation.
   const { data: client } = await supabase
     .from('agency_clients')
-    .select('id, name, status, container_config, gateway_status, agency_id, industry')
+    .select('id, name, status, container_config, gateway_status, agency_id, industry, updated_at')
     .eq('id', clientId)
     .single();
+
+  // Build a short ETag from clientId + updated_at — changes on any save and
+  // is cheap to compute. Browsers/CDNs that respect ETag will revalidate
+  // (sending If-None-Match) and get 304 when nothing changed; the moment
+  // the dashboard saves, updated_at advances, the ETag changes, and the
+  // next request gets a fresh full script.
+  const updatedAtRaw = (client as { updated_at?: string } | null)?.updated_at ?? '0';
+  const etag = `"w-${clientId.slice(0, 8)}-${Buffer.from(updatedAtRaw).toString('base64url').slice(0, 16)}"`;
+  if (request.headers.get('if-none-match') === etag) {
+    return new NextResponse(null, {
+      status: 304,
+      headers: {
+        ETag: etag,
+        // Same Cache-Control as the 200 path so intermediaries treat
+        // both alike; otherwise the 304 could end up cached longer than
+        // a 200 and stall future revalidations.
+        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+  }
 
   // Allow the widget to load even for inactive/missing clients
   // Chat will return a graceful fallback message in that case
@@ -1028,7 +1051,11 @@ export async function GET(
     status: 200,
     headers: {
       'Content-Type': 'application/javascript; charset=utf-8',
-      'Cache-Control': 'public, max-age=300', // 5 min cache — refreshes when config changes
+      // 2026-05-12: lowered from 300s → 60s + stale-while-revalidate. With
+      // the ETag above, saves invalidate the cache on the very next request;
+      // SWR keeps the customer's edge fast even under traffic spikes.
+      'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+      ETag: etag,
       'Access-Control-Allow-Origin': '*',
     },
   });

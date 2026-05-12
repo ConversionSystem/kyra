@@ -260,13 +260,25 @@ export function WidgetBuilderEmbedded({
                 <CardDescription className="text-xs">Customize, configure, and embed your AI chat widget</CardDescription>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px]">
-                Ready
-              </Badge>
-              <Button size="sm" onClick={saveAll} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
-                {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
-              </Button>
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px]">
+                  Ready
+                </Badge>
+                <Button size="sm" onClick={saveAll} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
+                  {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
+                </Button>
+              </div>
+              {/* UX hint: customer reported "changes don't apply on the live
+                  site." The script is now cached 60s + stale-while-revalidate
+                  + ETag-aware, so saves propagate within ~1 minute on most
+                  sites and instantly on cache-respecting CDNs. This tooltip
+                  sets expectations so the customer doesn't think it's broken. */}
+              {saved && (
+                <p className="text-[10px] text-gray-500 italic">
+                  Live within ~1 min. Hard-refresh your site to see immediately.
+                </p>
+              )}
             </div>
           </div>
         </CardHeader>
