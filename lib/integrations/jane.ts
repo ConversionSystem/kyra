@@ -854,13 +854,31 @@ export async function getBestSellers(
   const data = await res.json() as { hits?: AlgoliaHit[] };
   const allHits = data.hits ?? [];
 
-  // Keep only hits that have an actual best_seller_rank (> 0). Jane assigns
-  // ranks only to its top-selling products; everything else gets null. Sorting
-  // by rank ASC puts rank=1 first.
-  const ranked = allHits
+  // Primary signal: Jane's `best_seller_rank` (1 = top seller, asc).
+  // Jane populates this on most well-established dispensary indexes, but
+  // some stores leave it null across the board — Purple Lotus production
+  // (verified 2026-05-12) is one such case. When that happens, fall back
+  // to ranking by review_count desc + a rating floor: products that real
+  // customers reviewed AND rated well are the de-facto trending list.
+  // Either way the visitor gets a sensible discovery surface; we never
+  // show "trending" with random products.
+  let ranked = allHits
     .filter(h => typeof h.best_seller_rank === 'number' && (h.best_seller_rank as number) > 0)
     .sort((a, b) => (a.best_seller_rank as number) - (b.best_seller_rank as number))
     .slice(0, limit);
+
+  if (ranked.length === 0) {
+    // Fallback: review-count + rating floor. Floor of 4.0 stars filters out
+    // poorly-reviewed SKUs from the popular set; floor of 10 reviews filters
+    // out brand-new products that haven't accumulated signal yet.
+    ranked = allHits
+      .filter(h =>
+        typeof h.review_count === 'number' && (h.review_count as number) >= 10 &&
+        typeof h.aggregate_rating === 'number' && (h.aggregate_rating as number) >= 4.0,
+      )
+      .sort((a, b) => (b.review_count as number) - (a.review_count as number))
+      .slice(0, limit);
+  }
 
   const baseUrl = store.baseUrl;
   const products = ranked.map(h => algoliaHitToProduct(h, baseUrl, config.cartDeeplinkParam));
