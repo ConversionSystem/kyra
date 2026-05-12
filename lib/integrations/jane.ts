@@ -799,9 +799,18 @@ export async function getBestSellers(
   const channel = opts.channel ?? 'either';
   const limit = Math.max(1, Math.min(opts.limit ?? 3, 8));
 
-  // Build availability filter — same shape as searchProducts
-  const filters: string[] = [];
-  if (storeId) filters.push(`store_id = ${Number(storeId) || 0}`);
+  // Resolve slug → numeric Algolia store_id. Falls back to the default store
+  // if the slug isn't in the map. Without this lookup, the filter would try
+  // to coerce the slug ("san-jose") to a number and yield store_id:0,
+  // which matches nothing.
+  const store = config.stores[storeId] || config.stores[config.defaultStore];
+  if (!store) {
+    console.warn(`[jane/best-sellers] No store config for "${storeId}"`);
+    return { products: [], totalScanned: 0, rankedCount: 0 };
+  }
+
+  // Build availability filter — same shape (and operator) as searchProducts
+  const filters: string[] = [`store_id:${store.algoliaStoreId}`];
   if (channel === 'pickup') filters.push('available_for_pickup:true');
   else if (channel === 'delivery') filters.push('available_for_delivery:true');
   else filters.push('(available_for_pickup:true OR available_for_delivery:true)');
@@ -853,10 +862,7 @@ export async function getBestSellers(
     .sort((a, b) => (a.best_seller_rank as number) - (b.best_seller_rank as number))
     .slice(0, limit);
 
-  // Resolve baseUrl from the store entry (same pattern as searchProducts).
-  // Falls back to the default store if storeId not found in the map.
-  const store = config.stores[storeId] || config.stores[config.defaultStore];
-  const baseUrl = store?.baseUrl ?? '';
+  const baseUrl = store.baseUrl;
   const products = ranked.map(h => algoliaHitToProduct(h, baseUrl, config.cartDeeplinkParam));
   return {
     products,
