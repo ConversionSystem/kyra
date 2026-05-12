@@ -200,14 +200,14 @@ export async function GET(
   var STORE_ID = ${JSON.stringify((cfg.jane_default_store_id as string) || '')};
   var JANE_STORES = ${JSON.stringify((cfg.jane_stores as Array<{ id: string; name: string; address?: string }>) || [])};
   var STORAGE_KEY = 'kyra_session_' + CLIENT_ID;
-  // Age gate: required on cannabis dispensary widgets for state-law compliance.
-  // The 21+ check fires the first time a visitor opens the widget; verified
-  // status is stored in localStorage so returning visitors aren't re-prompted
-  // every page load. Disable on non-regulated industries by leaving INDUSTRY
-  // empty / non-cannabis. Operators can hard-disable per-client via
-  // widget_age_gate=false in container_config if they have their own gate.
+  // Age gate (cannabis compliance) — strictly OPT-IN per client.
+  // Most dispensary websites already have a site-wide 21+ gate, so doubling
+  // up inside the widget is redundant and adds an extra click for every
+  // returning visitor. Operators who want the widget to also enforce a
+  // gate (e.g. because they embed on a site without one) can flip
+  // container_config.widget_age_gate to true. Default off.
   var INDUSTRY = ${JSON.stringify((cfg.industry as string) || (client?.industry as string) || '')};
-  var AGE_GATE_ENABLED = ${JSON.stringify(cfg.widget_age_gate !== false && /cannabis|dispensary/i.test((cfg.industry as string) || (client?.industry as string) || ''))};
+  var AGE_GATE_ENABLED = ${JSON.stringify(cfg.widget_age_gate === true)};
   var AGE_GATE_KEY = 'kyra_age_verified_' + CLIENT_ID;
 
   // Don't init twice
@@ -995,6 +995,19 @@ export async function GET(
         }
       } else if (res.body) {
         // ── SSE streaming path ──────────────────────────────────────────
+        // Materialize the bot's reply bubble EAGERLY before processing any
+        // server frames. Without this, the 'results' / 'chips' / 'pivotAction'
+        // frames (which arrive before the first 'token') would render their
+        // DOM under #kyra-widget-messages first — so product cards displayed
+        // BEFORE the bot's text explanation. Customer report 2026-05-12.
+        // Pre-creating the bubble locks in the visual order:
+        //   1) bot text bubble (fills as tokens stream)
+        //   2) product cards
+        //   3) support-link chips
+        //   4) pivot CTA
+        // which matches the conversational expectation: the bot speaks
+        // first, then surfaces tools/cards to support what it said.
+        ensureBotBubble();
         var reader = res.body.getReader();
         var decoder = new TextDecoder();
         var buffer = '';
