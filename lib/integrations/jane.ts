@@ -335,6 +335,10 @@ interface AlgoliaHit {
   review_count?: number;
   available_for_delivery?: boolean;
   available_for_pickup?: boolean;
+  // Jane assigns a `best_seller_rank` integer to its top-selling products
+  // (1 = highest seller in the store, climbing). Used by the "Trending now"
+  // proactive surface in the widget — see getBestSellers() below.
+  best_seller_rank?: number | null;
 }
 
 /**
@@ -758,6 +762,106 @@ function algoliaHitToProduct(
     imageUrl: hit.image_urls?.[0] || undefined,
     rating: hit.aggregate_rating ?? undefined,
     reviewCount: hit.review_count ?? undefined,
+  };
+}
+
+// ── Best-sellers / Trending ─────────────────────────────────────────────────
+//
+// Discovery surface for visitors who open the widget but don't know what to
+// ask. Pulls Jane's own best-seller ranking (1 = highest seller in the store)
+// and returns the top N products as cards in the same shape as searchProducts
+// — drop-in compatible with the widget's existing card renderer.
+//
+// Algolia's standard index isn't sorted by `best_seller_rank`; rather than
+// require a replica, we over-fetch ~50 in-stock hits with a no-text query
+// and rank client-side. Cheap (~50 small objects in JS), no Algolia index
+// changes needed, works on every Jane store.
+
+export interface BestSellersResult {
+  products: JaneProduct[];
+  /** Total in-stock products considered (not the trending list count). */
+  totalScanned: number;
+  /** Number of products that actually had a best_seller_rank set. */
+  rankedCount: number;
+}
+
+export async function getBestSellers(
+  config: JaneConfig,
+  opts: {
+    storeId?: string;
+    /** Optional channel filter — only show products available for this channel. */
+    channel?: 'pickup' | 'delivery' | 'either';
+    /** Max number of trending cards to return (default 3). */
+    limit?: number;
+  } = {},
+): Promise<BestSellersResult> {
+  const storeId = opts.storeId || config.defaultStore;
+  const channel = opts.channel ?? 'either';
+  const limit = Math.max(1, Math.min(opts.limit ?? 3, 8));
+
+  // Build availability filter — same shape as searchProducts
+  const filters: string[] = [];
+  if (storeId) filters.push(`store_id = ${Number(storeId) || 0}`);
+  if (channel === 'pickup') filters.push('available_for_pickup:true');
+  else if (channel === 'delivery') filters.push('available_for_delivery:true');
+  else filters.push('(available_for_pickup:true OR available_for_delivery:true)');
+
+  const algoliaBase = `https://${config.algoliaAppId}-dsn.algolia.net/1/indexes/${config.algoliaIndex}/query`;
+
+  let res: Response;
+  try {
+    res = await fetch(algoliaBase, {
+      method: 'POST',
+      headers: {
+        'X-Algolia-Application-Id': config.algoliaAppId,
+        'X-Algolia-API-Key': config.algoliaSearchKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: '',
+        filters: filters.join(' AND '),
+        hitsPerPage: 50, // over-fetch then sort + trim client-side
+        attributesToRetrieve: [
+          'product_id', 'name', 'brand', 'kind', 'root_types', 'root_subtype',
+          'custom_product_type', 'category', 'percent_thc', 'percent_cbd',
+          'bucket_price', 'url_slug', 'available_weights', 'image_urls',
+          'feelings', 'activities', 'description', 'aggregate_rating',
+          'review_count', 'available_for_delivery', 'available_for_pickup',
+          'best_seller_rank',
+        ],
+      }),
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch (err) {
+    console.warn('[jane/best-sellers] Algolia fetch failed:', err instanceof Error ? err.message : err);
+    return { products: [], totalScanned: 0, rankedCount: 0 };
+  }
+
+  if (!res.ok) {
+    console.warn(`[jane/best-sellers] Algolia ${res.status}`);
+    return { products: [], totalScanned: 0, rankedCount: 0 };
+  }
+
+  const data = await res.json() as { hits?: AlgoliaHit[] };
+  const allHits = data.hits ?? [];
+
+  // Keep only hits that have an actual best_seller_rank (> 0). Jane assigns
+  // ranks only to its top-selling products; everything else gets null. Sorting
+  // by rank ASC puts rank=1 first.
+  const ranked = allHits
+    .filter(h => typeof h.best_seller_rank === 'number' && (h.best_seller_rank as number) > 0)
+    .sort((a, b) => (a.best_seller_rank as number) - (b.best_seller_rank as number))
+    .slice(0, limit);
+
+  // Resolve baseUrl from the store entry (same pattern as searchProducts).
+  // Falls back to the default store if storeId not found in the map.
+  const store = config.stores[storeId] || config.stores[config.defaultStore];
+  const baseUrl = store?.baseUrl ?? '';
+  const products = ranked.map(h => algoliaHitToProduct(h, baseUrl, config.cartDeeplinkParam));
+  return {
+    products,
+    totalScanned: allHits.length,
+    rankedCount: ranked.length,
   };
 }
 
