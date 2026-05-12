@@ -209,6 +209,11 @@ export async function GET(
   var INDUSTRY = ${JSON.stringify((cfg.industry as string) || (client?.industry as string) || '')};
   var AGE_GATE_ENABLED = ${JSON.stringify(cfg.widget_age_gate === true)};
   var AGE_GATE_KEY = 'kyra_age_verified_' + CLIENT_ID;
+  // Trending / best-sellers proactive surface — fires on widget open once
+  // welcome + quick-replies are rendered. Disabled per-client via
+  // widget_trending_enabled=false. Default on; gracefully no-ops when the
+  // client doesn't have Jane Algolia configured.
+  var TRENDING_ENABLED = ${JSON.stringify(cfg.widget_trending_enabled !== false)};
 
   // Don't init twice
   // Single-mount guard. Two layers:
@@ -350,6 +355,12 @@ export async function GET(
     '#kyra-age-gate .no { background:#f3f4f6; color:#374151; }',
     '#kyra-age-gate .no:hover { background:#e5e7eb; }',
     '#kyra-age-gate .disclaimer { margin-top:18px; font-size:11px; color:#9ca3af; max-width:260px; line-height:1.4; }',
+    /* Trending / Best-sellers section — proactive discovery surface shown on
+       widget open once welcome + quick-replies have rendered. Uses the same
+       card styling as in-conversation product results (.kyra-cards/.kyra-card)
+       so renderTrending() can share the row builder; only the header is new. */
+    '.kyra-trending-header { display:flex; align-items:center; gap:6px; padding:14px 16px 6px; font-size:13px; font-weight:700; color:#111827; font-family:system-ui,-apple-system,sans-serif; letter-spacing:0.01em; }',
+    '.kyra-trending-header .pulse { width:8px; height:8px; border-radius:50%; background:#ef4444; animation:kyra-pulse 2s infinite; flex-shrink:0; }',
   ].join('');
   document.head.appendChild(style);
 
@@ -486,6 +497,61 @@ export async function GET(
     if (el) el.remove();
   }
 
+  // ── Trending / best-sellers proactive surface ─────────────────────────────
+  // Fetches the dispensary's top in-stock sellers and renders them below the
+  // welcome quick-replies as a discovery surface. Powered by Jane's
+  // best_seller_rank via /api/widget/<clientId>/trending. Fails silently —
+  // if the endpoint 404s, returns 0 results, or Jane isn't configured, the
+  // welcome flow simply omits the section.
+  function fetchAndRenderTrending() {
+    if (!TRENDING_ENABLED) return;
+    // Don't re-fire if already rendered (e.g., user closed + reopened the panel).
+    if (document.getElementById('kyra-trending')) return;
+    var jane = readJaneContext();
+    var effectiveStoreId = jane.janeStore || window.__kyraStoreId || selectedStoreId || STORE_ID;
+    var effectiveChannel = sessionOrderTypeOverride || jane.orderType || 'either';
+    var qs = '?limit=3';
+    if (effectiveStoreId) qs += '&storeId=' + encodeURIComponent(effectiveStoreId);
+    if (effectiveChannel === 'pickup' || effectiveChannel === 'delivery') {
+      qs += '&channel=' + effectiveChannel;
+    }
+    fetch(API_BASE + '/api/widget/' + CLIENT_ID + '/trending' + qs, {
+      method: 'GET',
+      signal: AbortSignal.timeout(8000),
+    })
+      .then(function(res) { return res.ok ? res.json() : null; })
+      .then(function(data) {
+        if (!data || !data.products || !data.products.length) return;
+        // User may have started typing or sent a message in the meantime —
+        // don't barge in once a real conversation has begun. We check by
+        // looking for a user message bubble; the welcome state has none.
+        if (messagesEl.querySelector('.kyra-msg.user')) return;
+        renderTrending(data.label || '\\ud83d\\udd25 Trending now', data.products);
+      })
+      .catch(function() { /* fail silently — discovery is best-effort */ });
+  }
+
+  function renderTrending(label, products) {
+    if (!products || !products.length) return;
+    // Header
+    var header = document.createElement('div');
+    header.className = 'kyra-trending-header';
+    header.id = 'kyra-trending-header';
+    header.innerHTML = '<span class="pulse"></span><span>' + escHtml(label) + '</span>';
+    messagesEl.appendChild(header);
+    // Cards — reuse renderCards which handles the full card grid, ratings,
+    // OOS flags, "Add to Bag" CTA, etc. The trending list maps to its
+    // cards arg cleanly because algoliaHitToProduct + endpoint stamping
+    // produce the same shape the chat endpoint emits.
+    try {
+      renderCards(products, null, null);
+      // Tag the cards container so we don't double-render on reopen
+      var lastContainer = messagesEl.querySelector('.kyra-cards:last-of-type');
+      if (lastContainer) lastContainer.id = 'kyra-trending';
+    } catch(e) { header.remove(); }
+    scrollToBottom();
+  }
+
   function showStoreSelection() {
     hideQuickReplies();
     var container = document.createElement('div');
@@ -507,6 +573,8 @@ export async function GET(
         addMessage('user', '📍 ' + store.name);
         addMessage('bot', 'Got it! Showing products from our ' + store.name + ' location.' + (store.address ? ' (' + store.address + ')' : '') + ' What are you looking for today?');
         showQuickReplies();
+        // Now that store is known, fetch trending for that specific store.
+        fetchAndRenderTrending();
       });
       container.appendChild(sbtn);
     });
@@ -742,6 +810,11 @@ export async function GET(
         showStoreSelection();
       } else {
         showQuickReplies();
+        // Trending / best-sellers proactive surface — only when no store
+        // picker is in play, since picking a store changes which trending
+        // list applies. After store selection runs sendMessage/showQuickReplies,
+        // it'll re-call fetchAndRenderTrending with the chosen store.
+        fetchAndRenderTrending();
       }
     }
     applyMobileLayout();
