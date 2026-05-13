@@ -339,6 +339,13 @@ interface AlgoliaHit {
   // (1 = highest seller in the store, climbing). Used by the "Trending now"
   // proactive surface in the widget — see getBestSellers() below.
   best_seller_rank?: number | null;
+  // Jane attaches special_id / special_amount / special_title to products
+  // currently on sale. Used by getOnSaleProducts() (2026-05-13) to populate
+  // the "Today's Deals & Discounts" widget surface — pulls items the
+  // dispensary has explicitly discounted via Jane's specials engine.
+  special_id?: number | null;
+  special_amount?: string | null;
+  special_title?: string | null;
 }
 
 /**
@@ -887,6 +894,108 @@ export async function getBestSellers(
     totalScanned: allHits.length,
     rankedCount: ranked.length,
   };
+}
+
+// ── Today's Deals — products currently on a Jane special ──────────────────
+//
+// Powers the widget's "Today's Deals & Discounts" surface. Pulls products
+// that have an active `special_id` set in Algolia (= dispensary explicitly
+// discounted them via Jane's specials engine). Same shape as
+// getBestSellers — drops directly into the existing card renderer.
+//
+// Returns products with their `special_title` attached (visible at the
+// card level) so the widget can group cards by promo or show a banner.
+
+export interface OnSaleResult {
+  products: Array<JaneProduct & { specialTitle?: string; specialAmount?: string }>;
+  /** Distinct special titles across the returned set (for grouping/banners). */
+  specialTitles: string[];
+}
+
+export async function getOnSaleProducts(
+  config: JaneConfig,
+  opts: {
+    storeId?: string;
+    channel?: 'pickup' | 'delivery' | 'either';
+    limit?: number;
+  } = {},
+): Promise<OnSaleResult> {
+  const storeId = opts.storeId || config.defaultStore;
+  const channel = opts.channel ?? 'either';
+  const limit = Math.max(1, Math.min(opts.limit ?? 3, 8));
+
+  const store = config.stores[storeId] || config.stores[config.defaultStore];
+  if (!store) return { products: [], specialTitles: [] };
+
+  // Filter for products with an active special — special_id is non-null on
+  // discounted SKUs, null otherwise. Pair with the channel availability
+  // filter so we don't show OOS deals.
+  const filters: string[] = [
+    `store_id:${store.algoliaStoreId}`,
+    'special_id > 0',
+  ];
+  if (channel === 'pickup') filters.push('available_for_pickup:true');
+  else if (channel === 'delivery') filters.push('available_for_delivery:true');
+  else filters.push('(available_for_pickup:true OR available_for_delivery:true)');
+
+  const algoliaBase = `https://${config.algoliaAppId}-dsn.algolia.net/1/indexes/${config.algoliaIndex}/query`;
+  let res: Response;
+  try {
+    res = await fetch(algoliaBase, {
+      method: 'POST',
+      headers: {
+        'X-Algolia-Application-Id': config.algoliaAppId,
+        'X-Algolia-API-Key': config.algoliaSearchKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: '',
+        filters: filters.join(' AND '),
+        hitsPerPage: 30, // over-fetch — we sort + trim client-side
+        // Rank deals by review_count (most-loved discounted items first).
+        attributesToRetrieve: [
+          'product_id', 'name', 'brand', 'kind', 'root_types', 'root_subtype',
+          'custom_product_type', 'category', 'percent_thc', 'percent_cbd',
+          'bucket_price', 'url_slug', 'available_weights', 'image_urls',
+          'feelings', 'activities', 'description', 'aggregate_rating',
+          'review_count', 'available_for_delivery', 'available_for_pickup',
+          'best_seller_rank', 'special_id', 'special_amount', 'special_title',
+        ],
+      }),
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch (err) {
+    console.warn('[jane/on-sale] Algolia fetch failed:', err instanceof Error ? err.message : err);
+    return { products: [], specialTitles: [] };
+  }
+  if (!res.ok) {
+    console.warn(`[jane/on-sale] Algolia ${res.status}`);
+    return { products: [], specialTitles: [] };
+  }
+
+  const data = (await res.json()) as { hits?: AlgoliaHit[] };
+  const allHits = data.hits ?? [];
+
+  // Prefer hits with both a special AND solid social proof (rating+reviews).
+  // Falls back to recency / random ordering for new SKUs.
+  const ranked = allHits
+    .filter(h => h.special_id != null && (h.special_id as number) > 0)
+    .sort((a, b) => (b.review_count ?? 0) - (a.review_count ?? 0))
+    .slice(0, limit);
+
+  const products = ranked.map(h => {
+    const base = algoliaHitToProduct(h, store.baseUrl, config.cartDeeplinkParam);
+    return {
+      ...base,
+      specialTitle: h.special_title || undefined,
+      specialAmount: h.special_amount || undefined,
+    };
+  });
+
+  // Dedupe special_title set for the optional banner
+  const specialTitles = Array.from(new Set(products.map(p => p.specialTitle).filter(Boolean) as string[]));
+
+  return { products, specialTitles };
 }
 
 // ── Firecrawl Search (Fallback) ─────────────────────────────────────────────

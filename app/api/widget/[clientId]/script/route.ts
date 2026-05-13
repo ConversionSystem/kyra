@@ -126,10 +126,17 @@ export async function GET(
       status: 304,
       headers: {
         ETag: etag,
-        // Same Cache-Control as the 200 path so intermediaries treat
-        // both alike; otherwise the 304 could end up cached longer than
-        // a 200 and stall future revalidations.
-        'Cache-Control': 'public, max-age=0, must-revalidate',
+        // 2026-05-13: hardened cache directive. Customer report: "saves
+        // still don't propagate instantly." Root cause: `public, max-age=0,
+        // must-revalidate` lets browsers cache the script and soft-reload
+        // (F5/Cmd-R) often bypasses revalidation on <script> tags — only
+        // hard refresh forced a fresh fetch. Switched to no-store +
+        // no-cache (no caching, no revalidation needed) so every page load
+        // gets the fresh script. Trades a ~62KB refetch per page load for
+        // guaranteed instant config propagation.
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        Pragma: 'no-cache',
+        Vary: '*',
         'Access-Control-Allow-Origin': '*',
       },
     });
@@ -189,8 +196,12 @@ export async function GET(
   const widgetAvatarEmoji = (cfg.widget_avatar as string) || '🤖';
   const apiBase = (process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com').replace(/\/$/, '');
 
-  // The entire widget as a self-contained IIFE
-  const script = `
+  // The entire widget as a self-contained IIFE.
+  // Top-of-file version stamp helps customers verify they're seeing the
+  // freshest script — open dev tools, "View Source" on the script URL,
+  // first line shows save timestamp. Should match agency_clients.updated_at.
+  const versionStamp = `/* kyra-widget client=${clientId.slice(0, 8)} version=${updatedAtRaw} */\n`;
+  const script = versionStamp + `
 (function() {
   'use strict';
 
@@ -546,13 +557,37 @@ export async function GET(
     var container = document.createElement('div');
     container.className = 'kyra-quick-replies';
     container.id = 'kyra-quick-replies';
+    // QUICK_REPLIES entries are either plain strings (sent as a chat message
+    // on click) OR objects { label, url } (open the URL in a new tab on
+    // click — useful for CTAs like "LOTUS NOW" that should deep-link to a
+    // dedicated page rather than start a conversation).
     QUICK_REPLIES.forEach(function(reply) {
+      var label, url;
+      if (reply && typeof reply === 'object') {
+        label = reply.label || '';
+        url = reply.url || '';
+      } else {
+        label = String(reply || '');
+        url = '';
+      }
+      if (!label) return;
       var qbtn = document.createElement('button');
       qbtn.className = 'kyra-quick-btn';
-      qbtn.textContent = reply;
+      qbtn.textContent = label;
+      if (url) {
+        // Mark URL-style chips visually distinct so customers can tell at a
+        // glance which chips open a page vs. start a conversation.
+        qbtn.style.color = COLOR;
+        qbtn.style.borderColor = COLOR + '60';
+        qbtn.style.fontWeight = '700';
+      }
       qbtn.addEventListener('click', function() {
-        inputEl.value = reply;
-        sendMessage();
+        if (url) {
+          window.open(url, '_blank', 'noopener,noreferrer');
+        } else {
+          inputEl.value = label;
+          sendMessage();
+        }
       });
       container.appendChild(qbtn);
     });
@@ -594,7 +629,7 @@ export async function GET(
         // don't barge in once a real conversation has begun. We check by
         // looking for a user message bubble; the welcome state has none.
         if (messagesEl.querySelector('.kyra-msg.user')) return;
-        renderTrending(data.label || '\\ud83d\\udd25 Trending now', data.products);
+        renderTrending(data.label || "\\ud83d\\udd25 Today's Deals", data.products);
       })
       .catch(function() { /* fail silently — discovery is best-effort */ });
   }
@@ -1336,15 +1371,16 @@ export async function GET(
     status: 200,
     headers: {
       'Content-Type': 'application/javascript; charset=utf-8',
-      // 2026-05-12 final: must-revalidate. Every request to the script
-      // validates with origin via If-None-Match. 304 when unchanged (cheap
-      // — no body, ~50B response), 200 with fresh script when the
-      // dashboard saves and updated_at advances. This makes save→site
-      // propagation effectively INSTANT (limited only by the network
-      // round-trip) at the cost of one revalidation request per page
-      // load. For a chat widget this is the right tradeoff: customer
-      // sees every config change immediately, no "did it save?" anxiety.
-      'Cache-Control': 'public, max-age=0, must-revalidate',
+      // 2026-05-13: no-store + no-cache + must-revalidate. Customer
+      // reported that "public, max-age=0, must-revalidate" still let
+      // browsers soft-cache the script — soft-reloads on <script> tags
+      // sometimes skip revalidation. no-store kills the cache entirely:
+      // every page load fetches the fresh script. Costs ~62KB per page
+      // but guarantees the customer sees their saves immediately, which
+      // was the explicit business requirement.
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+      Pragma: 'no-cache',
+      Vary: '*',
       ETag: etag,
       'Access-Control-Allow-Origin': '*',
     },

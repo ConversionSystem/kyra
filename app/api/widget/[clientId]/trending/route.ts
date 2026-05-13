@@ -30,7 +30,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabase } from '@supabase/supabase-js';
-import { buildJaneConfigFromContainerConfig, getBestSellers, type JaneProduct } from '@/lib/integrations/jane';
+import { buildJaneConfigFromContainerConfig, getBestSellers, getOnSaleProducts, type JaneProduct } from '@/lib/integrations/jane';
 
 // CORS: widget is embedded on external sites
 const CORS = {
@@ -109,20 +109,42 @@ export async function GET(
   // Cache key
   const cacheKey = `${clientId}:${effectiveStoreId}:${channel}:${limit}`;
   const cached = TRENDING_CACHE.get(cacheKey);
+  // 2026-05-13: re-purposed surface from "Trending" → "Today's Deals & Discounts".
+  // Customer feedback: trending is generic; deals drive clicks. The label is
+  // overridable per-client via container_config.widget_trending_label.
+  const surfaceLabel = (cfg.widget_trending_label as string) || "🔥 Today's Deals";
   if (cached && cached.expiresAt > Date.now()) {
-    return respond(cached.products, { fromCache: true, label: (cfg.widget_trending_label as string) || '🔥 Trending now' });
+    return respond(cached.products, { fromCache: true, label: surfaceLabel });
   }
 
-  // Fresh fetch from Algolia
+  // Fresh fetch. Priority cascade:
+  //   1. getOnSaleProducts — items with an active special_id (true deals)
+  //   2. getBestSellers — fallback when no products are explicitly on sale
+  //      (already chains internally to review_count when best_seller_rank
+  //      is empty, e.g. on indexes that don't populate it)
   const t0 = Date.now();
-  const { products, rankedCount } = await getBestSellers(janeConfig, {
+  const { products: dealProducts, specialTitles } = await getOnSaleProducts(janeConfig, {
     storeId: effectiveStoreId,
     channel,
     limit,
   });
+  let products = dealProducts as Array<JaneProduct & { specialTitle?: string; specialAmount?: string }>;
+  let source: 'deals' | 'best_sellers' = 'deals';
+  let rankedCount = products.length;
+  if (products.length === 0) {
+    const fallback = await getBestSellers(janeConfig, {
+      storeId: effectiveStoreId,
+      channel,
+      limit,
+    });
+    products = fallback.products as typeof products;
+    source = 'best_sellers';
+    rankedCount = fallback.rankedCount;
+  }
   console.log(
     `[widget/trending] ${clientId.slice(0, 8)} store=${effectiveStoreId} channel=${channel} ` +
-    `limit=${limit} → ${products.length}/${rankedCount} ranked in ${Date.now() - t0}ms`,
+    `limit=${limit} source=${source} → ${products.length}/${rankedCount} in ${Date.now() - t0}ms ` +
+    `specialTitles=${JSON.stringify(specialTitles).slice(0, 80)}`,
   );
 
   if (products.length === 0) {
@@ -161,7 +183,7 @@ export async function GET(
   TRENDING_CACHE.set(cacheKey, { products: finalProducts, expiresAt: Date.now() + TRENDING_CACHE_TTL_MS });
   return respond(finalProducts, {
     fromCache: false,
-    label: (cfg.widget_trending_label as string) || '🔥 Trending now',
+    label: surfaceLabel,
   });
 }
 
