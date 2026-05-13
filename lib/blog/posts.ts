@@ -11,6 +11,237 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'openclaw-automation-hooks-cron-tasks-standing-orders-2026',
+    title: 'OpenClaw Automation in 2026: Hooks, Cron, Tasks, and Standing Orders Explained',
+    description: 'OpenClaw automation in 2026 has four layers: hooks for events, cron for schedules, the Task Brain tasks ledger, and standing orders for durable agent authority. CLI setup, comparison table, FAQ for agency operators.',
+    date: '2026-05-13',
+    readMins: 15,
+    category: 'AI Infrastructure',
+    emoji: '⚙️',
+    content: `
+<p><em>Last updated: May 13, 2026</em></p>
+
+<p><strong>OpenClaw automation</strong> is the four-layer system an AI gateway uses to do work without a human typing into a chat window. It combines hooks that react to events, cron jobs that run on a schedule, a background tasks ledger that tracks every detached run, and standing orders that grant an agent durable operating authority. In 2026 these four layers stopped being separate experiments and merged into one coherent surface, shipped together in the OpenClaw 2026.3.31 "Task Brain" release. Understanding which layer to reach for is the difference between an AI worker that answers questions and one that quietly runs a business after you log off.</p>
+
+<p>This post walks through what each automation type does, when to pick it, and how the four layers compose into something that actually replaces a junior operator. The aim is a working mental model for agency owners deploying AI workers across client accounts, not an exhaustive API tour. Every command shown runs against the gateway included in OpenClaw v2026.4.26.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>OpenClaw exposes four automation primitives: <strong>hooks</strong> (react to 28 event types), <strong>cron</strong> (scheduled agent turns), <strong>background tasks</strong> (the ledger of detached work), and <strong>standing orders</strong> (durable operating authority encoded in workspace files).</li>
+    <li>The March 31, 2026 "Task Brain" release unified ACP runs, subagent spawns, isolated cron executions, and CLI-initiated jobs into one SQLite-backed ledger you can query with <code>openclaw tasks list</code> or the in-session <code>/tasks</code> command.</li>
+    <li>Cron jobs persist in <code>~/.openclaw/cron/jobs.json</code> with runtime state in <code>jobs-state.json</code>. Recurring top-of-hour schedules are staggered by up to five minutes to flatten load spikes; pass <code>--exact</code> to disable.</li>
+    <li>Hooks fire on events like <code>command:new</code>, <code>gateway:startup</code>, <code>message:received</code>, <code>agent:bootstrap</code>, and <code>session:compact:before</code>. Three hooks ship in the box: <code>session-memory</code>, <code>command-logger</code>, and <code>bootstrap-extra-files</code>.</li>
+    <li>Standing orders live in <code>AGENTS.md</code> and grant the agent permanent authority over a program (weekly report, lead follow-up, inbox triage) with explicit triggers and escalation rules. They are the layer that lets you walk away.</li>
+    <li>Pick the layer that matches the trigger. Event happened? Hook. Clock ticked? Cron. Long-running detached work? Task. Recurring program the agent owns? Standing order.</li>
+  </ul>
+</div>
+
+<h2>What "automation" actually means inside OpenClaw</h2>
+
+<p>The word <em>automation</em> covers a lot of ground in 2026. For an agency deploying AI workers, it tends to mean three different things in the same sentence: "the agent should answer messages by itself," "the agent should run a recap at 6pm," and "the agent should chase last week's stale leads without being asked." Each of those is a different OpenClaw primitive. Conflating them is the most common reason a working pilot turns into an after-hours pager rotation.</p>
+
+<p>The four layers map cleanly to the four triggers an AI worker can have. A hook fires when an event happens inside the gateway. A cron job fires when the clock matches a schedule. A background task is what runs when work has to outlive a single chat turn. A standing order is the durable program an agent has been given permission to execute whenever its trigger condition shows up. Every useful AI worker is some combination of all four.</p>
+
+<p>What changed in 2026 is that these four primitives now share state. Before the March 31 "Task Brain" release, cron logged to its own file, hooks emitted to stdout, ACP runs lived in memory, and standing orders were just convention. After it, every detached run lands in one SQLite ledger that the gateway, the CLI, and the agent itself can read. That single ledger is what makes the four layers feel like one product rather than four scripts.</p>
+
+<h2>Hooks: react to events as they happen</h2>
+
+<p>Hooks are event-driven automations that fire when something specific happens inside the gateway. They are conceptually identical to git hooks or CI/CD triggers, just for an AI agent's lifecycle instead of a code repository.</p>
+
+<p>Each hook subscribes to one or more of roughly 28 event types. Five of the most useful in production:</p>
+
+<ul>
+  <li><code>command:new</code> — the user issued <code>/new</code> or <code>/reset</code>. Standard place to compact memory and snapshot the session.</li>
+  <li><code>message:received</code> — an inbound message arrived from any channel. Useful for spam filtering, priority routing, or starting a workflow before the agent even reads the message.</li>
+  <li><code>agent:bootstrap</code> — the agent is initializing a new session. The right place to inject a dynamic system prompt, today's date, or environment context.</li>
+  <li><code>gateway:startup</code> — fires once, after channels start and other hooks load. Useful for sanity checks or one-shot setup.</li>
+  <li><code>session:compact:before</code> — the runtime is about to summarize older turns to free up tokens. Hook here to save key facts to long-term memory before they get compressed away.</li>
+</ul>
+
+<p>OpenClaw ships with three hooks in the box. The <code>session-memory</code> hook writes a Markdown snapshot of the current session into <code>~/.openclaw/workspace/memory/</code> every time you run <code>/new</code> or <code>/reset</code>, with the filename including the date and a slug. Over a few weeks you end up with a searchable archive of what the agent has worked on. The <code>command-logger</code> hook keeps an audit trail of every command in <code>~/.openclaw/logs/commands.log</code> — timestamp, session ID, payload — which is the cheap version of a compliance log. The <code>bootstrap-extra-files</code> hook lets a monorepo inject custom <code>AGENTS.md</code> or <code>TOOLS.md</code> files into the workspace at session start.</p>
+
+<p>Hooks are the right primitive when the trigger is "something happened" rather than "it is now this time." If your reaction has to happen within the same turn as the event, do not reach for cron. Use a hook.</p>
+
+<h2>Cron jobs: agent turns on a schedule</h2>
+
+<p>Cron is OpenClaw's built-in scheduler. It does what <code>cron(8)</code> does on Unix, except instead of running a shell command it wakes the agent, runs an agent turn against a defined prompt, and delivers the output back to a chat channel or a webhook endpoint.</p>
+
+<p>Job definitions persist at <code>~/.openclaw/cron/jobs.json</code> so restarts do not lose schedules. Runtime execution state — last fired, next fire, status — lives in a separate <code>jobs-state.json</code>. On gateway startup, overdue isolated jobs are rescheduled out of the channel-connect window so Discord, Telegram, and native-command setup stay responsive.</p>
+
+<p>Two practical defaults are worth knowing. First, recurring top-of-hour expressions are automatically staggered by up to five minutes. This is deliberate: a hundred gateways all hammering OpenRouter or Anthropic at <code>0 * * * *</code> would create a load spike. If you need exact timing — perhaps the schedule has to align with an external API window — pass <code>--exact</code>. Second, you can override the stagger window with <code>--stagger 30s</code> or any duration string.</p>
+
+<p>Here is a complete setup for a daily 6pm client recap, posted to Slack:</p>
+
+<pre><code># Create a daily cron job
+openclaw cron add \\
+  --schedule "0 18 * * *" \\
+  --channel slack \\
+  --target "#dental-ops" \\
+  --prompt "Summarize today's appointments, missed calls, and outstanding lead follow-ups. Flag anything that needs a human."
+
+# List all jobs in machine-readable form
+openclaw cron list --json
+
+# Inspect one job
+openclaw cron show &lt;job-id&gt; --json
+
+# Run it once to verify before letting the schedule take over
+openclaw cron run &lt;job-id&gt;</code></pre>
+
+<p>Cron is the right primitive when the trigger is "it is now this time." Daily recaps, weekly reports, monthly billing summaries, the 5am inventory check before the warehouse opens. If you are tempted to put a <code>setInterval</code> in your own code instead, stop and use cron — the ledger, the retry behavior, and the channel delivery are already done for you.</p>
+
+<h2>Background tasks: the operator ledger</h2>
+
+<p>Background tasks are the activity record for work that runs outside the main conversation. That includes ACP (agent-control-protocol) runs invoked from the dashboard, subagent spawns from the in-session orchestrator, isolated cron job executions, and CLI-initiated long-runs. The unifying layer is the SQLite-backed ledger introduced as "Task Brain" in OpenClaw 2026.3.31.</p>
+
+<p>Every task moves through the same lifecycle: <code>queued</code> &rarr; <code>running</code> &rarr; one of five terminal states (<code>succeeded</code>, <code>failed</code>, <code>timed_out</code>, <code>cancelled</code>, <code>lost</code>). The <code>lost</code> state is the one most operators have not seen before: it means the gateway restarted while the task was running and never heard from it again. Surfacing <code>lost</code> as a distinct state instead of silently flipping it to <code>failed</code> is what makes the ledger useful for debugging.</p>
+
+<p>Two interfaces read the same ledger. Inside a chat session, the agent or operator can run <code>/tasks</code> to see background work linked to that session, with runtime, status, timing, and progress or error detail. From the CLI, <code>openclaw tasks list</code> shows the full operator view across every session, channel, and workspace.</p>
+
+<p>Background tasks are not something you typically <em>create</em> directly. They are the byproduct of the other three primitives. A hook can spawn one. A cron job is one. A standing order's execution shows up as one. You query them when you want to know what your AI workforce was doing while you were not watching. Treat the ledger as the AI equivalent of a logfile, not the AI equivalent of a cron table.</p>
+
+<h2>Standing orders: durable agent programs</h2>
+
+<p>Standing orders are the layer that lets you stop micromanaging. Where a hook reacts and a cron fires, a standing order is a program the agent owns. The difference is the same as telling an assistant "please send the weekly report this Friday" versus "you own the weekly report, do it every Friday, only escalate if something looks wrong."</p>
+
+<p>Standing orders live in your agent workspace files. The recommended pattern is to put them directly in <code>AGENTS.md</code>, which the gateway auto-injects every session so the agent always has them in context. A standing order has four parts: a name, a clear scope, an explicit trigger, and an escalation rule.</p>
+
+<p>Here is a minimal standing order block from a real dental client deployment:</p>
+
+<pre><code># Standing order: stale-lead-followup
+
+Scope:
+  - You own follow-up for every lead in pipeline stage "consultation booked"
+    that has had no activity for 5+ business days.
+
+Trigger:
+  - Every weekday at 9am, scan GHL pipeline for matching leads.
+
+Authority:
+  - Send a single follow-up SMS using the "polite check-in" template.
+  - Update the GHL lead note with what you sent and when.
+
+Escalation:
+  - If the lead has already received 3 automated touches, do nothing
+    and add a "needs human" tag instead.
+  - If the lead replies with intent to cancel, page the on-call operator.
+
+Reporting:
+  - At the end of each run, post a one-line summary to #ops:
+    "stale-lead-followup: touched N, escalated M, skipped K."</code></pre>
+
+<p>The 9am scan is implemented as a cron job that prompts the agent to "execute your stale-lead-followup standing order." The follow-up SMS is a tool call. The escalation is another hook. The summary post is the report step. The standing order is the spec that ties them together and gives the agent the right to do it without asking.</p>
+
+<p>Every step in a standing order should follow an Execute-Verify-Report loop. Execute the action, verify the result is correct, report what was done. Without the verify step, autonomous agents will happily mark work complete that quietly failed. With it, you get a daily summary you can scan in ten seconds.</p>
+
+<h2>A working example: daily client digest in eight minutes</h2>
+
+<p>To make the four layers concrete, here is the smallest useful end-to-end automation: a daily digest of yesterday's activity for one client, delivered at 7am their local time, with every email or appointment that needs a human attached at the bottom.</p>
+
+<ol>
+  <li><strong>Workspace.</strong> Drop a <code>standing-order-digest.md</code> in the client's workspace describing the program: scope (one client), trigger (daily 7am), authority (read calendar and email, summarize, do not reply), reporting (post to the configured channel).</li>
+  <li><strong>Standing order.</strong> Reference the file from <code>AGENTS.md</code> so the agent loads it every session.</li>
+  <li><strong>Cron.</strong> Add a cron job at <code>0 7 * * *</code> in the client's timezone with the prompt "Execute your daily digest standing order for today." Pass <code>--channel slack --target #client-ops</code> so the output lands in the right place.</li>
+  <li><strong>Hook.</strong> Subscribe a <code>session:compact:before</code> hook that writes the digest into <code>~/.openclaw/workspace/memory/digests/</code> so older digests survive context compaction and remain searchable.</li>
+  <li><strong>Tasks.</strong> Tail <code>openclaw tasks list --since "1 day ago"</code> for the first week. The ledger will show every run with success or error state. Anything in <code>failed</code>, <code>timed_out</code>, or <code>lost</code> goes in the post-mortem.</li>
+</ol>
+
+<p>That is the whole stack. Each layer pulls its weight. Remove cron and the digest never fires. Remove the standing order and the agent does not know what to do when it does. Remove the hook and the digest disappears the next time the context compacts. Remove the ledger and you cannot tell whether last Tuesday's run actually happened.</p>
+
+<h2>When to use which: comparison table</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Primitive</th>
+      <th>Trigger</th>
+      <th>Lives in</th>
+      <th>Right call when</th>
+      <th>Wrong call when</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Hook</td>
+      <td>Event (28 types)</td>
+      <td><code>hooks/</code> directory + gateway config</td>
+      <td>Reaction must happen the moment an event fires (compact, message, command, startup)</td>
+      <td>Reaction can wait minutes; clock is the real trigger</td>
+    </tr>
+    <tr>
+      <td>Cron job</td>
+      <td>Schedule (cron expression)</td>
+      <td><code>~/.openclaw/cron/jobs.json</code></td>
+      <td>Recurring task on a clock — daily recap, weekly report, hourly health check</td>
+      <td>You need sub-minute granularity, or the trigger is really an event</td>
+    </tr>
+    <tr>
+      <td>Background task</td>
+      <td>Created by another primitive</td>
+      <td>SQLite ledger (<code>~/.openclaw/tasks.db</code>)</td>
+      <td>You need to query, retry, or audit detached work after the fact</td>
+      <td>You are tempted to create one by hand for synchronous work</td>
+    </tr>
+    <tr>
+      <td>Standing order</td>
+      <td>Pattern of conditions the agent owns</td>
+      <td><code>AGENTS.md</code> in workspace</td>
+      <td>Recurring program with judgment, scope, and escalation — the thing a junior would own</td>
+      <td>A single one-off action; a deterministic script will be cheaper</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>If you are unsure, start with the trigger. "Something happened" goes to hooks. "It is now this time" goes to cron. "Here is a job you own" goes to a standing order. The ledger is the audit layer for all three.</p>
+
+<h2>How OpenClaw automation compares to Claude Code hooks</h2>
+
+<p>If you have used Anthropic's Claude Code, you already know one corner of this design. Claude Code ships twelve lifecycle hook events of its own — <code>SessionStart</code>, <code>SessionEnd</code>, <code>UserPromptSubmit</code>, <code>PreToolUse</code>, <code>PostToolUse</code>, <code>Stop</code>, and so on — and they run deterministic shell commands around the model's agentic loop. A typical <code>PostToolUse</code> hook runs Prettier after a file write or kicks off a security scan after an edit. Anthropic's documentation calls hooks the "deterministic control layer" for agents, which is exactly what OpenClaw's are for too.</p>
+
+<p>The OpenClaw model is a superset rather than a replacement. Hooks cover the same per-turn event slots Claude Code does. Cron adds time-based triggers Claude Code does not have. The tasks ledger adds the operator view Claude Code does not need because it runs interactively on a developer laptop. Standing orders add the durable program layer that distinguishes a server-side AI worker from a CLI tool you invoke. The two systems point at the same problem from different ends.</p>
+
+<h2>When this stack isn't for you</h2>
+
+<p>OpenClaw automation is overbuilt for a lot of real use cases. A handful where you should not bother:</p>
+
+<ul>
+  <li><strong>You only need a chatbot.</strong> If the entire job is "answer questions on a website widget," skip cron and standing orders. You want a chat-only deployment with a tight system prompt. Adding hooks at that stage is premature.</li>
+  <li><strong>Your workflows are deterministic.</strong> If the work is "every Friday, copy column A to column B in this spreadsheet," that is a Make or Zapier job. Putting an LLM in the middle adds cost and a failure mode you do not need.</li>
+  <li><strong>You are still validating the prompt.</strong> Standing orders assume the agent does the work correctly nine times out of ten. If you are still iterating on whether the agent should reply at all, do not promote it to a program. Run it in a chat session first.</li>
+  <li><strong>You do not have a logfile habit.</strong> The tasks ledger is only useful if somebody reads it. If nobody on your team will check <code>openclaw tasks list</code> for a failed run, you do not have an AI workforce. You have an unattended script.</li>
+</ul>
+
+<p>The honest framing: hooks, cron, tasks, and standing orders matter when the agent is doing things you cannot supervise in real time. For everything below that bar, plain chat with a tight prompt is fine, and probably cheaper.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>What is OpenClaw automation in one sentence?</h3>
+<p>OpenClaw automation is a four-layer system — hooks, cron jobs, background tasks, and standing orders — that lets a self-hosted AI gateway take action on events, on a schedule, or under durable agent authority, with a unified SQLite ledger tracking every detached run.</p>
+
+<h3>What is the difference between a hook and a cron job in OpenClaw?</h3>
+<p>A hook fires when a specific event happens inside the gateway (a message arrives, a session starts, a command runs). A cron job fires when the wall clock matches a schedule. Hooks are the right answer when the trigger is "something happened." Cron is the right answer when the trigger is "it is now this time."</p>
+
+<h3>What is the "Task Brain" release?</h3>
+<p>"Task Brain" is the unified task ledger introduced in OpenClaw 2026.3.31. It consolidates agent-control-protocol runs, subagent spawns, isolated cron executions, and CLI-initiated background processes into a single SQLite-backed layer that <code>openclaw tasks list</code> and the in-session <code>/tasks</code> command both query.</p>
+
+<h3>How do standing orders differ from a long system prompt?</h3>
+<p>A standing order is a program with explicit scope, trigger, authority, and escalation rules — usually one section of <code>AGENTS.md</code>. A long system prompt is undifferentiated context. Standing orders give the agent permission to act on a recurring pattern without re-asking. System prompts tell the agent who it is. Both ship together in the workspace, but they answer different questions.</p>
+
+<h3>Where do cron jobs and tasks actually live on disk?</h3>
+<p>Cron definitions persist in <code>~/.openclaw/cron/jobs.json</code> and runtime state in <code>~/.openclaw/cron/jobs-state.json</code>. The unified background tasks ledger lives in the SQLite database at <code>~/.openclaw/tasks.db</code>. Hooks live as small scripts inside the gateway's hooks directory, registered through the gateway config.</p>
+
+<h3>Can I run all four primitives without writing code?</h3>
+<p>Mostly yes. Hooks, cron jobs, and standing orders are all editable as text files in the workspace, and the CLI ships subcommands for adding and listing them. Custom hook logic — anything beyond the three bundled hooks — does require a small script in the gateway language. Standing orders are pure Markdown.</p>
+
+<h2>Wiring it into a real agency stack</h2>
+
+<p>The reason this matters for agency owners is the unit of work. A chat-only AI worker is billed per conversation and capped by the channel it lives on. An automation-aware AI worker handles the dozen recurring jobs around the conversation — the morning recap, the stale-lead chase, the after-hours triage, the weekly report — and those jobs add up to the revenue line that justifies the per-client fee. Hooks and cron are the difference between selling a chatbot and selling an operator.</p>
+
+<p>If you want the same architecture without standing up the gateway yourself, this is roughly what Kyra automates for agencies: per-client OpenClaw containers with hooks, cron, tasks, and standing orders pre-wired into the dashboard, so deploying a new client's automation stack is configuration rather than infrastructure. You can read the underlying primitives in the official <a href="https://docs.openclaw.ai/automation/hooks">OpenClaw hooks reference</a> and the <a href="https://docs.openclaw.ai/automation/cron-jobs">cron jobs documentation</a>, and the corresponding agent-side patterns in <a href="https://docs.anthropic.com">Anthropic's Claude documentation</a> and the source on <a href="https://github.com/openclaw/openclaw">GitHub</a>. For deeper Kyra-side reading, the <a href="/blog/ai-agent-memory-systems-openclaw-2026">memory systems post</a> covers what the agent remembers between runs, the <a href="/blog/openclaw-session-keys-explained-2026">session keys post</a> covers how channels stay isolated, and the <a href="/solo">Kyra Solo plan</a> is the lightest way to get a single client's automation stack live before scaling to many.</p>
+`,
+  },
+  {
     slug: 'ai-agent-memory-systems-openclaw-2026',
     title: 'AI Agent Memory Systems in 2026: How OpenClaw Workspaces, SOUL.md, and Context Compaction Actually Work',
     description: 'AI agent memory in 2026 is three layers: workspace files like SOUL.md and MEMORY.md, runtime context with Sonnet 4.6 compaction, and Anthropic’s memory tool for long-term storage. Step-by-step setup, comparison tables, anti-patterns, and FAQ for agency operators.',
