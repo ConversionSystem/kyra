@@ -501,7 +501,7 @@ export async function GET(
     '    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
     '  </button>',
     '</div>',
-    POWERED_BY ? '<div id="kyra-widget-powered"><a href="https://kyra.conversionsystem.com?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener">⚡ Powered by <strong>Kyra</strong></a></div>' : '',
+    POWERED_BY ? '<div id="kyra-widget-powered"><a href="https://kyra.conversionsystem.com?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" rel="noopener">⚡ Powered by <strong>Kyra</strong></a></div>' : '',
   ].join('');
   document.body.appendChild(panel);
 
@@ -583,7 +583,12 @@ export async function GET(
       }
       qbtn.addEventListener('click', function() {
         if (url) {
-          window.open(url, '_blank', 'noopener,noreferrer');
+          // 2026-05-13: same-window navigation (was _blank). Customer
+          // requested: clicking LOTUS NOW / TODAY'S DEALS / ABOUT TREEZ PAY
+          // should leave the chat and land on the page directly — these
+          // are critical CTAs, not auxiliary lookups, so a new tab broke
+          // the conversion flow ("user gets two tabs, closes the wrong one").
+          window.location.href = url;
         } else {
           inputEl.value = label;
           sendMessage();
@@ -672,7 +677,7 @@ export async function GET(
       var card = document.createElement('a');
       card.className = 'kyra-trending-card';
       card.href = url;
-      card.target = '_blank';
+      // 2026-05-13: same-window per customer directive ("ALL LINKS")
       card.rel = 'noopener';
       card.innerHTML =
         imgHtml +
@@ -736,7 +741,6 @@ export async function GET(
       var a = document.createElement('a');
       a.className = 'kyra-support-link';
       a.href = l.url;
-      a.target = '_blank';
       a.rel = 'noopener';
       a.textContent = l.label || 'Learn more';
       container.appendChild(a);
@@ -783,8 +787,8 @@ export async function GET(
         var actionsHtml =
           '<div class="kyra-card-actions">' +
             priceHtml +
-            (c.cartUrl ? '<a class="kyra-card-cta secondary" href="' + escHtml(c.url) + '" target="_blank" rel="noopener">Details</a>' : '') +
-            '<a class="kyra-card-cta" href="' + escHtml(primaryUrl) + '" target="_blank" rel="noopener">' + primaryLabel + '</a>' +
+            (c.cartUrl ? '<a class="kyra-card-cta secondary" href="' + escHtml(c.url) + '" rel="noopener">Details</a>' : '') +
+            '<a class="kyra-card-cta" href="' + escHtml(primaryUrl) + '" rel="noopener">' + primaryLabel + '</a>' +
           '</div>';
         // Build rating row — only shown if Jane returns a non-zero rating
         // with at least 1 review (filters out brand-new SKUs that have no
@@ -817,7 +821,6 @@ export async function GET(
       var a = document.createElement('a');
       a.className = 'kyra-browse-more';
       a.href = browseMore.url;
-      a.target = '_blank';
       a.rel = 'noopener';
       var totalTxt = browseMore.totalCount ? 'Browse all ' + browseMore.totalCount + ' ' : 'Browse ';
       a.textContent = totalTxt + (browseMore.label || 'Products') + ' \\u2192';
@@ -836,14 +839,14 @@ export async function GET(
     // 1. Convert markdown links [text](url) → null-char placeholder
     s = s.replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, function(_, txt, url) {
       var label = txt.toLowerCase().indexOf('http') === 0 ? 'View Product \\u2192' : escHtml(txt);
-      links.push('<a href="' + escHtml(url) + '" target="_blank" rel="noopener" class="kyra-product-link">' + label + '</a>');
+      links.push('<a href="' + escHtml(url) + '" rel="noopener" class="kyra-product-link">' + label + '</a>');
       return PH + 'L' + (links.length - 1) + PH;
     });
 
     // 2. Auto-link bare URLs not already captured above
     s = s.replace(/(https?:\\/\\/[^\\s<>"]+[^\\s<>.,!?;:"'\\)])/g, function(url) {
       var label = url.indexOf('/product/') > -1 ? 'View Product \\u2192' : 'View \\u2192';
-      links.push('<a href="' + escHtml(url) + '" target="_blank" rel="noopener" class="kyra-product-link">' + label + '</a>');
+      links.push('<a href="' + escHtml(url) + '" rel="noopener" class="kyra-product-link">' + label + '</a>');
       return PH + 'L' + (links.length - 1) + PH;
     });
 
