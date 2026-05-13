@@ -104,46 +104,53 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   }
 
   // ── Slug rename validation ─────────────────────────────────────────────
+  // DB convention: slugs are stored without a leading slash. Homepage
+  // row has slug='home' and page_type='homepage'. We protect the homepage
+  // row via page_type (more reliable than slug comparison) and block any
+  // other page from claiming the 'home' slot.
   if ('slug' in updates) {
     const rawSlug = String(updates.slug || '').trim().toLowerCase();
-    // Normalize: ensure leading slash, kebab-case, strip duplicate dashes.
-    const normalized = rawSlug === '/' || rawSlug === ''
-      ? '/'
-      : '/' + rawSlug
-          .replace(/^\/+/, '')
-          .replace(/[^a-z0-9\-/]+/g, '-')
-          .replace(/-+/g, '-')
-          .replace(/^-|-$/g, '');
+    // Normalize: no leading/trailing slashes, kebab-case, single dashes.
+    const normalized = rawSlug
+      .replace(/^\/+|\/+$/g, '')
+      .replace(/[^a-z0-9\-/]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
 
-    // Homepage protection — never let / be renamed, and never let another
-    // page rename TO / (only one page per site can hold the home slug).
-    if (result.page!.slug === '/' && normalized !== '/') {
-      return NextResponse.json({ error: 'The homepage slug (/) cannot be changed.' }, { status: 400 });
+    const currentPage = result.page!;
+    const isHomepageRow = currentPage.page_type === 'homepage' || currentPage.slug === 'home';
+
+    if (isHomepageRow && normalized !== currentPage.slug) {
+      return NextResponse.json(
+        { error: 'The homepage slot is reserved and its URL slug cannot be changed.' },
+        { status: 400 },
+      );
     }
-    if (result.page!.slug !== '/' && normalized === '/') {
-      return NextResponse.json({ error: 'Cannot rename a page to / — the homepage slot is reserved.' }, { status: 400 });
+    if (!isHomepageRow && (normalized === 'home' || normalized === '')) {
+      return NextResponse.json(
+        { error: 'Cannot rename a page to "home" — that slot is reserved for the homepage.' },
+        { status: 400 },
+      );
     }
 
-    // Only act if the slug is actually changing
-    if (normalized !== result.page!.slug) {
+    if (normalized !== currentPage.slug) {
       const supabaseCheck = createServiceClientWithoutCookies();
       const { data: collision } = await supabaseCheck
         .from('site_pages')
         .select('id')
         .eq('site_id', siteId)
         .eq('slug', normalized)
-        .neq('id', result.page!.id)
+        .neq('id', currentPage.id)
         .maybeSingle();
       if (collision) {
         return NextResponse.json(
-          { error: `Another page already uses the slug "${normalized}". Pick a different URL.` },
+          { error: `Another page already uses the URL "${normalized}". Pick a different slug.` },
           { status: 409 },
         );
       }
       updates.slug = normalized;
     } else {
-      // No-op slug change — drop it from the update set so the row's
-      // edited_at doesn't get touched for a non-change.
+      // No-op slug change — drop so edited_at doesn't tick.
       delete updates.slug;
     }
   }
