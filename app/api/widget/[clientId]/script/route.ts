@@ -309,17 +309,8 @@ export async function GET(
     '#kyra-widget-header .info { flex:1; min-width:0; }',
     '#kyra-widget-header .title { color:#fff; font-weight:800; font-size:16px; font-family:system-ui,-apple-system,"SF Pro Display",sans-serif; letter-spacing:-0.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }',
     '#kyra-widget-header .subtitle { color:rgba(255,255,255,0.8); font-size:12.5px; font-family:system-ui,-apple-system,sans-serif; display:flex; align-items:center; gap:5px; margin-top:2px; }',
-    /* "Now serving" badge — pins to the top of the messages area so the
-       customer can always see which store + fulfillment mode the bot is
-       answering for. Tappable: opens the in-widget store picker so the
-       user can override the inferred context if the site picker got it
-       wrong (or wasn't set at all). */
-    '#kyra-now-serving { display:flex; align-items:center; gap:8px; margin:8px 12px 0; padding:8px 12px; background:linear-gradient(135deg, ' + COLOR + '10, ' + COLOR + '20); border:1px solid ' + COLOR + '30; border-radius:12px; font-size:12px; font-family:system-ui,-apple-system,sans-serif; cursor:pointer; transition:all 0.15s; }',
-    '#kyra-now-serving:hover { background:linear-gradient(135deg, ' + COLOR + '18, ' + COLOR + '28); border-color:' + COLOR + '50; }',
-    '#kyra-now-serving .icon { font-size:14px; line-height:1; }',
-    '#kyra-now-serving .label { flex:1; color:#1f2937; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }',
-    '#kyra-now-serving .label strong { color:#111827; font-weight:700; }',
-    '#kyra-now-serving .change { font-size:11px; font-weight:600; color:' + COLOR + '; flex-shrink:0; }',
+    /* 2026-05-13: #kyra-now-serving CSS removed along with the badge it
+       styled. Store context still detected silently server-side. */
     '#kyra-widget-header .online-dot { width:8px; height:8px; border-radius:50%; background:#4ade80; flex-shrink:0; animation:kyra-pulse 2s infinite; }',
     '@keyframes kyra-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,0.4)} 50%{box-shadow:0 0 0 6px rgba(74,222,128,0)} }',
     '#kyra-widget-header .close-btn { background:rgba(255,255,255,0.12); border:none; cursor:pointer; color:#fff; font-size:18px; line-height:1; padding:6px; border-radius:50%; width:34px; height:34px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background 0.15s; }',
@@ -617,18 +608,16 @@ export async function GET(
       qbtn.className = url ? 'kyra-quick-btn kyra-quick-btn-cta' : 'kyra-quick-btn';
       qbtn.textContent = label;
       qbtn.addEventListener('click', function() {
-        if (url) {
-          trackEvent('chip_click', label, url);
-          // 2026-05-13: same-window navigation (was _blank). Customer
-          // requested: clicking LOTUS NOW / TODAY'S DEALS / ABOUT TREEZ PAY
-          // should leave the chat and land on the page directly — these
-          // are critical CTAs, not auxiliary lookups, so a new tab broke
-          // the conversion flow ("user gets two tabs, closes the wrong one").
-          window.location.href = url;
-        } else {
-          inputEl.value = label;
-          sendMessage();
-        }
+        // 2026-05-13 v2: clicking a chip ALWAYS sends a message — including
+        // URL-bearing CTA chips. The visitor stays in the chat and gets a
+        // real KB-grounded answer. The relevant URL still surfaces below
+        // the bot reply via the support-link resolver (resolveSupportLinks
+        // in lib/integrations/jane.ts maps "lotus now" / "deals" / "treez
+        // pay" intents to their chip URLs). Net result: chips become
+        // conversation starters, not navigation buttons.
+        if (url) trackEvent('chip_click', label, url);
+        inputEl.value = label;
+        sendMessage();
       });
       container.appendChild(qbtn);
     });
@@ -641,60 +630,10 @@ export async function GET(
     if (el) el.remove();
   }
 
-  // ── "Now serving" location/fulfillment context badge ──────────────────────
-  // Pins to the top of the messages area so the customer always sees which
-  // store + order mode the bot is answering for. Reads from the storefront
-  // (Jane cookies / localStorage) + the in-widget store picker, in that
-  // order of precedence. Tap to override via showStoreSelection().
-  function renderNowServingBadge() {
-    var existing = document.getElementById('kyra-now-serving');
-    if (existing) existing.remove();
-
-    var jane = readJaneContext();
-    var storeId = selectedStoreId || jane.janeStore || STORE_ID || '';
-    var orderType = sessionOrderTypeOverride || jane.orderType || '';
-
-    // Resolve store ID → friendly name via JANE_STORES config (per-client).
-    var storeLabel = '';
-    if (storeId) {
-      for (var i = 0; i < JANE_STORES.length; i++) {
-        var s = JANE_STORES[i];
-        if (String(s.id) === String(storeId) || String(s.algoliaStoreId) === String(storeId)) {
-          storeLabel = s.name;
-          break;
-        }
-      }
-    }
-
-    // Only render the badge if we have SOMETHING concrete to show. Without
-    // a store name or fulfillment mode it's noise — better to omit than
-    // show "📍 chatting with the bot" which adds nothing.
-    if (!storeLabel && !orderType) return;
-
-    var icon = orderType === 'delivery' ? '\\ud83d\\ude9a' : '\\ud83c\\udfea'; // 🚚 or 🏪
-    var orderLabel = orderType ? orderType.charAt(0).toUpperCase() + orderType.slice(1) : '';
-    var parts = [];
-    if (orderLabel) parts.push('<strong>' + escHtml(orderLabel) + '</strong>');
-    if (storeLabel) parts.push(escHtml(storeLabel));
-    var labelHtml = parts.join(' \\u2022 ');
-
-    var badge = document.createElement('div');
-    badge.id = 'kyra-now-serving';
-    badge.innerHTML =
-      '<span class="icon">' + icon + '</span>' +
-      '<span class="label">Serving: ' + labelHtml + '</span>' +
-      (JANE_STORES.length > 1 ? '<span class="change">Change \\u2192</span>' : '');
-    if (JANE_STORES.length > 1) {
-      badge.addEventListener('click', function() {
-        // Open the in-widget store picker so the user can switch contexts
-        showStoreSelection();
-      });
-    } else {
-      badge.style.cursor = 'default';
-    }
-    // Pin to top of messages area
-    messagesEl.insertBefore(badge, messagesEl.firstChild);
-  }
+  // 2026-05-13: the "now serving" badge was removed per customer feedback.
+  // Store context is still detected silently via readJaneContext() on
+  // every chat request — the bot just answers per the right store
+  // without any UI artifact in the widget.
 
   // ── Trending / best-sellers proactive surface ─────────────────────────────
   // Fetches the dispensary's top in-stock sellers and renders them below the
@@ -806,9 +745,6 @@ export async function GET(
         addMessage('user', '📍 ' + store.name);
         addMessage('bot', 'Got it! Showing products from our ' + store.name + ' location.' + (store.address ? ' (' + store.address + ')' : '') + ' What are you looking for today?');
         showQuickReplies();
-        // Refresh the "now serving" badge so the new store is reflected at
-        // the top of the messages area immediately.
-        renderNowServingBadge();
         // Now that store is known, fetch trending for that specific store.
         fetchAndRenderTrending();
       });
@@ -1064,22 +1000,16 @@ export async function GET(
     } else if (!greeted && messagesEl.children.length === 0) {
       greeted = true;
       addMessage('bot', GREETING);
-      // "Now serving" badge — anchors at top of messages area showing the
-      // store + fulfillment mode pulled from the host site's storefront
-      // state (cookies + localStorage). Customer sees which context the
-      // bot is using and can tap to override on multi-store dispensaries.
-      renderNowServingBadge();
-      // Multi-store dispensary: show store selection first, then quick replies after selection
-      if (JANE_STORES.length > 1 && !selectedStoreId) {
-        showStoreSelection();
-      } else {
-        showQuickReplies();
-        // Trending / best-sellers proactive surface — only when no store
-        // picker is in play, since picking a store changes which trending
-        // list applies. After store selection runs sendMessage/showQuickReplies,
-        // it'll re-call fetchAndRenderTrending with the chosen store.
-        fetchAndRenderTrending();
-      }
+      // 2026-05-13: removed the in-widget store picker + "now serving"
+      // badge. The visitor already picked their store on the host site
+      // (Jane Roots location dropdown); the widget detects that selection
+      // SILENTLY via readJaneContext (cookies + localStorage) and ships
+      // it along with every chat request. The bot's answers are tailored
+      // to the detected store, but there's no UI artifact inside the
+      // chat — per customer feedback: "I didn't ask to add a store
+      // selection on the chat."
+      showQuickReplies();
+      fetchAndRenderTrending();
     }
     applyMobileLayout();
     setTimeout(function() {
@@ -1104,30 +1034,10 @@ export async function GET(
 
   btn.addEventListener('click', function() { isOpen ? closePanel() : openPanel(); });
 
-  // ── Listen for storefront location changes mid-session ─────────────────
-  // When the customer changes their location on the Purple Lotus / Jane
-  // Roots site WITHOUT reloading the page (e.g. picks a different store
-  // in the header dropdown), the storefront writes to localStorage. We
-  // listen for 'storage' events (which fire only on OTHER tabs by spec,
-  // not the same tab — so we also poll every 5 seconds as a fallback,
-  // cheap and bounded to the keys our scanner reads).
-  window.addEventListener('storage', function(e) {
-    if (!e.key) return;
-    if (/store|fulfillment|cart-mode|order-type/i.test(e.key)) {
-      if (isOpen) renderNowServingBadge();
-    }
-  });
-  var lastContextSig = '';
-  setInterval(function() {
-    if (!isOpen) return;
-    var ctx = readJaneContext();
-    var sig = (ctx.janeStore || '') + '|' + (ctx.orderType || '');
-    if (sig !== lastContextSig) {
-      lastContextSig = sig;
-      // Skip the very first poll's update — it just records the baseline.
-      if (lastContextSig !== '|') renderNowServingBadge();
-    }
-  }, 5000);
+  // Storefront context is read silently on every chat request via
+  // readJaneContext() — no UI listener needed. Mid-session location
+  // changes get picked up automatically on the visitor's NEXT message
+  // because readJaneContext fires fresh each time sendMessage runs.
   closeBtn.addEventListener('click', closePanel);
 
   // ── Mobile sizing (JS-driven — more reliable than CSS media queries on iOS) ─
