@@ -1640,6 +1640,11 @@ export function resolveSupportLinks(
   // to a default that works on the typical Jane build.
   const topics: Array<{ topic: string; triggers: RegExp[]; label: string; path: string }> = [
     { topic: 'ordering', triggers: [/how.*(?:order|buy|purchase|checkout)/i, /ordering/i, /how to (?:place|get)/i, /where.*(?:buy|order|shop|purchase)/i], label: 'How to Order', path: '/how-to-order' },
+    // Fast-delivery / "LOTUS NOW" CTA — Purple Lotus's express-delivery
+    // service. Triggers when the visitor mentions Lotus Now, fast/express/
+    // rapid/instant delivery, or "right now." Other dispensaries can
+    // configure a similar fast-delivery chip via container_config.support_links.
+    { topic: 'lotus_now', triggers: [/\blotus\s*now\b/i, /\b(fast|express|rapid|instant|asap|right\s+now)\s+delivery\b/i, /\bfast\s*lane\b/i], label: 'Lotus Now', path: '/lotus-now' },
     { topic: 'delivery', triggers: [/deliver|delivery zone|service area|where.*deliver/i, /shipping|do you ship/i], label: 'Delivery Info', path: '/delivery' },
     { topic: 'pickup', triggers: [/pick.?up|curbside|in.?store/i], label: 'Pickup Info', path: '/pickup' },
     { topic: 'hours', triggers: [/hours|open|close|when.*open/i], label: 'Store Hours', path: '/locations' },
