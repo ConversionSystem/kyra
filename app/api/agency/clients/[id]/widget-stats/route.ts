@@ -51,6 +51,11 @@ export async function GET(
   // Pull the most recent ~500 rows; that's enough for all insights without
   // scanning the whole history. Sorted ascending so we can compute deltas
   // between consecutive turns for avg response time.
+  //
+  // Conversation rows live alongside synthetic 'widget_event' rows in the
+  // same table (chip clicks, panel opens — see app/api/widget/[clientId]/event).
+  // We pull both and split them downstream so chip-click metrics get their
+  // own card without polluting the conversation aggregates.
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // last 30 days
   const { data: recentRows } = await supabase
     .from('client_conversations')
@@ -58,9 +63,11 @@ export async function GET(
     .eq('client_id', clientId)
     .gte('created_at', since.toISOString())
     .order('created_at', { ascending: true })
-    .limit(500);
+    .limit(1000);
 
-  const rows = recentRows ?? [];
+  const allRows = recentRows ?? [];
+  const eventRows = allRows.filter(r => r.channel === 'widget_event');
+  const rows = allRows.filter(r => r.channel !== 'widget_event');
 
   // ── Avg response time (heuristic) ──────────────────────────────────────
   // Each `client_conversations` row contains both user_message + ai_response
@@ -124,6 +131,46 @@ export async function GET(
     ? 0
     : Math.round(((totalRecent - escalationCount) / totalRecent) * 100);
 
+  // ── Chip click counts (widget_event rows) ─────────────────────────────
+  // user_message shape is "<event>:<label>" — split on the first colon.
+  const chipClickCounts = new Map<string, number>();
+  let totalChipClicks = 0;
+  for (const r of eventRows) {
+    const raw = r.user_message || '';
+    const idx = raw.indexOf(':');
+    if (idx < 0) continue;
+    const eventKind = raw.slice(0, idx);
+    if (eventKind !== 'chip_click') continue;
+    const label = raw.slice(idx + 1).trim();
+    if (!label) continue;
+    chipClickCounts.set(label, (chipClickCounts.get(label) ?? 0) + 1);
+    totalChipClicks++;
+  }
+  const topChipClicks = Array.from(chipClickCounts.entries())
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+
+  // ── Peak hour (when conversations happen) ─────────────────────────────
+  // 24-element histogram of conversation counts per hour-of-day. Useful
+  // for staffing the human-handoff queue.
+  const hourBuckets = new Array(24).fill(0);
+  for (const r of rows) {
+    try {
+      const h = new Date(r.created_at).getHours();
+      if (h >= 0 && h < 24) hourBuckets[h]++;
+    } catch { /* skip bad timestamps */ }
+  }
+  // Find peak hour
+  let peakHour = -1;
+  let peakHourCount = 0;
+  for (let h = 0; h < 24; h++) {
+    if (hourBuckets[h] > peakHourCount) {
+      peakHourCount = hourBuckets[h];
+      peakHour = h;
+    }
+  }
+
   return NextResponse.json({
     conversations: conversations ?? 0,
     messagesToday: messagesToday ?? 0,
@@ -136,5 +183,11 @@ export async function GET(
     channelMix,                 // { web: 412, sms: 23, ... }
     windowDays: 30,             // size of the analysis window
     sampleSize: totalRecent,    // how many rows the insights are computed over
+    // 2026-05-13 telemetry additions
+    topChipClicks,              // [{ label: '⚡ LOTUS NOW', count: 47 }, ...]
+    totalChipClicks,            // integer
+    hourBuckets,                // 24-element array
+    peakHour,                   // 0-23 or -1
+    peakHourCount,              // integer
   });
 }

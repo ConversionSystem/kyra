@@ -114,6 +114,12 @@ export function WidgetBuilderEmbedded({
     channelMix?: Record<string, number>;
     windowDays?: number;
     sampleSize?: number;
+    // v3 telemetry additions (2026-05-13)
+    topChipClicks?: Array<{ label: string; count: number }>;
+    totalChipClicks?: number;
+    hourBuckets?: number[];
+    peakHour?: number;
+    peakHourCount?: number;
   } | null>(null);
 
   useEffect(() => {
@@ -124,9 +130,17 @@ export function WidgetBuilderEmbedded({
       .catch(() => {});
   }, [clientId]);
 
-  // Load config from API if no initialConfig provided
+  // Refresh config from the API on every mount, EVEN when initialConfig
+  // was provided. The initialConfig prop seeds the initial state to avoid
+  // a flash of empty form (server-rendered first paint), but it goes stale
+  // the moment any field is changed elsewhere — including out-of-band SQL
+  // updates, or a separate browser tab. Always re-fetching guarantees the
+  // form reflects current DB state, which a customer in this session
+  // reported as "Quick Reply Buttons not updated" after we SQL-edited the
+  // chips. Cost: one extra API call per dashboard mount, fine for an
+  // admin-facing surface.
   useEffect(() => {
-    if (initialConfig || !clientId) return;
+    if (!clientId) return;
     fetch(`/api/agency/clients/${clientId}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
@@ -879,6 +893,76 @@ export function WidgetBuilderEmbedded({
                                 </div>
                               );
                             })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Chip clicks — top URL chips by click count */}
+                      {(stats.totalChipClicks ?? 0) > 0 && (stats.topChipClicks ?? []).length > 0 && (
+                        <div className="p-4 rounded-xl bg-white border border-gray-200">
+                          <div className="flex items-baseline justify-between mb-3">
+                            <p className="text-sm font-semibold text-gray-700">Top chip clicks</p>
+                            <span className="text-xs text-gray-500">{stats.totalChipClicks} total clicks tracked</span>
+                          </div>
+                          <ol className="space-y-1.5">
+                            {(stats.topChipClicks ?? []).slice(0, 6).map((c, i) => {
+                              const maxCount = Math.max(1, ...(stats.topChipClicks ?? []).map(x => x.count));
+                              const pct = Math.round((c.count / maxCount) * 100);
+                              return (
+                                <li key={i} className="flex items-center gap-3 text-sm">
+                                  <span className="w-5 text-xs text-gray-400 font-mono">{i + 1}.</span>
+                                  <span className="flex-1 text-gray-700 truncate" title={c.label}>{c.label}</span>
+                                  <div className="w-24 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                    <div className="h-full bg-indigo-500" style={{ width: `${pct}%` }} />
+                                  </div>
+                                  <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5 w-10 text-center">×{c.count}</span>
+                                </li>
+                              );
+                            })}
+                          </ol>
+                          <p className="text-[11px] text-gray-500 mt-3 italic">
+                            Tracks clicks on CTA chips (URL-bearing quick replies). Use this to A/B test which CTAs drive the most navigation.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Peak hour — when conversations cluster */}
+                      {(stats.peakHour ?? -1) >= 0 && (stats.peakHourCount ?? 0) > 0 && (
+                        <div className="p-4 rounded-xl bg-white border border-gray-200">
+                          <p className="text-sm font-semibold text-gray-700 mb-2">Peak activity hour</p>
+                          <div className="flex items-baseline gap-3">
+                            <span className="text-3xl font-extrabold text-gray-900">
+                              {(() => {
+                                const h = stats.peakHour ?? 0;
+                                const ampm = h >= 12 ? 'PM' : 'AM';
+                                const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+                                return `${hour12} ${ampm}`;
+                              })()}
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              {stats.peakHourCount} conversations during this hour-of-day (rolling {stats.windowDays}d)
+                            </span>
+                          </div>
+                          {/* 24-hour sparkbar */}
+                          {(stats.hourBuckets ?? []).length === 24 && (
+                            <div className="mt-3 flex items-end gap-0.5 h-12">
+                              {(stats.hourBuckets ?? []).map((count, h) => {
+                                const max = Math.max(1, ...(stats.hourBuckets ?? []));
+                                const pct = Math.round((count / max) * 100);
+                                const isPeak = h === stats.peakHour;
+                                return (
+                                  <div
+                                    key={h}
+                                    className={`flex-1 rounded-t ${isPeak ? 'bg-indigo-600' : 'bg-indigo-200'}`}
+                                    style={{ height: `${Math.max(2, pct)}%` }}
+                                    title={`${h}:00 → ${count} conv`}
+                                  />
+                                );
+                              })}
+                            </div>
+                          )}
+                          <div className="mt-1 flex justify-between text-[9px] text-gray-400 font-mono">
+                            <span>12am</span><span>6am</span><span>noon</span><span>6pm</span><span>11pm</span>
                           </div>
                         </div>
                       )}

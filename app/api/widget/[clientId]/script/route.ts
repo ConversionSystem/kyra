@@ -349,6 +349,12 @@ export async function GET(
     '.kyra-quick-replies { display:flex; flex-wrap:wrap; gap:7px; padding:6px 16px 10px; }',
     '.kyra-quick-btn { background:#fff; color:#374151; border:1.5px solid #e5e7eb; border-radius:24px; padding:8px 16px; font-size:13px; font-weight:500; font-family:system-ui,-apple-system,sans-serif; cursor:pointer; transition:all 0.2s ease; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.04); }',
     '.kyra-quick-btn:hover { background:' + COLOR + '; color:#fff; border-color:' + COLOR + '; box-shadow:0 2px 8px ' + COLOR + '33; transform:translateY(-1px); }',
+    /* CTA chips (URL-bearing). Brand-color text + thicker border in resting
+       state, FILLED brand-color background + white text on hover. The 2026-05-13
+       bug: inline style.color = COLOR was winning over .kyra-quick-btn:hover,
+       leaving text invisible (brand-on-brand). Dedicated class fixes it. */
+    '.kyra-quick-btn-cta { color:' + COLOR + '; border-color:' + COLOR + '60; font-weight:700; }',
+    '.kyra-quick-btn-cta:hover { color:#fff !important; background:' + COLOR + '; border-color:' + COLOR + '; }',
     /* Product cards — structured grid rendering of live inventory */
     '.kyra-cards { display:flex; flex-direction:column; gap:10px; padding:4px 16px 8px; }',
     '.kyra-card { display:flex; gap:12px; background:#fff; border:1px solid #eef0f4; border-radius:16px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04); transition:transform 0.15s, box-shadow 0.15s; font-family:system-ui,-apple-system,"SF Pro Text",sans-serif; position:relative; }',
@@ -572,17 +578,24 @@ export async function GET(
       }
       if (!label) return;
       var qbtn = document.createElement('button');
-      qbtn.className = 'kyra-quick-btn';
+      // Distinct class for URL chips so the :hover state can flip BOTH bg
+      // and text together (inline styles win over :hover with same specificity,
+      // which is why the previous attempt left text invisible on hover).
+      qbtn.className = url ? 'kyra-quick-btn kyra-quick-btn-cta' : 'kyra-quick-btn';
       qbtn.textContent = label;
-      if (url) {
-        // Mark URL-style chips visually distinct so customers can tell at a
-        // glance which chips open a page vs. start a conversation.
-        qbtn.style.color = COLOR;
-        qbtn.style.borderColor = COLOR + '60';
-        qbtn.style.fontWeight = '700';
-      }
       qbtn.addEventListener('click', function() {
         if (url) {
+          // Fire-and-forget click event for the Insights tab "top chips"
+          // metric. Use sendBeacon when available so the event survives
+          // the imminent navigation; fall back to fetch with keepalive.
+          try {
+            var payload = JSON.stringify({ event: 'chip_click', label: label, url: url, sessionId: sessionId });
+            if (navigator.sendBeacon) {
+              navigator.sendBeacon(API_BASE + '/api/widget/' + CLIENT_ID + '/event', new Blob([payload], { type: 'application/json' }));
+            } else {
+              fetch(API_BASE + '/api/widget/' + CLIENT_ID + '/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(function(){});
+            }
+          } catch(e) {}
           // 2026-05-13: same-window navigation (was _blank). Customer
           // requested: clicking LOTUS NOW / TODAY'S DEALS / ABOUT TREEZ PAY
           // should leave the chat and land on the page directly — these

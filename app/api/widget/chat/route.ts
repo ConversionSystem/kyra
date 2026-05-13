@@ -611,6 +611,9 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
     reviewCount?: number;
     /** Phase 1b: Jane Menu API V1 disagrees with Algolia — show "Out of stock" overlay. */
     outOfStock?: boolean;
+    /** Set on the deals short-circuit path so the LLM can describe the active promo. */
+    specialTitle?: string;
+    specialAmount?: string;
   };
   let productContext = '';
   let productCards: ProductCard[] = [];
@@ -632,7 +635,7 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
   } | null = null;
   if (janeActive && janeConfig) {
     try {
-      const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI, describeFallback, getBrandCatalog, resolveSupportLinks, buildBrowseMore } =
+      const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI, describeFallback, getBrandCatalog, resolveSupportLinks, buildBrowseMore, getOnSaleProducts } =
         await import('@/lib/integrations/jane');
 
       // IMPORTANT: intent parsing and product search MUST use the raw message
@@ -654,7 +657,61 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
         website_url: cfg.website_url as string | undefined,
       });
 
-      if (isProductQuery(searchInput, knownBrands)) {
+      // ── Deals / specials short-circuit ──────────────────────────────────
+      // When the customer asks about today's deals / what's on sale /
+      // discount / coupon, route to Jane's actual on-sale products
+      // (special_id > 0 filter) instead of the generic Algolia search,
+      // which previously returned "popular products" disguised as deals.
+      // Customer report 2026-05-13: "what's today's deals" came back with
+      // generic products. This path returns ONLY products with active
+      // specials, with the special title attached to each card so the
+      // LLM can describe the actual promo (e.g. "30% OFF STIIIZY VAPES").
+      const dealKeywords = /\b(deal|deals|special|specials|sale|sales|on sale|discount|discounts|promo|promos|coupon|coupons|today'?s? deals?|what'?s? on sale|markdown|markdowns|offers?)\b/i;
+      if (dealKeywords.test(searchInput)) {
+        const dealStoreId = resolvedStoreId || janeConfig.defaultStore;
+        const onSaleResult = await getOnSaleProducts(janeConfig, {
+          storeId: dealStoreId,
+          channel: orderType,
+          limit: 6,
+        });
+        if (onSaleResult.products.length > 0) {
+          productCards = onSaleResult.products.slice(0, 6).map((p) => ({
+            id: String(p.id),
+            name: p.name,
+            brand: p.brand,
+            category: p.category,
+            strainType: p.strainType,
+            thc: p.thc,
+            cbd: p.cbd,
+            price: p.price,
+            url: p.url,
+            cartUrl: p.cartUrl,
+            imageUrl: p.imageUrl,
+            weight: p.weight,
+            rating: p.rating,
+            reviewCount: p.reviewCount,
+            outOfStock: false,
+            specialTitle: p.specialTitle,
+            specialAmount: p.specialAmount,
+          })) as ProductCard[];
+          // Stock-verify before rendering so we don't surface sold-out deals.
+          const algoliaStoreNum = Number(
+            (janeConfig.stores[dealStoreId] || janeConfig.stores[janeConfig.defaultStore])?.algoliaStoreId,
+          );
+          if (Number.isFinite(algoliaStoreNum) && algoliaStoreNum > 0) {
+            await stampOutOfStockFlags(productCards, clientId, algoliaStoreNum, orderType);
+          }
+          productCards = productCards.filter((c) => !c.outOfStock);
+          console.log(
+            `[widget/chat] DEALS short-circuit ${clientId.slice(0, 8)} → ${productCards.length} on-sale cards; ` +
+            `specials=${JSON.stringify(onSaleResult.specialTitles.slice(0, 3))}`,
+          );
+          // Skip the regular searchProducts path entirely — we've already
+          // populated productCards with on-sale items.
+        }
+      }
+
+      if (productCards.length === 0 && isProductQuery(searchInput, knownBrands)) {
         const intent = parseProductIntent(searchInput, knownBrands);
         intent.storeId = resolvedStoreId || janeConfig.defaultStore;
         // For brand queries, get more results to show full brand inventory
