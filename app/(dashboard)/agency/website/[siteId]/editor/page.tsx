@@ -482,7 +482,12 @@ function PageSettingsCard({
   const [title, setTitle] = useState(page.title || '');
   const [slug, setSlug] = useState(page.slug || '');
   const [dirty, setDirty] = useState(false);
-  const isHome = page.slug === '/';
+  // Homepage detection via page_type (the canonical DB signal) — slug ===
+  // '/' is unreliable because the DB convention is actually slug='home'
+  // for the homepage row, not slug='/'. The editor's other branches check
+  // slug === '/' which never matches in production; we use page_type here
+  // to avoid the same trap.
+  const isHome = page.page_type === 'homepage' || page.slug === 'home' || page.slug === '/';
 
   // Re-sync when the user switches between pages
   useEffect(() => {
@@ -492,22 +497,22 @@ function PageSettingsCard({
   }, [page.id, page.title, page.slug]);
 
   function normalizeSlug(raw: string): string {
+    // DB convention: slugs are stored WITHOUT a leading slash
+    // (e.g. 'ip-pbx', not '/ip-pbx'). Homepage slug is 'home'.
     const trimmed = raw.trim().toLowerCase();
-    if (!trimmed || trimmed === '/') return '/';
-    // Strip leading slashes + non-url chars, kebab-case
-    const cleaned = trimmed
-      .replace(/^\/+/, '')
+    if (!trimmed) return '';
+    return trimmed
+      .replace(/^\/+|\/+$/g, '')
       .replace(/[^a-z0-9\-/]+/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
-    return cleaned ? `/${cleaned}` : '/';
   }
 
   async function handleSave() {
     const cleanedSlug = normalizeSlug(slug);
     const updates: Partial<SitePage> = {};
     if (title.trim() && title !== page.title) updates.title = title.trim();
-    if (cleanedSlug !== page.slug && !isHome) updates.slug = cleanedSlug;
+    if (!isHome && cleanedSlug && cleanedSlug !== page.slug) updates.slug = cleanedSlug;
     if (Object.keys(updates).length === 0) {
       setDirty(false);
       return;
@@ -546,12 +551,12 @@ function PageSettingsCard({
             URL slug {isHome && <span className="text-gray-400 font-normal">(homepage — fixed)</span>}
           </label>
           <div className="flex items-center gap-1">
-            <span className="text-xs text-gray-500 font-mono whitespace-nowrap pl-1">https://yoursite.com</span>
+            <span className="text-xs text-gray-500 font-mono whitespace-nowrap pl-1">yoursite.com/</span>
             <input
               type="text"
               value={slug}
               onChange={(e) => { setSlug(e.target.value); setDirty(true); }}
-              placeholder="/ip-pbx-solutions"
+              placeholder="ip-pbx-solutions"
               maxLength={120}
               disabled={isHome}
               className="flex-1 h-10 px-3 rounded-md border border-gray-200 bg-white text-sm font-mono disabled:bg-gray-50 disabled:text-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300"
@@ -559,8 +564,8 @@ function PageSettingsCard({
           </div>
           <p className="text-[11px] text-gray-500">
             {isHome
-              ? 'The homepage slug is always /. Cannot be changed.'
-              : 'Auto-normalized to kebab-case. ⚠️ Changing this will break inbound links to the old URL. Search engines may take days to reindex.'}
+              ? 'The homepage slot is reserved and its URL slug cannot be changed.'
+              : 'Auto-normalized to kebab-case, no leading slash. ⚠️ Changing this will break inbound links to the old URL. Search engines may take days to reindex.'}
           </p>
         </div>
 
