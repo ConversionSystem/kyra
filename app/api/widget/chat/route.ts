@@ -570,17 +570,28 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
       // detail (hours, address, pickup/delivery availability, inventory
       // mentions) must be for the selected store. If the visitor asks
       // about "another store," only then surface the alternative.
-      const orderTypeStr = orderType ? `, fulfillment mode: ${orderType.toUpperCase()}` : '';
+      const orderTypeStr = orderType ? `, mode: ${orderType.toUpperCase()}` : '';
+      const addressPart = activeStore.address ? ` at ${activeStore.address}` : '';
       storeContext =
-        `\nCUSTOMER LOCATION CONTEXT (HARD CONSTRAINT — applies to every answer below):\n` +
-        `- Active store: ${activeStore.name}${activeStore.address ? ` (${activeStore.address})` : ''}${orderTypeStr}\n` +
-        `- Tailor EVERY store-specific fact to this exact location: hours, address, ` +
-        `phone, pickup/delivery availability, deals running here, inventory.\n` +
-        `- When the customer asks "your hours" / "where are you" / "what time do you close" / ` +
-        `"are you open" — answer for THIS store, not a generic answer covering all locations.\n` +
-        `- If you must reference another store (e.g. "actually the Downtown one closes later"), ` +
-        `explicitly name it so the customer knows which store you're talking about.\n` +
-        `- Product cards have already been filtered to this store's inventory.\n`;
+        `\nCUSTOMER LOCATION CONTEXT (ABSOLUTE — overrides any generic training-doc answer):\n` +
+        `╔═══════════════════════════════════════════════════════════════════╗\n` +
+        `║ ACTIVE STORE: ${activeStore.name}${addressPart}${orderTypeStr}\n` +
+        `╚═══════════════════════════════════════════════════════════════════╝\n` +
+        `The visitor has SPECIFICALLY selected this store on the website. ` +
+        `Every store-specific answer MUST be tailored to this exact location:\n` +
+        `  • Hours questions → name THIS store explicitly (e.g. "Our ${activeStore.name} ` +
+        `location${activeStore.address ? ` at ${activeStore.address}` : ''} is open…") — ` +
+        `NEVER say "both locations" or "our stores" when answering for THIS visitor.\n` +
+        `  • Address / "where are you" → give THIS store's address (${activeStore.address || 'see contact page'}), ` +
+        `not a list of all locations.\n` +
+        `  • Phone / contact → give the store's contact channel.\n` +
+        `  • Pickup vs. delivery → assume the visitor is asking about ${orderType ? orderType.toUpperCase() : 'their selected mode'} ` +
+        `unless they explicitly switch.\n` +
+        `  • Product/inventory recommendations → already filtered to this store's stock.\n` +
+        `  • Deals → if you mention a deal, note whether it applies at this location.\n` +
+        `If the customer asks about a DIFFERENT store, explicitly name the other ` +
+        `store in your response so they know which one you're talking about. ` +
+        `Default behavior: assume THIS store unless asked otherwise.\n`;
     }
   }
 
