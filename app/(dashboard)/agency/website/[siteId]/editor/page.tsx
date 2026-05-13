@@ -460,6 +460,127 @@ function FaqEditor({
   );
 }
 
+// ── Page Settings Card ───────────────────────────────────────────────────────
+//
+// Edits the page's TITLE (drives the sidebar label + nav menu label + default
+// for meta_title) and the URL SLUG. Both fields already exist in the
+// `site_pages` table and are in the PATCH endpoint's allowlist — there just
+// wasn't a UI control to edit them (customer report 2026-05-13).
+//
+// Slug changes carry a risk warning: existing inbound links to the old
+// URL will 404. The save also normalizes the slug (lowercase, kebab-case,
+// prefix `/`) and prevents collisions with the homepage slug `/`.
+function PageSettingsCard({
+  page,
+  onSave,
+  saving,
+}: {
+  page: SitePage;
+  onSave: (updates: Partial<SitePage>) => Promise<void>;
+  saving: boolean;
+}) {
+  const [title, setTitle] = useState(page.title || '');
+  const [slug, setSlug] = useState(page.slug || '');
+  const [dirty, setDirty] = useState(false);
+  const isHome = page.slug === '/';
+
+  // Re-sync when the user switches between pages
+  useEffect(() => {
+    setTitle(page.title || '');
+    setSlug(page.slug || '');
+    setDirty(false);
+  }, [page.id, page.title, page.slug]);
+
+  function normalizeSlug(raw: string): string {
+    const trimmed = raw.trim().toLowerCase();
+    if (!trimmed || trimmed === '/') return '/';
+    // Strip leading slashes + non-url chars, kebab-case
+    const cleaned = trimmed
+      .replace(/^\/+/, '')
+      .replace(/[^a-z0-9\-/]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    return cleaned ? `/${cleaned}` : '/';
+  }
+
+  async function handleSave() {
+    const cleanedSlug = normalizeSlug(slug);
+    const updates: Partial<SitePage> = {};
+    if (title.trim() && title !== page.title) updates.title = title.trim();
+    if (cleanedSlug !== page.slug && !isHome) updates.slug = cleanedSlug;
+    if (Object.keys(updates).length === 0) {
+      setDirty(false);
+      return;
+    }
+    await onSave(updates);
+    setDirty(false);
+  }
+
+  return (
+    <CollapsibleCard
+      title="Page Settings"
+      icon={<Settings className="h-4 w-4" />}
+      badge={dirty ? 'Unsaved' : undefined}
+      defaultOpen={true}
+    >
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-gray-700">
+            Page title <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => { setTitle(e.target.value); setDirty(true); }}
+            placeholder="e.g. IP PBX Solutions"
+            maxLength={120}
+            className="w-full h-10 px-3 rounded-md border border-gray-200 bg-white text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+          />
+          <p className="text-[11px] text-gray-500">
+            Shows in the editor sidebar, top-nav menu, and as the default browser tab text. Required.
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-gray-700">
+            URL slug {isHome && <span className="text-gray-400 font-normal">(homepage — fixed)</span>}
+          </label>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-gray-500 font-mono whitespace-nowrap pl-1">https://yoursite.com</span>
+            <input
+              type="text"
+              value={slug}
+              onChange={(e) => { setSlug(e.target.value); setDirty(true); }}
+              placeholder="/ip-pbx-solutions"
+              maxLength={120}
+              disabled={isHome}
+              className="flex-1 h-10 px-3 rounded-md border border-gray-200 bg-white text-sm font-mono disabled:bg-gray-50 disabled:text-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+            />
+          </div>
+          <p className="text-[11px] text-gray-500">
+            {isHome
+              ? 'The homepage slug is always /. Cannot be changed.'
+              : 'Auto-normalized to kebab-case. ⚠️ Changing this will break inbound links to the old URL. Search engines may take days to reindex.'}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <p className="text-[11px] text-gray-400">
+            Page type: <span className="font-mono uppercase">{page.page_type || 'page'}</span>
+          </p>
+          <button
+            onClick={handleSave}
+            disabled={saving || !dirty || !title.trim()}
+            className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          >
+            {saving ? 'Saving…' : 'Save Page Settings'}
+          </button>
+        </div>
+      </div>
+    </CollapsibleCard>
+  );
+}
+
 // ── Hero Editor ───────────────────────────────────────────────────────────────
 
 function HeroEditor({
@@ -1605,7 +1726,10 @@ export default function PageEditor() {
         const result = await res.json();
         if (result.data) {
           setSelectedPage(result.data);
-          setPages((prev) => prev.map((p) => (p.slug === slug ? result.data : p)));
+          // Match by ID (not slug) so a fresh slug after a rename still
+          // updates the correct row — otherwise the sidebar shows the
+          // stale row beside the freshly-renamed one until next page load.
+          setPages((prev) => prev.map((p) => (p.id === result.data.id ? result.data : p)));
         }
       }
     } catch {
@@ -1626,22 +1750,37 @@ export default function PageEditor() {
     }
   };
 
-  // Save page edits (hero, meta, hidden)
+  // Save page edits (hero, meta, hidden, title, slug)
   const savePageEdits = async (updates: Partial<SitePage>) => {
     if (!selectedPage) return;
     setSaving(true);
     try {
-      const encodedSlug = encodeURIComponent(selectedPage.slug);
+      // IMPORTANT: use the CURRENT slug for the URL (the row is looked up by
+      // path), but if updates.slug changes the slug, the response carries
+      // the new value and we refresh with that. Without this, slug renames
+      // would 404 on the next refresh against the old URL.
+      const oldSlug = selectedPage.slug;
+      const encodedSlug = encodeURIComponent(oldSlug);
       const res = await fetch(`/api/agency/sites/${siteId}/pages/${encodedSlug}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       });
       if (res.ok) {
-        showToast('Changes saved');
-        await refreshPage(selectedPage.slug);
+        const result = await res.json().catch(() => ({}));
+        const newSlug = (result?.data?.slug as string | undefined) || oldSlug;
+        showToast(newSlug !== oldSlug ? `Page renamed → ${newSlug}` : 'Changes saved');
+        await refreshPage(newSlug);
+        // After a slug rename, the pages array still has the old slug for
+        // this row — refreshPage updates the matching row by ID, but the
+        // sidebar grouping uses .slug, so also swap the slug locally.
+        if (newSlug !== oldSlug) {
+          setPages((prev) => prev.map((p) => (p.id === selectedPage.id ? { ...p, slug: newSlug } : p)));
+        }
       } else {
-        showToast('Failed to save changes', 'error');
+        // Surface server error message (collision, homepage protection, etc.)
+        const result = await res.json().catch(() => ({}));
+        showToast(result?.error || 'Failed to save changes', 'error');
       }
     } catch {
       showToast('Failed to save changes', 'error');
@@ -2356,6 +2495,15 @@ export default function PageEditor() {
               {/* ─── Content Tab (always shown on non-homepage, conditional on homepage) ─── */}
               {(selectedPage.slug !== '/' || activeTab === 'content') && (
                 <div className="space-y-4">
+                  {/* Page Settings (title + slug) — must be above Hero & SEO so
+                      customers find the title field quickly. Added 2026-05-13
+                      after a customer reported pages had no way to be renamed. */}
+                  <PageSettingsCard
+                    page={selectedPage}
+                    onSave={savePageEdits}
+                    saving={saving}
+                  />
+
                   {/* Hero & SEO Editor */}
                   <HeroEditor
                     page={selectedPage}

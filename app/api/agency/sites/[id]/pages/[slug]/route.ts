@@ -83,9 +83,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: result.error }, { status: 404 });
   }
 
-  // Allowlist of editable page fields
+  // Allowlist of editable page fields. `slug` added 2026-05-13 with the
+  // new Page Settings UI — needs extra validation below (normalize +
+  // uniqueness + homepage protection).
   const allowedFields = [
-    'title', 'meta_title', 'meta_description',
+    'title', 'slug', 'meta_title', 'meta_description',
     'hero_h1', 'hero_subtitle', 'hero_cta_text', 'hero_cta_link',
     'content_sections', 'faq', 'schema_markup',
     'hidden',
@@ -98,6 +100,51 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   for (const key of allowedFields) {
     if (key in body) {
       updates[key] = body[key];
+    }
+  }
+
+  // ── Slug rename validation ─────────────────────────────────────────────
+  if ('slug' in updates) {
+    const rawSlug = String(updates.slug || '').trim().toLowerCase();
+    // Normalize: ensure leading slash, kebab-case, strip duplicate dashes.
+    const normalized = rawSlug === '/' || rawSlug === ''
+      ? '/'
+      : '/' + rawSlug
+          .replace(/^\/+/, '')
+          .replace(/[^a-z0-9\-/]+/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '');
+
+    // Homepage protection — never let / be renamed, and never let another
+    // page rename TO / (only one page per site can hold the home slug).
+    if (result.page!.slug === '/' && normalized !== '/') {
+      return NextResponse.json({ error: 'The homepage slug (/) cannot be changed.' }, { status: 400 });
+    }
+    if (result.page!.slug !== '/' && normalized === '/') {
+      return NextResponse.json({ error: 'Cannot rename a page to / — the homepage slot is reserved.' }, { status: 400 });
+    }
+
+    // Only act if the slug is actually changing
+    if (normalized !== result.page!.slug) {
+      const supabaseCheck = createServiceClientWithoutCookies();
+      const { data: collision } = await supabaseCheck
+        .from('site_pages')
+        .select('id')
+        .eq('site_id', siteId)
+        .eq('slug', normalized)
+        .neq('id', result.page!.id)
+        .maybeSingle();
+      if (collision) {
+        return NextResponse.json(
+          { error: `Another page already uses the slug "${normalized}". Pick a different URL.` },
+          { status: 409 },
+        );
+      }
+      updates.slug = normalized;
+    } else {
+      // No-op slug change — drop it from the update set so the row's
+      // edited_at doesn't get touched for a non-change.
+      delete updates.slug;
     }
   }
 
