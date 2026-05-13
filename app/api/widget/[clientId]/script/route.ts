@@ -309,6 +309,17 @@ export async function GET(
     '#kyra-widget-header .info { flex:1; min-width:0; }',
     '#kyra-widget-header .title { color:#fff; font-weight:800; font-size:16px; font-family:system-ui,-apple-system,"SF Pro Display",sans-serif; letter-spacing:-0.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }',
     '#kyra-widget-header .subtitle { color:rgba(255,255,255,0.8); font-size:12.5px; font-family:system-ui,-apple-system,sans-serif; display:flex; align-items:center; gap:5px; margin-top:2px; }',
+    /* "Now serving" badge — pins to the top of the messages area so the
+       customer can always see which store + fulfillment mode the bot is
+       answering for. Tappable: opens the in-widget store picker so the
+       user can override the inferred context if the site picker got it
+       wrong (or wasn't set at all). */
+    '#kyra-now-serving { display:flex; align-items:center; gap:8px; margin:8px 12px 0; padding:8px 12px; background:linear-gradient(135deg, ' + COLOR + '10, ' + COLOR + '20); border:1px solid ' + COLOR + '30; border-radius:12px; font-size:12px; font-family:system-ui,-apple-system,sans-serif; cursor:pointer; transition:all 0.15s; }',
+    '#kyra-now-serving:hover { background:linear-gradient(135deg, ' + COLOR + '18, ' + COLOR + '28); border-color:' + COLOR + '50; }',
+    '#kyra-now-serving .icon { font-size:14px; line-height:1; }',
+    '#kyra-now-serving .label { flex:1; color:#1f2937; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }',
+    '#kyra-now-serving .label strong { color:#111827; font-weight:700; }',
+    '#kyra-now-serving .change { font-size:11px; font-weight:600; color:' + COLOR + '; flex-shrink:0; }',
     '#kyra-widget-header .online-dot { width:8px; height:8px; border-radius:50%; background:#4ade80; flex-shrink:0; animation:kyra-pulse 2s infinite; }',
     '@keyframes kyra-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,0.4)} 50%{box-shadow:0 0 0 6px rgba(74,222,128,0)} }',
     '#kyra-widget-header .close-btn { background:rgba(255,255,255,0.12); border:none; cursor:pointer; color:#fff; font-size:18px; line-height:1; padding:6px; border-radius:50%; width:34px; height:34px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background 0.15s; }',
@@ -630,6 +641,61 @@ export async function GET(
     if (el) el.remove();
   }
 
+  // ── "Now serving" location/fulfillment context badge ──────────────────────
+  // Pins to the top of the messages area so the customer always sees which
+  // store + order mode the bot is answering for. Reads from the storefront
+  // (Jane cookies / localStorage) + the in-widget store picker, in that
+  // order of precedence. Tap to override via showStoreSelection().
+  function renderNowServingBadge() {
+    var existing = document.getElementById('kyra-now-serving');
+    if (existing) existing.remove();
+
+    var jane = readJaneContext();
+    var storeId = selectedStoreId || jane.janeStore || STORE_ID || '';
+    var orderType = sessionOrderTypeOverride || jane.orderType || '';
+
+    // Resolve store ID → friendly name via JANE_STORES config (per-client).
+    var storeLabel = '';
+    if (storeId) {
+      for (var i = 0; i < JANE_STORES.length; i++) {
+        var s = JANE_STORES[i];
+        if (String(s.id) === String(storeId) || String(s.algoliaStoreId) === String(storeId)) {
+          storeLabel = s.name;
+          break;
+        }
+      }
+    }
+
+    // Only render the badge if we have SOMETHING concrete to show. Without
+    // a store name or fulfillment mode it's noise — better to omit than
+    // show "📍 chatting with the bot" which adds nothing.
+    if (!storeLabel && !orderType) return;
+
+    var icon = orderType === 'delivery' ? '\\ud83d\\ude9a' : '\\ud83c\\udfea'; // 🚚 or 🏪
+    var orderLabel = orderType ? orderType.charAt(0).toUpperCase() + orderType.slice(1) : '';
+    var parts = [];
+    if (orderLabel) parts.push('<strong>' + escHtml(orderLabel) + '</strong>');
+    if (storeLabel) parts.push(escHtml(storeLabel));
+    var labelHtml = parts.join(' \\u2022 ');
+
+    var badge = document.createElement('div');
+    badge.id = 'kyra-now-serving';
+    badge.innerHTML =
+      '<span class="icon">' + icon + '</span>' +
+      '<span class="label">Serving: ' + labelHtml + '</span>' +
+      (JANE_STORES.length > 1 ? '<span class="change">Change \\u2192</span>' : '');
+    if (JANE_STORES.length > 1) {
+      badge.addEventListener('click', function() {
+        // Open the in-widget store picker so the user can switch contexts
+        showStoreSelection();
+      });
+    } else {
+      badge.style.cursor = 'default';
+    }
+    // Pin to top of messages area
+    messagesEl.insertBefore(badge, messagesEl.firstChild);
+  }
+
   // ── Trending / best-sellers proactive surface ─────────────────────────────
   // Fetches the dispensary's top in-stock sellers and renders them below the
   // welcome quick-replies as a discovery surface. Powered by Jane's
@@ -740,6 +806,9 @@ export async function GET(
         addMessage('user', '📍 ' + store.name);
         addMessage('bot', 'Got it! Showing products from our ' + store.name + ' location.' + (store.address ? ' (' + store.address + ')' : '') + ' What are you looking for today?');
         showQuickReplies();
+        // Refresh the "now serving" badge so the new store is reflected at
+        // the top of the messages area immediately.
+        renderNowServingBadge();
         // Now that store is known, fetch trending for that specific store.
         fetchAndRenderTrending();
       });
@@ -995,6 +1064,11 @@ export async function GET(
     } else if (!greeted && messagesEl.children.length === 0) {
       greeted = true;
       addMessage('bot', GREETING);
+      // "Now serving" badge — anchors at top of messages area showing the
+      // store + fulfillment mode pulled from the host site's storefront
+      // state (cookies + localStorage). Customer sees which context the
+      // bot is using and can tap to override on multi-store dispensaries.
+      renderNowServingBadge();
       // Multi-store dispensary: show store selection first, then quick replies after selection
       if (JANE_STORES.length > 1 && !selectedStoreId) {
         showStoreSelection();
@@ -1029,6 +1103,31 @@ export async function GET(
   }
 
   btn.addEventListener('click', function() { isOpen ? closePanel() : openPanel(); });
+
+  // ── Listen for storefront location changes mid-session ─────────────────
+  // When the customer changes their location on the Purple Lotus / Jane
+  // Roots site WITHOUT reloading the page (e.g. picks a different store
+  // in the header dropdown), the storefront writes to localStorage. We
+  // listen for 'storage' events (which fire only on OTHER tabs by spec,
+  // not the same tab — so we also poll every 5 seconds as a fallback,
+  // cheap and bounded to the keys our scanner reads).
+  window.addEventListener('storage', function(e) {
+    if (!e.key) return;
+    if (/store|fulfillment|cart-mode|order-type/i.test(e.key)) {
+      if (isOpen) renderNowServingBadge();
+    }
+  });
+  var lastContextSig = '';
+  setInterval(function() {
+    if (!isOpen) return;
+    var ctx = readJaneContext();
+    var sig = (ctx.janeStore || '') + '|' + (ctx.orderType || '');
+    if (sig !== lastContextSig) {
+      lastContextSig = sig;
+      // Skip the very first poll's update — it just records the baseline.
+      if (lastContextSig !== '|') renderNowServingBadge();
+    }
+  }, 5000);
   closeBtn.addEventListener('click', closePanel);
 
   // ── Mobile sizing (JS-driven — more reliable than CSS media queries on iOS) ─
@@ -1092,24 +1191,71 @@ export async function GET(
   // Same-origin, no Jane API call needed. Per Jane's Allie 2026-04-23.
   function readJaneContext() {
     var ctx = {};
+    // ── Cookies — try Jane's canonical names ─────────────────────────────
     try {
       var c = document.cookie || '';
-      var sm = c.match(/(?:^|;\\s*)JANE_STORE=([^;]+)/);
+      // Store ID: JANE_STORE is the documented name. Several Roots builds
+      // also write 'jane_store_id' or 'selected_store'.
+      var sm = c.match(/(?:^|;\\s*)(?:JANE_STORE|jane_store_id|selected_store)=([^;]+)/);
       if (sm) ctx.janeStore = decodeURIComponent(sm[1]);
-      var om = c.match(/(?:^|;\\s*)ORDER_TYPE=([^;]+)/);
+      // Order type: ORDER_TYPE is canonical. 'cart_mode' / 'fulfillment'
+      // appear on some builds.
+      var om = c.match(/(?:^|;\\s*)(?:ORDER_TYPE|cart_mode|fulfillment)=([^;]+)/);
       if (om) {
         var ot = decodeURIComponent(om[1]).toLowerCase();
         if (ot === 'pickup' || ot === 'delivery') ctx.orderType = ot;
       }
     } catch(e) {}
+
+    // ── localStorage — Jane Roots writes the picker state here ──────────
+    // 2026-05-13: customer reported the widget wasn't picking up the site's
+    // location selection. Roots stores the picker state under several
+    // different keys across versions — scan a broad allowlist and any
+    // value that looks like a store ID or order type wins. Always logs
+    // the keys we found so we can extend the allowlist when new variants
+    // surface in the wild.
+    try {
+      var STORE_KEYS = [
+        'jane:store-id', 'jane:selected-store', 'roots:store-id',
+        'roots:selected-store', 'roots:pickup-store', 'roots:delivery-store',
+        'selected_store_id', 'selected-store-id', 'kyra_store_' + CLIENT_ID,
+      ];
+      for (var i = 0; i < STORE_KEYS.length && !ctx.janeStore; i++) {
+        var v = localStorage.getItem(STORE_KEYS[i]);
+        if (v) {
+          // Some keys store raw IDs ("4398"), others wrap in JSON.
+          try {
+            var parsed = JSON.parse(v);
+            ctx.janeStore = String(parsed.id || parsed.storeId || parsed.value || parsed) || '';
+          } catch(e) {
+            ctx.janeStore = String(v);
+          }
+          if (ctx.janeStore) ctx.janeStoreSource = STORE_KEYS[i];
+        }
+      }
+      var ORDER_KEYS = [
+        'jane:order-type', 'roots:order-type', 'roots:fulfillment',
+        'cart-mode', 'fulfillment_type', 'cart_destination',
+      ];
+      for (var j = 0; j < ORDER_KEYS.length && !ctx.orderType; j++) {
+        var vv = localStorage.getItem(ORDER_KEYS[j]);
+        if (vv) {
+          var ott = String(vv).toLowerCase().replace(/['"]/g, '').trim();
+          if (ott === 'pickup' || ott === 'delivery') {
+            ctx.orderType = ott;
+            ctx.orderTypeSource = ORDER_KEYS[j];
+          }
+        }
+      }
+    } catch(e) {}
+
+    // ── Cart (existing, unchanged) ───────────────────────────────────────
     try {
       var raw = localStorage.getItem('shopping-cart');
       if (raw) {
-        var parsed = JSON.parse(raw);
-        // Cart shape varies by Jane build — accept either an array directly
-        // or { items: [...] }. Defensive on length to avoid huge payloads.
-        var items = Array.isArray(parsed) ? parsed
-          : (parsed && Array.isArray(parsed.items)) ? parsed.items
+        var cartParsed = JSON.parse(raw);
+        var items = Array.isArray(cartParsed) ? cartParsed
+          : (cartParsed && Array.isArray(cartParsed.items)) ? cartParsed.items
           : [];
         if (items.length > 0 && items.length <= 20) {
           ctx.cart = items.slice(0, 20).map(function(i) {

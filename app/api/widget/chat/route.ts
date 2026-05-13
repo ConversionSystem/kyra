@@ -564,7 +564,23 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
     const janeStores = (cfg.jane_stores as Array<{ id: string; name: string; address?: string; menuUrl?: string }>) || [];
     const activeStore = janeStores.find(s => s.id === resolvedStoreId);
     if (activeStore) {
-      storeContext = `\nCUSTOMER'S SELECTED STORE: ${activeStore.name}${activeStore.address ? ` (${activeStore.address})` : ''}. All product recommendations are for this location's inventory.`;
+      // 2026-05-13: stronger constraint. Customer reported the bot was
+      // giving generic answers even when the visitor had selected a
+      // specific store. This is now a hard rule: every store-specific
+      // detail (hours, address, pickup/delivery availability, inventory
+      // mentions) must be for the selected store. If the visitor asks
+      // about "another store," only then surface the alternative.
+      const orderTypeStr = orderType ? `, fulfillment mode: ${orderType.toUpperCase()}` : '';
+      storeContext =
+        `\nCUSTOMER LOCATION CONTEXT (HARD CONSTRAINT — applies to every answer below):\n` +
+        `- Active store: ${activeStore.name}${activeStore.address ? ` (${activeStore.address})` : ''}${orderTypeStr}\n` +
+        `- Tailor EVERY store-specific fact to this exact location: hours, address, ` +
+        `phone, pickup/delivery availability, deals running here, inventory.\n` +
+        `- When the customer asks "your hours" / "where are you" / "what time do you close" / ` +
+        `"are you open" — answer for THIS store, not a generic answer covering all locations.\n` +
+        `- If you must reference another store (e.g. "actually the Downtown one closes later"), ` +
+        `explicitly name it so the customer knows which store you're talking about.\n` +
+        `- Product cards have already been filtered to this store's inventory.\n`;
     }
   }
 
