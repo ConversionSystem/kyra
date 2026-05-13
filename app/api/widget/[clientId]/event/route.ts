@@ -83,7 +83,9 @@ export async function POST(
   // Insert as a "synthetic" conversation row with channel='widget_event'.
   // user_message = "<event>:<label>" so aggregations group cleanly.
   // ai_response = the URL (when relevant) for click-through analysis.
+  // session_id ties the event to the visitor's conversation for funnel attribution.
   // Fire-and-forget — never block the chip click on a DB write.
+  const sessionId = (body.sessionId || '').slice(0, 80) || null;
   void supabase
     .from('client_conversations')
     .insert({
@@ -93,6 +95,7 @@ export async function POST(
       user_message: `${event}:${label}`.slice(0, 200),
       ai_response: url,
       tokens_used: 0,
+      session_id: sessionId,
     })
     .then(({ error }) => {
       if (error) console.warn(`[widget/event] insert failed: ${error.message}`);

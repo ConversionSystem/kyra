@@ -455,6 +455,28 @@ export async function GET(
   var greeted = false;
   var unreadCount = 0;
   var history = []; // [{role:'user'|'assistant', content:string}] — last 10 turns
+
+  // ── Telemetry (Insights tab analytics) ──────────────────────────────────
+  // Fire-and-forget event logger. Uses sendBeacon when available so the
+  // event survives page unload (critical for chip_click + card_click which
+  // are followed by navigation). Falls back to fetch with keepalive.
+  // Events are deliberately permissive on labels — operators see whatever
+  // string we send under user_message in client_conversations.
+  function trackEvent(event, label, url) {
+    try {
+      var payload = JSON.stringify({ event: event, label: label || '', url: url || '', sessionId: sessionId });
+      var endpoint = API_BASE + '/api/widget/' + CLIENT_ID + '/event';
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(endpoint, new Blob([payload], { type: 'application/json' }));
+      } else {
+        fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(function(){});
+      }
+    } catch(e) {}
+  }
+  // Once-per-session deduplication for panel_open + first_message_sent so
+  // we don't double-count when the user toggles the panel.
+  var trackedPanelOpen = false;
+  var trackedFirstMessage = false;
   var selectedStoreId = STORE_ID; // may be overridden by user picking a store
   try { var savedStore = localStorage.getItem('kyra_store_' + CLIENT_ID); if (savedStore) selectedStoreId = savedStore; } catch(e) {}
   // Auto-pivot override — when the server returns a pivotAction (current
@@ -585,17 +607,7 @@ export async function GET(
       qbtn.textContent = label;
       qbtn.addEventListener('click', function() {
         if (url) {
-          // Fire-and-forget click event for the Insights tab "top chips"
-          // metric. Use sendBeacon when available so the event survives
-          // the imminent navigation; fall back to fetch with keepalive.
-          try {
-            var payload = JSON.stringify({ event: 'chip_click', label: label, url: url, sessionId: sessionId });
-            if (navigator.sendBeacon) {
-              navigator.sendBeacon(API_BASE + '/api/widget/' + CLIENT_ID + '/event', new Blob([payload], { type: 'application/json' }));
-            } else {
-              fetch(API_BASE + '/api/widget/' + CLIENT_ID + '/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(function(){});
-            }
-          } catch(e) {}
+          trackEvent('chip_click', label, url);
           // 2026-05-13: same-window navigation (was _blank). Customer
           // requested: clicking LOTUS NOW / TODAY'S DEALS / ABOUT TREEZ PAY
           // should leave the chat and land on the page directly — these
@@ -769,6 +781,11 @@ export async function GET(
   // visually. Safe against XSS — every field is escaped before interpolation.
   function renderCards(cards, browseMore, fallbackNotice) {
     if ((!cards || !cards.length) && !fallbackNotice) return;
+    // Telemetry — record how many cards were shown in this exchange so the
+    // Insights tab can compute "cards rendered → cards clicked" CTR.
+    if (cards && cards.length) {
+      trackEvent('cards_shown', String(cards.length), '');
+    }
     // Fallback note — amber banner explaining the miss + substitution
     if (fallbackNotice) {
       var note = document.createElement('div');
@@ -825,6 +842,19 @@ export async function GET(
             (chips.length ? '<div class="kyra-card-meta">' + chips.join('') + '</div>' : '') +
             actionsHtml +
           '</div>';
+        // Attach card_click telemetry to every CTA inside this card. Captures
+        // both "View →" / "Add to Bag" and "Details" via the same listener;
+        // distinguish via the data-card-id we attach to each anchor.
+        (function(cardData) {
+          var ctaLinks = card.querySelectorAll('.kyra-card-cta');
+          for (var k = 0; k < ctaLinks.length; k++) {
+            ctaLinks[k].addEventListener('click', function() {
+              trackEvent('card_click',
+                (cardData.brand ? cardData.brand + ': ' : '') + (cardData.name || ''),
+                this.href || cardData.url || '');
+            });
+          }
+        })(c);
         container.appendChild(card);
       }
       messagesEl.appendChild(container);
@@ -834,6 +864,9 @@ export async function GET(
       var a = document.createElement('a');
       a.className = 'kyra-browse-more';
       a.href = browseMore.url;
+      a.addEventListener('click', function() {
+        trackEvent('browse_more', browseMore.label || 'Browse', browseMore.url);
+      });
       a.rel = 'noopener';
       var totalTxt = browseMore.totalCount ? 'Browse all ' + browseMore.totalCount + ' ' : 'Browse ';
       a.textContent = totalTxt + (browseMore.label || 'Products') + ' \\u2192';
@@ -939,6 +972,10 @@ export async function GET(
   // ── Toggle ───────────────────────────────────────────────────────────────────
   function openPanel() {
     isOpen = true;
+    if (!trackedPanelOpen) {
+      trackedPanelOpen = true;
+      trackEvent('panel_open', window.location.pathname || '/', '');
+    }
     panel.classList.remove('hidden');
     btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
     var isMobile = window.innerWidth <= 600;
@@ -1122,6 +1159,12 @@ export async function GET(
   async function sendMessage() {
     var text = inputEl.value.trim();
     if (!text || isLoading) return;
+    if (!trackedFirstMessage) {
+      trackedFirstMessage = true;
+      trackEvent('first_message_sent', text.slice(0, 80), '');
+    } else {
+      trackEvent('message_sent', text.slice(0, 80), '');
+    }
     hideQuickReplies();
     lastUserMessage = text;
 
