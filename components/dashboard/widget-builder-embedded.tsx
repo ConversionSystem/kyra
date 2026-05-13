@@ -102,33 +102,46 @@ export function WidgetBuilderEmbedded({
   const [activeSection, setActiveSection] = useState<'appearance' | 'replies' | 'behavior' | 'menu' | 'embed' | 'insights'>('appearance');
 
   // ── Stats ──
+  type FunnelStage = { stage: string; count: number };
+  const [insightsWindow, setInsightsWindow] = useState<7 | 30 | 90>(30);
   const [stats, setStats] = useState<{
     conversations: number;
     messagesToday: number;
     avgResponseTime: string;
-    // Insights additions (widget-stats route v2, 2026-05-12)
     dailyVolume?: Array<{ day: string; count: number }>;
+    dailyBucketDays?: number;
     topQueries?: Array<{ query: string; count: number }>;
     escalationCount?: number;
     deflectionRate?: number;
+    fallbackRate?: number;
+    fallbackCount?: number;
     channelMix?: Record<string, number>;
     windowDays?: number;
     sampleSize?: number;
-    // v3 telemetry additions (2026-05-13)
+    sessionsCount?: number;
+    avgMessagesPerConv?: number;
+    topCategories?: Array<{ category: string; count: number }>;
     topChipClicks?: Array<{ label: string; count: number }>;
+    topCardClicks?: Array<{ label: string; count: number }>;
     totalChipClicks?: number;
+    totalCardClicks?: number;
+    totalPanelOpens?: number;
+    totalFirstMessages?: number;
     hourBuckets?: number[];
     peakHour?: number;
     peakHourCount?: number;
+    funnel?: FunnelStage[];
+    cardCTR?: number;
+    cardsShownTotal?: number;
   } | null>(null);
 
   useEffect(() => {
     if (!clientId) return;
-    fetch(`/api/agency/clients/${clientId}/widget-stats`)
+    fetch(`/api/agency/clients/${clientId}/widget-stats?windowDays=${insightsWindow}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => d && setStats(d))
       .catch(() => {});
-  }, [clientId]);
+  }, [clientId, insightsWindow]);
 
   // Refresh config from the API on every mount, EVEN when initialConfig
   // was provided. The initialConfig prop seeds the initial state to avoid
@@ -800,6 +813,33 @@ export function WidgetBuilderEmbedded({
               {/* ── INSIGHTS — analytics from /widget-stats v2 ── */}
               {activeSection === 'insights' && (
                 <div className="space-y-5">
+                  {/* ── Time-range selector + CSV export — always rendered ── */}
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 shadow-sm">
+                      {([7, 30, 90] as const).map((d) => (
+                        <button
+                          key={d}
+                          onClick={() => setInsightsWindow(d)}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                            insightsWindow === d
+                              ? 'bg-white text-indigo-700 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          {d === 7 ? '7 days' : d === 30 ? '30 days' : '90 days'}
+                        </button>
+                      ))}
+                    </div>
+                    <a
+                      href={`/api/agency/clients/${clientId}/widget-stats/export?windowDays=${insightsWindow}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                      title="Download conversations + telemetry as CSV"
+                    >
+                      <Code className="h-3.5 w-3.5" />
+                      Export CSV
+                    </a>
+                  </div>
+
                   {!stats ? (
                     <div className="text-center py-10 text-sm text-gray-500">Loading insights…</div>
                   ) : (stats.sampleSize ?? 0) === 0 ? (
@@ -833,9 +873,111 @@ export function WidgetBuilderEmbedded({
                         </div>
                       </div>
 
-                      {/* 7-day volume sparkline (CSS-only, no chart library) */}
+                      {/* ── Engagement row — 4 stats cards ── */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="p-3 rounded-xl bg-white border border-gray-200">
+                          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Sessions</div>
+                          <div className="text-xl font-extrabold text-gray-900">{stats.sessionsCount ?? 0}</div>
+                          <p className="text-[10px] text-gray-500 mt-0.5">unique chats</p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-white border border-gray-200">
+                          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Msgs / chat</div>
+                          <div className="text-xl font-extrabold text-gray-900">{stats.avgMessagesPerConv ?? 0}</div>
+                          <p className="text-[10px] text-gray-500 mt-0.5">engagement depth</p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-white border border-gray-200">
+                          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Card CTR</div>
+                          <div className="text-xl font-extrabold text-gray-900">{stats.cardCTR ?? 0}%</div>
+                          <p className="text-[10px] text-gray-500 mt-0.5">{stats.totalCardClicks ?? 0} / {stats.cardsShownTotal ?? 0} clicks</p>
+                        </div>
+                        <div className={`p-3 rounded-xl bg-white border ${(stats.fallbackRate ?? 0) > 30 ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}>
+                          <div className="text-[10px] font-semibold uppercase tracking-wider mb-1 text-gray-500">Fallback rate</div>
+                          <div className={`text-xl font-extrabold ${(stats.fallbackRate ?? 0) > 30 ? 'text-red-700' : 'text-gray-900'}`}>{stats.fallbackRate ?? 0}%</div>
+                          <p className="text-[10px] text-gray-500 mt-0.5">replies that punt to phone</p>
+                        </div>
+                      </div>
+
+                      {/* ── Conversion funnel ── */}
+                      {(stats.funnel ?? []).length > 0 && (stats.funnel?.[0]?.count ?? 0) > 0 && (
+                        <div className="p-4 rounded-xl bg-white border border-gray-200">
+                          <p className="text-sm font-semibold text-gray-700 mb-3">Conversion funnel</p>
+                          <div className="space-y-2">
+                            {(stats.funnel ?? []).map((s, i) => {
+                              const top = stats.funnel?.[0]?.count ?? 1;
+                              const pct = top === 0 ? 0 : Math.round((s.count / top) * 100);
+                              const prev = i === 0 ? 100 : (stats.funnel?.[i - 1]?.count ?? 1);
+                              const dropoff = i === 0 || prev === 0 ? null : Math.round(((prev - s.count) / prev) * 100);
+                              return (
+                                <div key={s.stage} className="flex items-center gap-3">
+                                  <span className="text-xs text-gray-600 w-32 truncate">{s.stage}</span>
+                                  <div className="flex-1 h-7 rounded-md bg-gray-100 overflow-hidden relative">
+                                    <div
+                                      className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 flex items-center px-2"
+                                      style={{ width: `${Math.max(2, pct)}%` }}
+                                    >
+                                      <span className="text-[10px] font-bold text-white">{s.count}</span>
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] text-gray-500 w-16 text-right">
+                                    {pct}%{dropoff != null && dropoff > 0 ? ` (-${dropoff}%)` : ''}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <p className="text-[11px] text-gray-500 mt-3 italic">
+                            Visitor flow from widget open through clicking out. Big drop between Cards shown and Card clicked means the cards aren't compelling — try sharper product names or bigger discount badges.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* ── Top product categories asked about ── */}
+                      {(stats.topCategories ?? []).length > 0 && (
+                        <div className="p-4 rounded-xl bg-white border border-gray-200">
+                          <p className="text-sm font-semibold text-gray-700 mb-3">Most-asked categories</p>
+                          <div className="flex flex-wrap gap-2">
+                            {(stats.topCategories ?? []).map(c => (
+                              <span
+                                key={c.category}
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100"
+                              >
+                                <span className="capitalize">{c.category}</span>
+                                <span className="text-indigo-500 font-bold">×{c.count}</span>
+                              </span>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-gray-500 mt-3 italic">
+                            Where customer demand is concentrated. Cross-reference with stock to make sure trending categories aren't selling out.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* ── Top product cards clicked ── */}
+                      {(stats.topCardClicks ?? []).length > 0 && (
+                        <div className="p-4 rounded-xl bg-white border border-gray-200">
+                          <div className="flex items-baseline justify-between mb-3">
+                            <p className="text-sm font-semibold text-gray-700">Top product clicks</p>
+                            <span className="text-xs text-gray-500">{stats.totalCardClicks} total</span>
+                          </div>
+                          <ol className="space-y-1.5">
+                            {(stats.topCardClicks ?? []).slice(0, 8).map((c, i) => (
+                              <li key={i} className="flex items-center gap-3 text-sm">
+                                <span className="w-5 text-xs text-gray-400 font-mono">{i + 1}.</span>
+                                <span className="flex-1 text-gray-700 truncate" title={c.label}>{c.label}</span>
+                                <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">×{c.count}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+
+                      {/* Volume sparkline — dynamic window label */}
                       <div className="p-4 rounded-xl bg-white border border-gray-200">
-                        <p className="text-sm font-semibold text-gray-700 mb-3">Last 7 days</p>
+                        <p className="text-sm font-semibold text-gray-700 mb-3">
+                          {stats.dailyBucketDays === 1
+                            ? `Daily volume (last ${stats.windowDays}d)`
+                            : `Volume per ${stats.dailyBucketDays}d (last ${stats.windowDays}d)`}
+                        </p>
                         <div className="flex items-end gap-2 h-24">
                           {(stats.dailyVolume ?? []).map((d) => {
                             const max = Math.max(1, ...(stats.dailyVolume ?? []).map(x => x.count));
