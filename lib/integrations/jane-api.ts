@@ -313,6 +313,133 @@ export async function checkStock(
   return { inStock, unknown: [] };
 }
 
+// ── Today's Deals / Specials (Menu API V1) ─────────────────────────────────
+//
+// Pulls the dispensary's active specials from Jane's Menu API V1 specials
+// endpoint. Powers the widget's "Today's Deals & Discounts" surface on
+// chat open — preferred over best_seller_rank since it's both more
+// merchant-controlled and more conversion-relevant (a deal IS a CTA).
+//
+// Endpoint: GET /roots/menu_api/v1/stores/{store_id}/specials
+// Query:    enabled=true (we only want active specials), page_size=20
+// Returns:  array of specials, each containing the special_type, title,
+//           discount %, applicable products, etc.
+//
+// We surface ONE primary special at a time (the most relevant, prioritized
+// by special_type rank). The widget renders it as a header strip with
+// title + savings + a "Shop the deal" CTA.
+
+export interface JaneSpecial {
+  id: number | string;
+  title: string;
+  description?: string;
+  special_type?: string; // 'product' | 'cart_total' | 'qualified_group' | 'bundle' | 'bulk_pricing'
+  discount_amount?: number;
+  discount_percent?: number;
+  discount_type?: string; // 'percent' | 'dollar'
+  enabled?: boolean;
+  starts_at?: string;
+  ends_at?: string;
+  promo_code?: string;
+  store_id?: number;
+  product_ids?: Array<number | string>;
+}
+
+interface SpecialsResult {
+  specials: JaneSpecial[];
+  /** Total count Jane reports for this store/filter combo. */
+  total: number;
+}
+
+// 10-min cache: specials change rarely (operator edits in Jane backend)
+const SPECIALS_CACHE = new Map<string, { specials: JaneSpecial[]; total: number; expiresAt: number }>();
+const SPECIALS_CACHE_TTL_MS = 10 * 60 * 1000;
+
+export function clearSpecialsCache(): void {
+  SPECIALS_CACHE.clear();
+}
+
+/**
+ * Fetch today's active specials for a Jane store. Honors the Menu API V1
+ * pagination conventions (page_size + pagination_id) and the `enabled=true`
+ * filter so we only surface live deals.
+ *
+ * Soft-fails to empty array on auth errors, network failures, or non-2xx
+ * responses — the caller should treat absence as "no deals to surface."
+ */
+export async function getTodaysSpecials(
+  creds: JaneApiCredentials,
+  storeId: number,
+  opts: { pageSize?: number; specialType?: string } = {},
+): Promise<SpecialsResult> {
+  const base = getApiBase();
+  const pageSize = Math.max(1, Math.min(opts.pageSize ?? 20, 50));
+  const cacheKey = `${creds.clientSlug}:${storeId}:${opts.specialType ?? 'any'}:${pageSize}:${base}`;
+  const cached = SPECIALS_CACHE.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return { specials: cached.specials, total: cached.total };
+  }
+
+  let token: string;
+  try {
+    token = await getAccessToken(creds);
+  } catch (err) {
+    console.warn('[jane-api/specials] token fetch failed:', err instanceof Error ? err.message : err);
+    return { specials: [], total: 0 };
+  }
+
+  const url = new URL(`${base}/roots/menu_api/v1/stores/${storeId}/specials`);
+  url.searchParams.set('enabled', 'true');
+  url.searchParams.set('page_size', String(pageSize));
+  if (opts.specialType) url.searchParams.set('special_type', opts.specialType);
+
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      signal: AbortSignal.timeout(6000),
+    });
+  } catch (err) {
+    console.warn('[jane-api/specials] fetch failed:', err instanceof Error ? err.message : err);
+    return { specials: [], total: 0 };
+  }
+
+  // 401 → expired token (cache check passed but Cognito rotated). Refresh once.
+  if (res.status === 401) {
+    clearAccessToken(creds);
+    try {
+      const fresh = await getAccessToken(creds);
+      res = await fetch(url.toString(), {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${fresh}`, Accept: 'application/json' },
+        signal: AbortSignal.timeout(6000),
+      });
+    } catch {
+      return { specials: [], total: 0 };
+    }
+  }
+
+  if (!res.ok) {
+    console.warn(`[jane-api/specials] non-2xx ${res.status} store=${storeId}`);
+    return { specials: [], total: 0 };
+  }
+
+  const data = (await res.json()) as {
+    data?: { specials?: JaneSpecial[] };
+    specials?: JaneSpecial[];
+    metadata?: { count?: number; total?: number };
+  };
+
+  // Jane Menu API V1 wraps list responses in { data: { ... }, metadata: { ... } }
+  // but defensively unwrap a flat .specials if the shape ever changes.
+  const specials = data?.data?.specials ?? data?.specials ?? [];
+  const total = data?.metadata?.total ?? specials.length;
+
+  SPECIALS_CACHE.set(cacheKey, { specials, total, expiresAt: Date.now() + SPECIALS_CACHE_TTL_MS });
+  return { specials, total };
+}
+
 // ── Future phases (stubs for documentation purposes) ────────────────────────
 //
 // Phase 2 (cart deeplinks): Allie confirmed Purple Lotus uses unmanaged

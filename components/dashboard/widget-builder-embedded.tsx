@@ -56,10 +56,15 @@ export function WidgetBuilderEmbedded({
   const [poweredBy, setPoweredBy] = useState(cfg.widget_powered_by !== false);
 
   // ── Quick Replies ──
-  const [quickReplies, setQuickReplies] = useState<string[]>(
-    (cfg.widget_quick_replies as string[]) || []
+  // 2026-05-13: each entry can be a plain string (sent as chat message
+  // on click) OR an object { label, url } (opens URL in new tab on click).
+  // Backward-compat: legacy string-only configs still load + save fine.
+  type QuickReply = string | { label: string; url?: string };
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>(
+    (cfg.widget_quick_replies as QuickReply[]) || []
   );
   const [newReply, setNewReply] = useState('');
+  const [newReplyUrl, setNewReplyUrl] = useState('');
 
   // ── Behavior ──
   const [proactiveDelay, setProactiveDelay] = useState<number>((cfg.widget_proactive_delay as number) || 8);
@@ -137,7 +142,7 @@ export function WidgetBuilderEmbedded({
         if (c.widget_secondary_color) setWidgetSecondaryColor(c.widget_secondary_color);
         if (c.response_language) setResponseLanguage(c.response_language);
         if (c.widget_powered_by !== undefined) setPoweredBy(Boolean(c.widget_powered_by));
-        if (c.widget_quick_replies) setQuickReplies(c.widget_quick_replies);
+        if (c.widget_quick_replies) setQuickReplies(c.widget_quick_replies as QuickReply[]);
         if (c.widget_proactive_delay) setProactiveDelay(c.widget_proactive_delay);
         if (c.widget_sound !== undefined) setSoundEnabled(c.widget_sound !== false);
         if (c.widget_lead_capture !== undefined) setLeadCapture(c.widget_lead_capture !== false);
@@ -177,14 +182,28 @@ export function WidgetBuilderEmbedded({
 
   const addQuickReply = () => {
     const trimmed = newReply.trim();
+    const url = newReplyUrl.trim();
     if (!trimmed || quickReplies.length >= 6) return;
-    setQuickReplies([...quickReplies, trimmed]);
+    // If URL is set, store as object so the chip opens the link instead of
+    // sending the label as a chat message. Otherwise keep as a plain string
+    // to preserve simple legacy configs.
+    const entry: QuickReply = url
+      ? { label: trimmed, url }
+      : trimmed;
+    setQuickReplies([...quickReplies, entry]);
     setNewReply('');
+    setNewReplyUrl('');
   };
 
   const removeQuickReply = (index: number) => {
     setQuickReplies(quickReplies.filter((_, i) => i !== index));
   };
+
+  // Helper: pull a display label out of a QuickReply (string OR {label,url}).
+  const replyLabel = (r: QuickReply): string =>
+    typeof r === 'object' ? (r.label || '') : String(r || '');
+  const replyUrl = (r: QuickReply): string =>
+    typeof r === 'object' ? (r.url || '') : '';
 
   const resetQuickReplies = () => {
     setQuickReplies([]);
@@ -276,7 +295,12 @@ export function WidgetBuilderEmbedded({
   };
 
   return (
-    <div className="max-w-6xl">
+    // 2026-05-13: removed max-w-6xl. The Chat Widget is the flagship
+    // product surface; constraining it to ~72rem made the form feel
+    // cramped on wide monitors while the live preview shrank in lockstep.
+    // Now full-width within whatever parent it lives in (Settings tab
+    // or the deleted /agency/widget page that previously hosted it).
+    <div className="w-full">
       <Card className="border-indigo-100 shadow-sm">
         <CardHeader className="pb-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
@@ -495,29 +519,50 @@ export function WidgetBuilderEmbedded({
                       {quickReplies.length === 0 && ' Using industry defaults — add custom ones below.'}
                     </p>
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {quickReplies.length > 0 ? quickReplies.map((reply, i) => (
-                        <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-gray-200 bg-white shadow-sm">
-                          {reply}
-                          <button onClick={() => removeQuickReply(i)} className="text-gray-400 hover:text-red-500 transition-colors">
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        </span>
-                      )) : (
+                      {quickReplies.length > 0 ? quickReplies.map((reply, i) => {
+                        const lbl = replyLabel(reply);
+                        const u = replyUrl(reply);
+                        return (
+                          <span
+                            key={i}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border shadow-sm ${u ? 'border-indigo-300 bg-indigo-50 text-indigo-900' : 'border-gray-200 bg-white text-gray-900'}`}
+                            title={u ? `Opens: ${u}` : 'Sends as a message to the bot'}
+                          >
+                            {u && <ExternalLink className="h-3 w-3 opacity-60" />}
+                            {lbl}
+                            <button onClick={() => removeQuickReply(i)} className="text-gray-400 hover:text-red-500 transition-colors">
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </span>
+                        );
+                      }) : (
                         <p className="text-xs text-gray-400 italic">Using industry defaults for {clientIndustry}</p>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          value={newReply}
+                          onChange={(e) => setNewReply(e.target.value)}
+                          placeholder="Label — e.g. ⚡ LOTUS NOW or 💰 Pricing"
+                          className="bg-gray-50 flex-1"
+                          maxLength={50}
+                          onKeyDown={(e) => e.key === 'Enter' && addQuickReply()}
+                        />
+                        <Button size="sm" variant="outline" onClick={addQuickReply} disabled={quickReplies.length >= 6 || !newReply.trim()}>
+                          <Plus className="h-4 w-4 mr-1" /> Add
+                        </Button>
+                      </div>
                       <Input
-                        value={newReply}
-                        onChange={(e) => setNewReply(e.target.value)}
-                        placeholder="e.g. Pricing, Hours, Book Now..."
-                        className="bg-gray-50 flex-1"
-                        maxLength={50}
+                        value={newReplyUrl}
+                        onChange={(e) => setNewReplyUrl(e.target.value)}
+                        placeholder="Optional URL — turns the chip into a link (e.g. /lotus-now)"
+                        className="bg-gray-50 text-xs"
                         onKeyDown={(e) => e.key === 'Enter' && addQuickReply()}
                       />
-                      <Button size="sm" variant="outline" onClick={addQuickReply} disabled={quickReplies.length >= 6 || !newReply.trim()}>
-                        <Plus className="h-4 w-4 mr-1" /> Add
-                      </Button>
+                      <p className="text-xs text-gray-500">
+                        Leave URL blank for chips that send a message to the bot. Add a URL when the chip should deep-link to a page (LOTUS NOW, Book Now, etc.).
+                      </p>
                     </div>
                     {quickReplies.length > 0 && (
                       <button onClick={resetQuickReplies} className="flex items-center gap-1 text-xs text-gray-500 hover:text-indigo-600 mt-2 transition-colors">
@@ -930,13 +975,13 @@ export function WidgetBuilderEmbedded({
 
                       {/* Quick replies preview */}
                       <div className="flex flex-wrap gap-1.5 pt-1">
-                        {(quickReplies.length > 0 ? quickReplies : ['Get Started', 'Pricing', 'Contact']).slice(0, 5).map((reply, i) => (
+                        {((quickReplies.length > 0 ? quickReplies : ['Get Started', 'Pricing', 'Contact']) as QuickReply[]).slice(0, 5).map((reply, i) => (
                           <span
                             key={i}
                             className="text-[10px] font-medium px-2.5 py-1.5 rounded-full border bg-white shadow-sm cursor-default"
-                            style={{ borderColor: `${widgetColor}33`, color: '#374151' }}
+                            style={{ borderColor: `${widgetColor}33`, color: replyUrl(reply) ? widgetColor : '#374151', fontWeight: replyUrl(reply) ? 700 : 500 }}
                           >
-                            {reply}
+                            {replyLabel(reply)}
                           </span>
                         ))}
                       </div>
