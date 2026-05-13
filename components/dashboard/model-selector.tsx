@@ -8,6 +8,11 @@ const TIER_CONFIG = {
   mini:      { label: 'Fast',      icon: Zap,   color: 'text-emerald-600', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   standard:  { label: 'Standard',  icon: Cpu,   color: 'text-indigo-600',  badge: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   pro:       { label: 'Pro',       icon: Star,  color: 'text-blue-600',    badge: 'bg-blue-50 text-blue-700 border-blue-200' },
+  // 2026-05-13: Sonnet tier was defined in MODELS (Sonnet 3.7 + 4.6) but
+  // the picker's tier-order array didn't include 'flagship', so both
+  // Sonnet variants were invisible in the dashboard. Adding the section
+  // here surfaces them. Color = purple to match "concierge tier" branding.
+  flagship:  { label: 'Flagship',  icon: Star,  color: 'text-purple-600',  badge: 'bg-purple-50 text-purple-700 border-purple-200' },
   reasoning: { label: 'Reasoning', icon: Brain, color: 'text-violet-600',  badge: 'bg-violet-50 text-violet-700 border-violet-200' },
   premium:   { label: 'Premium',   icon: Star,  color: 'text-amber-600',   badge: 'bg-amber-50 text-amber-700 border-amber-200' },
   ultra:     { label: 'Ultra',     icon: Star,  color: 'text-rose-600',    badge: 'bg-rose-50 text-rose-700 border-rose-200' },
@@ -31,7 +36,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
 
   return (
     <div className="space-y-5">
-      {(['mini', 'standard', 'pro', 'reasoning', 'premium', 'ultra'] as const).map(tier => {
+      {(['mini', 'standard', 'pro', 'flagship', 'reasoning', 'premium', 'ultra'] as const).map(tier => {
         const models = byTier[tier];
         if (!models.length) return null;
         const cfg = TIER_CONFIG[tier];
