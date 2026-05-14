@@ -184,6 +184,10 @@ export interface AssemblePageOptions {
     fontFamily?: string | null;
     /** Border-radius preset id (sharp/subtle/default/rounded/pill) or raw CSS. */
     borderRadius?: string | null;
+    /** Raw HTML injected before </head> (analytics, pixels, custom CSS). Sprint 3. */
+    headCode?: string | null;
+    /** Raw HTML injected before </body> (chat widgets, tracking scripts). Sprint 3. */
+    bodyCode?: string | null;
     domain?: string;
     city?: string;
     state?: string;
@@ -634,6 +638,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     ${designOverrideCSS}
     a { color: inherit; }
   </style>
+  ${siteData.headCode ? `<!-- Custom head code (agency-defined) -->\n  ${siteData.headCode}\n  <!-- /Custom head code -->` : ''}
 </head>
 <body id="top">
   ${navbarHtml}
@@ -643,6 +648,7 @@ export function assemblePage(options: AssemblePageOptions): string {
   ${footerHtml}
   ${mobileCta}
   ${widgetScript}
+  ${siteData.bodyCode ? `<!-- Custom body code (agency-defined) -->\n  ${siteData.bodyCode}\n  <!-- /Custom body code -->` : ''}
 </body>
 </html>`;
 }

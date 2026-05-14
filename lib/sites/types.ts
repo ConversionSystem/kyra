@@ -192,6 +192,19 @@ export interface ClientSite {
   growth_suggestions: unknown | null;
   growth_last_analyzed: string | null;
 
+  /**
+   * Custom <head> HTML snippet injected on every page at build time.
+   * Used for analytics (GA4, GTM, Plausible), pixels (Meta, TikTok),
+   * custom CSS overrides, and meta tags. NOT sanitized — trust customer.
+   * Sprint 3 (2026-05-14).
+   */
+  head_code: string | null;
+  /**
+   * Custom </body> HTML snippet injected on every page at build time.
+   * Used for chat widgets, tracking scripts that should fire late.
+   */
+  body_code: string | null;
+
   // Kyra integration
   widget_embedded: boolean;
   knowledge_synced: boolean;
