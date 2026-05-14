@@ -94,7 +94,20 @@ interface FAQItem {
 interface NavLink {
   label: string;
   href: string;
+  /** Optional dropdown children — when set, link renders as a hover menu group. */
+  children?: { label: string; href: string }[];
 }
+
+/** Footer column entry for the custom Footer Builder. */
+interface FooterColumn {
+  title: string;
+  links: { label: string; href: string }[];
+}
+
+/** Navbar template variants — must match `NAVBARS` keys in assembler.ts. */
+type NavbarVariant = 'sticky-white' | 'transparent-overlay' | 'hamburger';
+/** Footer template variants — must match `FOOTERS` keys in assembler.ts. */
+type FooterVariant = 'map-contact' | 'four-column' | 'minimal';
 
 interface SocialLinks {
   facebook?: string;
@@ -127,7 +140,10 @@ interface SiteData {
   google_review_url: string | null;
   tagline: string | null;
   nav_links: NavLink[] | null;
+  navbar_variant: NavbarVariant | null;
   footer_tagline: string | null;
+  footer_variant: FooterVariant | null;
+  footer_columns: FooterColumn[] | null;
   social_links: SocialLinks | null;
   photos: SitePhoto[] | null;
   // P2: Visual Section Management
@@ -135,6 +151,20 @@ interface SiteData {
   section_overrides: Record<string, string> | null;
   template_id: string | null;
   client_id?: string | null;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/**
+ * Detect whether a SitePage row is the homepage. Production rows use
+ * `page_type === 'homepage'` (preferred) or `slug === 'home'`. The legacy
+ * `slug === '/'` form only appears in older fixtures, kept for backward
+ * compat. Centralizing this avoided multiple bugs where Site Settings and
+ * the homepage-only editors were gated on slug='/' and never appeared in
+ * production (where slugs are stored as 'home').
+ */
+function isHomepageRow(page: { page_type?: string; slug?: string }): boolean {
+  return page.page_type === 'homepage' || page.slug === 'home' || page.slug === '/';
 }
 
 // ── Page Type Icons ───────────────────────────────────────────────────────────
@@ -154,7 +184,7 @@ const PAGE_ICONS: Record<string, React.ReactNode> = {
 };
 
 function getPageIcon(page: SitePage) {
-  if (page.slug === '/') return PAGE_ICONS.homepage;
+  if (isHomepageRow(page)) return PAGE_ICONS.homepage;
   if (page.slug === '/about') return PAGE_ICONS.about;
   if (page.slug === '/contact') return PAGE_ICONS.contact;
   if (page.slug === '/faq') return PAGE_ICONS.faq;
@@ -163,7 +193,7 @@ function getPageIcon(page: SitePage) {
 }
 
 function getPageLabel(page: SitePage): string {
-  if (page.slug === '/') return 'Homepage';
+  if (isHomepageRow(page)) return 'Homepage';
   return page.title || page.slug.replace(/^\//, '').replace(/-/g, ' ');
 }
 
@@ -921,6 +951,17 @@ function BusinessDetailsEditor({
 
 // ── Nav Link Editor ───────────────────────────────────────────────────────────
 
+/**
+ * NavLinkEditor — the Header Builder.
+ *
+ * Lets agencies pick a navbar template variant, edit the flat nav link list,
+ * and add dropdown menu groups (children) on any entry. Saved fields:
+ *   - nav_links: NavLink[] (each item may have a `children` array for dropdowns)
+ *   - navbar_variant: 'sticky-white' | 'transparent-overlay' | 'hamburger'
+ *
+ * Renamed conceptually from "Navigation Links" to "Header" to signal that
+ * customers can also swap the navbar template here, not just edit link text.
+ */
 function NavLinkEditor({
   site,
   onSave,
@@ -940,6 +981,7 @@ function NavLinkEditor({
   const [links, setLinks] = useState<NavLink[]>(
     site.nav_links && site.nav_links.length > 0 ? site.nav_links : defaultLinks
   );
+  const [variant, setVariant] = useState<NavbarVariant>(site.navbar_variant || 'sticky-white');
   const [dirty, setDirty] = useState(false);
 
   const addLink = () => {
@@ -968,67 +1010,179 @@ function NavLinkEditor({
     setDirty(true);
   };
 
+  // Child (dropdown) operations — children live under each parent link.
+  const addChild = (i: number) => {
+    const newLinks = [...links];
+    const kids = newLinks[i].children || [];
+    newLinks[i] = { ...newLinks[i], children: [...kids, { label: '', href: '' }] };
+    setLinks(newLinks);
+    setDirty(true);
+  };
+  const updateChild = (i: number, ci: number, field: 'label' | 'href', value: string) => {
+    const newLinks = [...links];
+    const kids = [...(newLinks[i].children || [])];
+    kids[ci] = { ...kids[ci], [field]: value };
+    newLinks[i] = { ...newLinks[i], children: kids };
+    setLinks(newLinks);
+    setDirty(true);
+  };
+  const removeChild = (i: number, ci: number) => {
+    const newLinks = [...links];
+    const kids = (newLinks[i].children || []).filter((_, x) => x !== ci);
+    newLinks[i] = { ...newLinks[i], children: kids.length > 0 ? kids : undefined };
+    setLinks(newLinks);
+    setDirty(true);
+  };
+
+  const variantOptions: { id: NavbarVariant; label: string; desc: string }[] = [
+    { id: 'sticky-white',        label: 'Sticky Light',      desc: 'White bar, sticks on scroll. Best for most.' },
+    { id: 'transparent-overlay', label: 'Transparent',       desc: 'Overlays hero, turns solid on scroll.' },
+    { id: 'hamburger',           label: 'Minimal Hamburger', desc: 'Compact icon-only menu.' },
+  ];
+
+  const totalLinks = links.length + links.reduce((n, l) => n + (l.children?.length || 0), 0);
+
   return (
-    <CollapsibleCard title="Navigation Links" icon={<Navigation className="h-4 w-4" />} badge={`${links.length} links`}>
-      <div className="space-y-2">
-        {links.map((link, i) => (
-          <div key={i} className="flex items-center gap-2 group">
-            <div className="flex flex-col gap-0.5">
+    <CollapsibleCard title="Header & Navigation" icon={<Navigation className="h-4 w-4" />} badge={`${totalLinks} links`}>
+      <div className="space-y-4">
+        {/* Variant picker */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-2">Header Style</label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {variantOptions.map(opt => (
               <button
-                onClick={() => moveLink(i, -1)}
-                disabled={i === 0}
-                className="p-0.5 text-gray-300 hover:text-gray-500 disabled:opacity-30"
+                key={opt.id}
+                type="button"
+                onClick={() => { setVariant(opt.id); setDirty(true); }}
+                className={`text-left p-2.5 rounded-lg border transition ${
+                  variant === opt.id
+                    ? 'border-indigo-400 bg-indigo-50 ring-1 ring-indigo-300'
+                    : 'border-gray-200 bg-white hover:border-indigo-200'
+                }`}
               >
-                <ArrowUp className="h-3 w-3" />
+                <div className={`text-xs font-semibold ${variant === opt.id ? 'text-indigo-900' : 'text-gray-900'}`}>
+                  {opt.label}
+                </div>
+                <div className="text-[10px] text-gray-500 mt-0.5 leading-tight">{opt.desc}</div>
               </button>
-              <button
-                onClick={() => moveLink(i, 1)}
-                disabled={i === links.length - 1}
-                className="p-0.5 text-gray-300 hover:text-gray-500 disabled:opacity-30"
-              >
-                <ArrowDown className="h-3 w-3" />
-              </button>
-            </div>
-            <GripVertical className="h-4 w-4 text-gray-300 shrink-0" />
-            <input
-              type="text"
-              value={link.label}
-              onChange={(e) => updateLink(i, 'label', e.target.value)}
-              placeholder="Label"
-              className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <input
-              type="text"
-              value={link.href}
-              onChange={(e) => updateLink(i, 'href', e.target.value)}
-              placeholder="#section or /page"
-              className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <button
-              onClick={() => removeLink(i)}
-              className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {/* Links list (with dropdown children) */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-2">Menu Items</label>
+          <div className="space-y-2">
+            {links.map((link, i) => (
+              <div key={i} className="border border-gray-200 rounded-lg p-2 bg-gray-50/50">
+                <div className="flex items-center gap-2 group">
+                  <div className="flex flex-col gap-0.5">
+                    <button
+                      onClick={() => moveLink(i, -1)}
+                      disabled={i === 0}
+                      className="p-0.5 text-gray-300 hover:text-gray-500 disabled:opacity-30"
+                    >
+                      <ArrowUp className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => moveLink(i, 1)}
+                      disabled={i === links.length - 1}
+                      className="p-0.5 text-gray-300 hover:text-gray-500 disabled:opacity-30"
+                    >
+                      <ArrowDown className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <GripVertical className="h-4 w-4 text-gray-300 shrink-0" />
+                  <input
+                    type="text"
+                    value={link.label}
+                    onChange={(e) => updateLink(i, 'label', e.target.value)}
+                    placeholder="Label"
+                    className="flex-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="text"
+                    value={link.href}
+                    onChange={(e) => updateLink(i, 'href', e.target.value)}
+                    placeholder="#section or /page"
+                    className="flex-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <button
+                    onClick={() => removeLink(i)}
+                    className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
+                    title="Remove link"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                {/* Dropdown children */}
+                {link.children && link.children.length > 0 && (
+                  <div className="mt-2 pl-7 space-y-1.5">
+                    {link.children.map((c, ci) => (
+                      <div key={ci} className="flex items-center gap-2">
+                        <span className="text-gray-300 text-xs">↳</span>
+                        <input
+                          type="text"
+                          value={c.label}
+                          onChange={(e) => updateChild(i, ci, 'label', e.target.value)}
+                          placeholder="Sub-item label"
+                          className="flex-1 rounded-md border border-gray-200 px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                        <input
+                          type="text"
+                          value={c.href}
+                          onChange={(e) => updateChild(i, ci, 'href', e.target.value)}
+                          placeholder="/page or https://..."
+                          className="flex-1 rounded-md border border-gray-200 px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                        <button
+                          onClick={() => removeChild(i, ci)}
+                          className="p-1 text-gray-300 hover:text-red-500"
+                          title="Remove sub-item"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => addChild(i)}
+                  className="ml-7 mt-1.5 text-[11px] text-indigo-600 hover:text-indigo-800 font-medium inline-flex items-center gap-1"
+                >
+                  <Plus className="h-2.5 w-2.5" /> Add dropdown item
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="flex items-center gap-2 pt-1">
           <button
             onClick={addLink}
             className="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 flex items-center gap-1"
           >
-            <Plus className="h-3 w-3" /> Add Link
+            <Plus className="h-3 w-3" /> Add Menu Item
           </button>
           <button
             onClick={() => {
-              onSave({ nav_links: links.filter(l => l.label && l.href) });
+              // Drop empty entries + empty children so the live nav stays clean.
+              const cleaned = links
+                .filter(l => l.label && l.href)
+                .map(l => {
+                  const kids = (l.children || []).filter(c => c.label && c.href);
+                  return kids.length > 0 ? { ...l, children: kids } : { label: l.label, href: l.href };
+                });
+              onSave({ nav_links: cleaned, navbar_variant: variant });
               setDirty(false);
             }}
             disabled={saving || !dirty}
             className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1"
           >
             {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-            Save
+            Save Header
           </button>
         </div>
       </div>
@@ -1038,6 +1192,15 @@ function NavLinkEditor({
 
 // ── Footer Editor ─────────────────────────────────────────────────────────────
 
+/**
+ * FooterEditor — the Footer Builder.
+ *
+ * Variant picker + tagline + social links + custom column editor. When the
+ * agency adds any custom columns, they replace the default auto-fill from
+ * `services[]` / `cities[]` in the four-column footer template. Keeping the
+ * column array empty preserves the legacy behavior so existing sites don't
+ * change appearance after this upgrade.
+ */
 function FooterEditor({
   site,
   onSave,
@@ -1049,6 +1212,8 @@ function FooterEditor({
 }) {
   const [footerTagline, setFooterTagline] = useState(site.footer_tagline || '');
   const [socialLinks, setSocialLinks] = useState<SocialLinks>(site.social_links || {});
+  const [variant, setVariant] = useState<FooterVariant>(site.footer_variant || 'four-column');
+  const [columns, setColumns] = useState<FooterColumn[]>(site.footer_columns || []);
   const [dirty, setDirty] = useState(false);
 
   const socialPlatforms: { key: keyof SocialLinks; label: string }[] = [
@@ -1059,9 +1224,76 @@ function FooterEditor({
     { key: 'yelp', label: 'Yelp' },
   ];
 
+  const variantOptions: { id: FooterVariant; label: string; desc: string }[] = [
+    { id: 'four-column', label: 'Four Column', desc: 'Logo · columns · contact. Best for most sites.' },
+    { id: 'map-contact', label: 'Map + Contact', desc: 'Embedded map next to contact details.' },
+    { id: 'minimal',     label: 'Minimal',      desc: 'Single-row brand + copyright.' },
+  ];
+
+  // Column ops
+  const addColumn = () => {
+    setColumns([...columns, { title: '', links: [{ label: '', href: '' }] }]);
+    setDirty(true);
+  };
+  const removeColumn = (i: number) => {
+    setColumns(columns.filter((_, x) => x !== i));
+    setDirty(true);
+  };
+  const updateColumnTitle = (i: number, title: string) => {
+    const next = [...columns];
+    next[i] = { ...next[i], title };
+    setColumns(next);
+    setDirty(true);
+  };
+  const addColumnLink = (i: number) => {
+    const next = [...columns];
+    next[i] = { ...next[i], links: [...next[i].links, { label: '', href: '' }] };
+    setColumns(next);
+    setDirty(true);
+  };
+  const updateColumnLink = (i: number, li: number, field: 'label' | 'href', value: string) => {
+    const next = [...columns];
+    const links = [...next[i].links];
+    links[li] = { ...links[li], [field]: value };
+    next[i] = { ...next[i], links };
+    setColumns(next);
+    setDirty(true);
+  };
+  const removeColumnLink = (i: number, li: number) => {
+    const next = [...columns];
+    next[i] = { ...next[i], links: next[i].links.filter((_, x) => x !== li) };
+    setColumns(next);
+    setDirty(true);
+  };
+
   return (
     <CollapsibleCard title="Footer" icon={<FileText className="h-4 w-4" />}>
-      <div className="space-y-3">
+      <div className="space-y-4">
+        {/* Variant picker */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-2">Footer Style</label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {variantOptions.map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => { setVariant(opt.id); setDirty(true); }}
+                className={`text-left p-2.5 rounded-lg border transition ${
+                  variant === opt.id
+                    ? 'border-indigo-400 bg-indigo-50 ring-1 ring-indigo-300'
+                    : 'border-gray-200 bg-white hover:border-indigo-200'
+                }`}
+              >
+                <div className={`text-xs font-semibold ${variant === opt.id ? 'text-indigo-900' : 'text-gray-900'}`}>
+                  {opt.label}
+                </div>
+                <div className="text-[10px] text-gray-500 mt-0.5 leading-tight">{opt.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tagline */}
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Footer Tagline</label>
           <textarea
@@ -1073,6 +1305,91 @@ function FooterEditor({
           />
         </div>
 
+        {/* Custom columns — only meaningful on four-column variant */}
+        {variant === 'four-column' && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-medium text-gray-600">
+                Custom Columns
+                <span className="ml-1 font-normal text-gray-400">
+                  ({columns.length > 0 ? `${columns.length} custom` : 'using auto-fill'})
+                </span>
+              </label>
+              <button
+                onClick={addColumn}
+                className="text-[11px] font-medium text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1"
+              >
+                <Plus className="h-3 w-3" /> Add Column
+              </button>
+            </div>
+            {columns.length === 0 ? (
+              <p className="text-[11px] text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                Leave empty to auto-generate columns from your Services and Cities. Add columns
+                here to replace them with custom link groups (e.g. &ldquo;Solutions&rdquo;,
+                &ldquo;Company&rdquo;, &ldquo;Legal&rdquo;).
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {columns.map((col, i) => (
+                  <div key={i} className="border border-gray-200 rounded-lg p-3 bg-gray-50/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={col.title}
+                        onChange={(e) => updateColumnTitle(i, e.target.value)}
+                        placeholder="Column title (e.g. Solutions)"
+                        className="flex-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <button
+                        onClick={() => removeColumn(i)}
+                        className="p-1.5 text-gray-300 hover:text-red-500"
+                        title="Remove column"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="space-y-1.5">
+                      {col.links.map((l, li) => (
+                        <div key={li} className="flex items-center gap-2">
+                          <span className="text-gray-300 text-xs">•</span>
+                          <input
+                            type="text"
+                            value={l.label}
+                            onChange={(e) => updateColumnLink(i, li, 'label', e.target.value)}
+                            placeholder="Link label"
+                            className="flex-1 rounded-md border border-gray-200 px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          />
+                          <input
+                            type="text"
+                            value={l.href}
+                            onChange={(e) => updateColumnLink(i, li, 'href', e.target.value)}
+                            placeholder="/page or https://..."
+                            className="flex-1 rounded-md border border-gray-200 px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          />
+                          <button
+                            onClick={() => removeColumnLink(i, li)}
+                            className="p-1 text-gray-300 hover:text-red-500"
+                            title="Remove link"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => addColumnLink(i)}
+                      className="mt-2 text-[11px] text-indigo-600 hover:text-indigo-800 font-medium inline-flex items-center gap-1"
+                    >
+                      <Plus className="h-2.5 w-2.5" /> Add Link
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Social links */}
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-2">Social Media Links</label>
           <div className="space-y-2">
@@ -1099,8 +1416,19 @@ function FooterEditor({
             const cleanedSocial = Object.fromEntries(
               Object.entries(socialLinks).filter(([, v]) => v)
             );
+            // Drop blank rows so we don't ship empty list items to the live footer.
+            const cleanedColumns = columns
+              .filter(c => c.title.trim())
+              .map(c => ({
+                title: c.title.trim(),
+                links: c.links.filter(l => l.label.trim() && l.href.trim()),
+              }))
+              .filter(c => c.links.length > 0);
+
             onSave({
               footer_tagline: footerTagline || null,
+              footer_variant: variant,
+              footer_columns: cleanedColumns.length > 0 ? cleanedColumns : null,
               social_links: Object.keys(cleanedSocial).length > 0 ? cleanedSocial : null,
             });
             setDirty(false);
@@ -1707,7 +2035,7 @@ export default function PageEditor() {
         if (Array.isArray(pagesResult.data)) {
           setPages(pagesResult.data);
           if (!selectedPage && pagesResult.data.length > 0) {
-            setSelectedPage(pagesResult.data.find((p: { slug: string }) => p.slug === '/') || pagesResult.data[0]);
+            setSelectedPage(pagesResult.data.find((p: SitePage) => isHomepageRow(p)) || pagesResult.data[0]);
           }
         }
       }
@@ -1871,8 +2199,8 @@ export default function PageEditor() {
   const duplicatePage = async (page: SitePage) => {
     setSaving(true);
     try {
-      const newSlug = page.slug === '/'
-        ? '/home-copy'
+      const newSlug = isHomepageRow(page)
+        ? 'home-copy'
         : `${page.slug}-copy`;
 
       const res = await fetch(`/api/agency/sites/${siteId}/pages`, {
@@ -2354,7 +2682,7 @@ export default function PageEditor() {
                       </h2>
                       <div className="flex items-center gap-2 mt-0.5">
                         <p className="text-xs text-gray-400 font-mono truncate">{selectedPage.slug}</p>
-                        {selectedPage.slug === '/' && (
+                        {isHomepageRow(selectedPage) && (
                           <span className="text-[10px] text-gray-400 shrink-0">
                             › {activeTab === 'content' ? 'Content' : activeTab === 'design' ? 'Design' : 'Site Settings'}
                           </span>
@@ -2473,8 +2801,9 @@ export default function PageEditor() {
                 </div>
               )}
 
-              {/* Tab Bar — only show on homepage */}
-              {selectedPage.slug === '/' && (
+              {/* Tab Bar — only show on homepage (Site Settings + Design are
+                  site-wide so they only make sense on the home row). */}
+              {isHomepageRow(selectedPage) && (
                 <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
                   {([
                     { id: 'content' as const, label: 'Content', icon: <FileText className="h-3.5 w-3.5" /> },
@@ -2498,7 +2827,7 @@ export default function PageEditor() {
               )}
 
               {/* ─── Content Tab (always shown on non-homepage, conditional on homepage) ─── */}
-              {(selectedPage.slug !== '/' || activeTab === 'content') && (
+              {(!isHomepageRow(selectedPage) || activeTab === 'content') && (
                 <div className="space-y-4">
                   {/* Page Settings (title + slug) — must be above Hero & SEO so
                       customers find the title field quickly. Added 2026-05-13
@@ -2646,7 +2975,7 @@ export default function PageEditor() {
               )}
 
               {/* ─── Design Tab (homepage only) ─── */}
-              {selectedPage.slug === '/' && activeTab === 'design' && site && (
+              {isHomepageRow(selectedPage) && activeTab === 'design' && site && (
                 <div className="space-y-4">
                   {/* Section Manager — reorder + variant switching */}
                   <SectionManager
@@ -2664,8 +2993,12 @@ export default function PageEditor() {
                 </div>
               )}
 
-              {/* ─── Site Settings Tab (homepage only) ─── */}
-              {selectedPage.slug === '/' && activeTab === 'site' && site && (
+              {/* ─── Site Settings Tab (homepage only) ───
+                  Previously gated on `slug === '/'` which never matched in
+                  production (homepage rows use slug='home' or page_type=
+                  'homepage'), so the Header/Footer builders were invisible.
+                  Fixed 2026-05-14 alongside the menus builder upgrade. */}
+              {isHomepageRow(selectedPage) && activeTab === 'site' && site && (
                 <div className="space-y-4">
                   <BusinessDetailsEditor site={site} onSave={saveSiteEdits} saving={savingSite} />
                   <NavLinkEditor site={site} onSave={saveSiteEdits} saving={savingSite} />

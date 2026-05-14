@@ -13,6 +13,46 @@ interface FooterData {
   footerTagline?: string;
   socialLinks?: Record<string, string>;
   designStyle?: string;
+  /**
+   * Custom column override from the Footer Builder. When non-empty, the
+   * middle two auto-fill columns (Services + Service Areas) are replaced
+   * with these. Logo column (left) and Contact column (right) are always
+   * preserved so phone / hours stay reachable.
+   */
+  customColumns?: Array<{ title: string; links: Array<{ label: string; href: string }> }>;
+}
+
+/**
+ * Render a custom Footer Builder column. Used by both light + dark variants
+ * to keep custom output visually consistent across designStyle.
+ */
+function renderCustomColumns(
+  cols: Array<{ title: string; links: Array<{ label: string; href: string }> }>,
+  style: 'dark' | 'light',
+  primary: string,
+): string {
+  return cols.map(col => {
+    const links = col.links.map(l => {
+      if (style === 'dark') {
+        return `<a class="block text-sm text-gray-400 hover:text-white transition" href="${escapeAttr(l.href)}">${escapeHtml(l.label)}</a>`;
+      }
+      return `<li><a href="${escapeAttr(l.href)}" style="color: #9ca3af; text-decoration: none; font-size: 0.9rem; transition: color 0.2s;" onmouseover="this.style.color='${primary}'" onmouseout="this.style.color='#9ca3af'">${escapeHtml(l.label)}</a></li>`;
+    }).join(style === 'dark' ? '' : '\n          ');
+
+    if (style === 'dark') {
+      return `<div><h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">${escapeHtml(col.title)}</h4><div class="space-y-2">${links || '<span class="text-sm text-gray-500">—</span>'}</div></div>`;
+    }
+    return `<div><h4 style="color: #ffffff; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 1.25rem 0;">${escapeHtml(col.title)}</h4><ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">${links || '<li style="color: #6b7280; font-size: 0.9rem;">—</li>'}</ul></div>`;
+  }).join('');
+}
+
+/** Minimal HTML escapers — these footer templates emit raw strings, so any
+ *  agency-supplied text needs to be neutralized before interpolation. */
+function escapeHtml(s: string): string {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function escapeAttr(s: string): string {
+  return escapeHtml(s).replace(/'/g, '&#39;');
 }
 
 // Lucide SVGs from original site
@@ -54,6 +94,12 @@ export function fourColumnFooter(data: FooterData): string {
 }
 
 function modernDarkFooter(data: FooterData, _primary: string, year: number): string {
+  // Footer Builder override: if customColumns is provided, render those in
+  // place of the auto-generated Services + Service Areas columns. Otherwise
+  // fall back to the legacy auto-fill from data.services / data.cities.
+  const useCustom = !!(data.customColumns && data.customColumns.length > 0);
+  const customMiddle = useCustom ? renderCustomColumns(data.customColumns!, 'dark', _primary) : '';
+
   const serviceLinks = (data.services || []).slice(0, 7).map(s =>
     `<a class="block text-sm text-gray-400 hover:text-white transition" href="/services/${s.slug}">${s.name}</a>`
   ).join('');
@@ -78,12 +124,24 @@ function modernDarkFooter(data: FooterData, _primary: string, year: number): str
     ? `<div class="flex items-center gap-2 text-sm text-gray-400">${ICON_CLOCK} ${data.formattedHours}</div>`
     : '';
 
-  return `<footer class="border-t border-white/10 bg-gray-900/50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><div class="grid md:grid-cols-4 gap-8"><div><div class="flex items-center gap-2 mb-3"><div class="h-8 w-8 rounded-lg bg-red-600 flex items-center justify-center">${ICON_THERMOMETER_FOOTER}</div><span class="font-bold text-white">${data.businessName}</span></div><p class="text-sm text-gray-400 mb-3">${data.footerTagline || 'Proudly serving our community.'}</p><p class="text-sm text-gray-400">Serving the area with quality and care.</p></div><div><h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Services</h4><div class="space-y-2">${serviceLinks || '<span class="text-sm text-gray-500">Coming soon</span>'}</div></div><div><h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Service Areas</h4><div class="space-y-2">${cityLinks || '<span class="text-sm text-gray-500">Local &amp; Surrounding Areas</span>'}</div></div><div><h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Contact</h4><div class="space-y-3">${phone}${email}${address}${hours}</div></div></div><div class="border-t border-white/10 mt-10 pt-6 text-center text-xs text-gray-500">&copy; ${year} ${data.businessName}. All rights reserved.</div></div></footer>`;
+  const middleColumns = useCustom
+    ? customMiddle
+    : `<div><h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Services</h4><div class="space-y-2">${serviceLinks || '<span class="text-sm text-gray-500">Coming soon</span>'}</div></div><div><h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Service Areas</h4><div class="space-y-2">${cityLinks || '<span class="text-sm text-gray-500">Local &amp; Surrounding Areas</span>'}</div></div>`;
+
+  // Grid column count: logo + middle columns + contact. Custom mode can have
+  // 1–4 middle columns, so we widen the grid as needed (cap at 5 total).
+  const totalCols = Math.min(5, 2 + (useCustom ? data.customColumns!.length : 2));
+  const gridClass = `grid md:grid-cols-${totalCols} gap-8`;
+
+  return `<footer class="border-t border-white/10 bg-gray-900/50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><div class="${gridClass}"><div><div class="flex items-center gap-2 mb-3"><div class="h-8 w-8 rounded-lg bg-red-600 flex items-center justify-center">${ICON_THERMOMETER_FOOTER}</div><span class="font-bold text-white">${data.businessName}</span></div><p class="text-sm text-gray-400 mb-3">${data.footerTagline || 'Proudly serving our community.'}</p><p class="text-sm text-gray-400">Serving the area with quality and care.</p></div>${middleColumns}<div><h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Contact</h4><div class="space-y-3">${phone}${email}${address}${hours}</div></div></div><div class="border-t border-white/10 mt-10 pt-6 text-center text-xs text-gray-500">&copy; ${year} ${data.businessName}. All rights reserved.</div></div></footer>`;
 }
 
 function lightFooter(data: FooterData, primary: string, year: number): string {
   const linkColor = '#9ca3af';
   const borderColor = 'rgba(255,255,255,0.08)';
+  // Footer Builder override — see modernDarkFooter for the same pattern.
+  const useCustom = !!(data.customColumns && data.customColumns.length > 0);
+  const customMiddle = useCustom ? renderCustomColumns(data.customColumns!, 'light', primary) : '';
 
   const serviceLinks = (data.services || []).slice(0, 7).map(s =>
     `<li><a href="/services/${s.slug}" style="color: ${linkColor}; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; transition: color 0.2s;" onmouseover="this.style.color='${primary}'" onmouseout="this.style.color='${linkColor}'">
@@ -138,7 +196,7 @@ function lightFooter(data: FooterData, primary: string, year: number): string {
         ${buildSocialIcons(data, primary, false)}
       </div>
     </div>
-    <div>
+    ${useCustom ? customMiddle : `<div>
       <h4 style="color: #ffffff; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 1.25rem 0;">Services</h4>
       <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
         ${serviceLinks || '<li style="color: #6b7280; font-size: 0.9rem;">Coming soon</li>'}
@@ -149,7 +207,7 @@ function lightFooter(data: FooterData, primary: string, year: number): string {
       <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
         ${cityLinks || '<li style="color: #6b7280; font-size: 0.9rem;">Local &amp; Surrounding Areas</li>'}
       </ul>
-    </div>
+    </div>`}
     <div>
       <h4 style="color: #ffffff; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 1.25rem 0;">Contact Us</h4>
       ${phone}
