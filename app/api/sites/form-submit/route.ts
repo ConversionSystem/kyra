@@ -164,9 +164,12 @@ export async function POST(req: NextRequest) {
         email: submissionEmail || undefined,
         phone: submissionPhone || undefined,
         source,
-        stage: 'new',
+        // CRM contact stage enum: 'lead' | 'contact' | 'customer' | 'churned'.
+        // A fresh website submission is always a lead.
+        stage: 'lead',
         tags: ['website-lead'],
-        custom_fields: { ...fields, _submission_id: submission.id },
+        // CreateContactData uses enrichment_data for arbitrary JSON payload.
+        enrichment_data: { ...fields, _submission_id: submission.id },
       }, site.client_id);
 
       if (res?.contact?.id) {

@@ -9,6 +9,21 @@ interface CtaData {
   clientId?: string;
   colors: { primary: string; secondary: string };
   designStyle?: string;
+  /**
+   * Sprint 5 — accepted but ignored by this variant. Included so the CTAS
+   * map's value type (`typeof phoneBannerCta`) is wide enough for the
+   * assembler to pass form-embed-only fields without a type error.
+   */
+  customFields?: Array<{
+    id: string;
+    label: string;
+    type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'number';
+    required?: boolean;
+    placeholder?: string;
+    options?: string[];
+  }>;
+  pageSlug?: string;
+  siteId?: string;
 }
 
 // Lucide SVGs from original site
