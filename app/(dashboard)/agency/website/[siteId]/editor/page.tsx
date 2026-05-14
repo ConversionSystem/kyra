@@ -2062,6 +2062,229 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
   navbar: <Navigation className="h-4 w-4" />,
 };
 
+/**
+ * PageHistoryModal — Sprint 4 (2026-05-14).
+ *
+ * Lists the last 30 revisions for a page (snapshot-on-save table) and lets
+ * the customer one-click restore any of them. Right pane previews the
+ * selected revision's hero + section count so they don't restore blind.
+ *
+ * The restore endpoint snapshots the CURRENT state before writing the chosen
+ * revision back, so every restore is itself reversible — there's no "point
+ * of no return" in this flow.
+ */
+function PageHistoryModal({
+  siteId,
+  page,
+  onClose,
+  onRestored,
+}: {
+  siteId: string;
+  page: SitePage;
+  onClose: () => void;
+  onRestored: () => void;
+}) {
+  type Revision = {
+    id: string;
+    snapshot: Record<string, unknown>;
+    note: string | null;
+    created_at: string;
+  };
+  const [loading, setLoading] = useState(true);
+  const [revisions, setRevisions] = useState<Revision[]>([]);
+  const [selected, setSelected] = useState<Revision | null>(null);
+  const [restoring, setRestoring] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const encoded = encodeURIComponent(page.slug);
+        const res = await fetch(`/api/agency/sites/${siteId}/pages/${encoded}/revisions`, { cache: 'no-store' });
+        const result = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          setError(result.error || 'Failed to load history');
+        } else {
+          const list: Revision[] = result.data || [];
+          setRevisions(list);
+          setSelected(list[0] || null);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Network error');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [siteId, page.slug]);
+
+  const onRestore = async () => {
+    if (!selected) return;
+    if (!window.confirm('Restore this revision? Your current edits will be saved as a new revision first, so this is reversible.')) return;
+    setRestoring(true);
+    setError(null);
+    try {
+      const encoded = encodeURIComponent(page.slug);
+      const res = await fetch(
+        `/api/agency/sites/${siteId}/pages/${encoded}/revisions/${selected.id}/restore`,
+        { method: 'POST' },
+      );
+      const result = await res.json();
+      if (!res.ok) {
+        setError(result.error || 'Restore failed');
+      } else {
+        onRestored();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  // Snapshot helpers — best-effort projections for the preview pane.
+  const snapHero = (r: Revision | null): string =>
+    String((r?.snapshot.hero_h1 as string) || '(no headline)');
+  const snapSubtitle = (r: Revision | null): string =>
+    String((r?.snapshot.hero_subtitle as string) || '');
+  const snapSectionCount = (r: Revision | null): number => {
+    const cs = r?.snapshot.content_sections;
+    return Array.isArray(cs) ? cs.length : 0;
+  };
+  const snapFaqCount = (r: Revision | null): number => {
+    const f = r?.snapshot.faq;
+    return Array.isArray(f) ? f.length : 0;
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[80vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 shrink-0">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">Revision history</h3>
+            <p className="text-[11px] text-gray-500 mt-0.5">{page.title || page.slug}</p>
+          </div>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-700">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {loading && (
+          <div className="flex-1 flex items-center justify-center text-xs text-gray-500">
+            <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading history…
+          </div>
+        )}
+
+        {!loading && revisions.length === 0 && (
+          <div className="flex-1 flex flex-col items-center justify-center px-5 py-12 text-center">
+            <Clock className="h-8 w-8 text-gray-300 mb-2" />
+            <p className="text-sm text-gray-600">No revisions yet.</p>
+            <p className="text-[11px] text-gray-400 mt-1">
+              Saved edits create restore points automatically. Edit anything on this page to start building history.
+            </p>
+          </div>
+        )}
+
+        {!loading && revisions.length > 0 && (
+          <div className="flex-1 flex min-h-0">
+            {/* Left: revision list */}
+            <div className="w-1/2 border-r border-gray-100 overflow-y-auto">
+              {revisions.map((rev) => {
+                const isSelected = selected?.id === rev.id;
+                return (
+                  <button
+                    key={rev.id}
+                    onClick={() => setSelected(rev)}
+                    className={`w-full text-left px-4 py-2.5 border-b border-gray-50 transition-colors ${
+                      isSelected ? 'bg-indigo-50 border-l-2 border-l-indigo-500' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-xs font-medium ${isSelected ? 'text-indigo-900' : 'text-gray-800'}`}>
+                        {formatRelativeTime(rev.created_at)}
+                      </span>
+                      <span className="text-[10px] text-gray-400 shrink-0 tabular-nums">
+                        {new Date(rev.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-gray-500 mt-0.5 truncate">
+                      {rev.note || (rev.snapshot.hero_h1 ? `H1: ${rev.snapshot.hero_h1}` : 'Untitled edit')}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Right: preview */}
+            <div className="w-1/2 overflow-y-auto p-4">
+              {selected && (
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Headline</div>
+                    <div className="text-gray-900 font-medium">{snapHero(selected)}</div>
+                  </div>
+                  {snapSubtitle(selected) && (
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Subtitle</div>
+                      <div className="text-gray-700">{snapSubtitle(selected)}</div>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-md border border-gray-100 px-2.5 py-1.5">
+                      <div className="text-[10px] text-gray-400 uppercase tracking-wider">Sections</div>
+                      <div className="text-sm font-semibold text-gray-800">{snapSectionCount(selected)}</div>
+                    </div>
+                    <div className="rounded-md border border-gray-100 px-2.5 py-1.5">
+                      <div className="text-[10px] text-gray-400 uppercase tracking-wider">FAQ items</div>
+                      <div className="text-sm font-semibold text-gray-800">{snapFaqCount(selected)}</div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Meta title</div>
+                    <div className="text-gray-700 truncate">{String(selected.snapshot.meta_title || '—')}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="px-5 py-2 text-[11px] text-red-700 bg-red-50 border-t border-red-200">{error}</div>
+        )}
+
+        <div className="flex items-center justify-between gap-2 px-5 py-3 border-t border-gray-100 shrink-0">
+          <p className="text-[10px] text-gray-400">
+            Restores are reversible — your current state is snapshotted first.
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onRestore}
+              disabled={!selected || restoring}
+              className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center gap-1.5"
+            >
+              {restoring ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
+              Restore this revision
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Section Manager ───────────────────────────────────────────────────────────
 
 /**
@@ -2857,6 +3080,8 @@ export default function PageEditor() {
   const [editingSection, setEditingSection] = useState<number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [activeTab, setActiveTab] = useState<'content' | 'design' | 'site'>('content');
+  // Sprint 4: revision history modal — opens from the page header History button.
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [editorSubTab, setEditorSubTab] = useState<'editor' | 'widget'>('editor');
 
@@ -3111,7 +3336,10 @@ export default function PageEditor() {
         body: JSON.stringify({ hidden: !page.hidden }),
       });
       if (res.ok) {
-        showToast(page.hidden ? 'Page visible' : 'Page hidden');
+        // Sprint 4 wording: "Hide" → "Draft", "Show" → "Publish". The
+        // distinction here is one click ahead of the optimistic state, so
+        // `page.hidden` reflects the pre-toggle value.
+        showToast(page.hidden ? 'Page published — visible on next deploy' : 'Page moved to draft');
         // Refresh pages list and selected
         const pagesRes = await fetch(`/api/agency/sites/${siteId}/pages`);
         if (pagesRes.ok) {
@@ -3281,6 +3509,20 @@ export default function PageEditor() {
           onSave={saveSectionEdit}
           onClose={() => setEditingSection(null)}
           saving={saving}
+        />
+      )}
+
+      {/* Revision History Modal — Sprint 4 */}
+      {historyOpen && selectedPage && (
+        <PageHistoryModal
+          siteId={siteId}
+          page={selectedPage}
+          onClose={() => setHistoryOpen(false)}
+          onRestored={async () => {
+            await refreshPage(selectedPage.slug);
+            setToast({ type: 'success', message: 'Revision restored — remember to Publish to push it live.' });
+            setHistoryOpen(false);
+          }}
         />
       )}
 
@@ -3456,8 +3698,8 @@ export default function PageEditor() {
                           </span>
                           <span className="text-sm truncate flex-1">{getPageLabel(page)}</span>
                           {page.hidden && (
-                            <span className="shrink-0 text-[8px] bg-gray-200 text-gray-500 px-1 py-0.5 rounded font-medium">
-                              Hidden
+                            <span className="shrink-0 text-[8px] bg-amber-100 text-amber-700 border border-amber-200 px-1 py-0.5 rounded font-medium uppercase tracking-wide" title="Draft — not visible to visitors">
+                              Draft
                             </span>
                           )}
                           {!page.hidden && page.edited && (
@@ -3542,8 +3784,11 @@ export default function PageEditor() {
                       <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2 truncate">
                         <span className="truncate">{getPageLabel(selectedPage)}</span>
                         {selectedPage.hidden && (
-                          <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium flex items-center gap-1 shrink-0">
-                            <EyeOff className="h-3 w-3" /> Hidden
+                          <span
+                            className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium flex items-center gap-1 shrink-0"
+                            title="This page is a draft — hidden from visitors and search engines."
+                          >
+                            <EyeOff className="h-3 w-3" /> Draft
                           </span>
                         )}
                       </h2>
@@ -3620,12 +3865,22 @@ export default function PageEditor() {
                       </a>
                     )}
                     <button
+                      onClick={() => setHistoryOpen(true)}
+                      className="min-h-[44px] sm:min-h-0 px-2 sm:px-3 py-2 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
+                      title="View revision history"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+                      <span className="hidden sm:inline">History</span>
+                    </button>
+                    <button
                       onClick={() => togglePageVisibility(selectedPage)}
                       className="min-h-[44px] sm:min-h-0 px-2 sm:px-3 py-2 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
-                      title={selectedPage.hidden ? 'Show page' : 'Hide page'}
+                      title={selectedPage.hidden
+                        ? 'Publish — make this page visible to visitors'
+                        : 'Move to draft — hide from visitors and search engines'}
                     >
-                      {selectedPage.hidden ? <EyeOff className="h-3.5 w-3.5 sm:h-3 sm:w-3" /> : <Eye className="h-3.5 w-3.5 sm:h-3 sm:w-3" />}
-                      <span className="hidden sm:inline">{selectedPage.hidden ? 'Show' : 'Hide'}</span>
+                      {selectedPage.hidden ? <Eye className="h-3.5 w-3.5 sm:h-3 sm:w-3" /> : <EyeOff className="h-3.5 w-3.5 sm:h-3 sm:w-3" />}
+                      <span className="hidden sm:inline">{selectedPage.hidden ? 'Publish' : 'Draft'}</span>
                     </button>
                     <button
                       onClick={() => duplicatePage(selectedPage)}
