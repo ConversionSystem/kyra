@@ -165,6 +165,17 @@ a{text-decoration:none;color:inherit;transition:var(--transition)}
 .nav-links a::before{content:'';position:absolute;bottom:8px;left:50%;transform:translateX(-50%) scaleX(0);width:20px;height:2px;background:var(--secondary);transition:var(--transition)}
 .nav-links a:hover,.nav-links a.active{color:var(--secondary)}
 .nav-links a:hover::before,.nav-links a.active::before{transform:translateX(-50%) scaleX(1)}
+/* 2026-05-14 — dropdown styles for agency-configured nav children */
+.nav-dropdown{position:relative}
+.nav-dropdown>button{padding:10px 18px;font-weight:500;font-size:15px;color:rgba(255,255,255,.9);background:transparent;border:0;cursor:pointer;border-radius:var(--radius);display:inline-flex;align-items:center;gap:4px}
+.nav-dropdown>button:hover,.nav-dropdown>button.active{color:var(--secondary)}
+.nav-dropdown .dropdown-chevron{font-size:10px;line-height:1}
+.nav-dropdown .dropdown-menu{position:absolute;top:100%;left:0;min-width:220px;background:#fff;color:#1a365d;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px 0;margin-top:4px;opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .15s,transform .15s;z-index:1100}
+.nav-dropdown:hover .dropdown-menu,.nav-dropdown:focus-within .dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.nav-dropdown .dropdown-item{display:block;padding:8px 16px;font-size:14px;color:#1a365d;border-radius:0}
+.nav-dropdown .dropdown-item::before{display:none}
+.nav-dropdown .dropdown-item:hover{background:#f3f4f6;color:var(--primary)}
+.mobile-menu .mobile-child{padding-left:32px;font-size:14px;color:rgba(255,255,255,.75)}
 .nav-actions{display:flex;align-items:center;gap:16px}
 .phone-btn{display:flex;align-items:center;gap:10px;padding:12px 24px;background:linear-gradient(135deg,var(--teal),var(--teal-dark));color:#fff;border-radius:50px;font-weight:600;font-size:15px;box-shadow:0 4px 15px rgba(0,118,144,.4);transition:var(--transition)}
 .phone-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,118,144,.5)}
@@ -521,39 +532,79 @@ function renderNavbar(site: Record<string, any>, page: Record<string, any>, allP
   const logoUrl = site.logo_url || IMG.logo;
   const currentSlug = ((page.slug as string) || '').replace(/^\/+/, '') || 'home';
 
-  // Build nav links from allPages or use defaults
-  const navItems = allPages.length > 0
-    ? allPages.filter(p => {
-        const s = ((p.slug as string) || '').replace(/^\/+/, '');
-        return ['home', '', 'index', 'services', 'about', 'portfolio', 'blog', 'contact'].includes(s);
-      }).map(p => ({
-        slug: ((p.slug as string) || '').replace(/^\/+/, '') || 'home',
-        title: p.title as string,
-      }))
-    : [
-        { slug: 'home', title: 'Home' },
-        { slug: 'services', title: 'Services' },
-        { slug: 'about', title: 'About' },
-        { slug: 'portfolio', title: 'Portfolio' },
-        { slug: 'blog', title: 'Blog' },
-        { slug: 'contact', title: 'Contact' },
-      ];
+  // 2026-05-14 fix: agency-configured nav_links (with optional dropdown
+  // children) are now honored, mirroring the TrustedNetworx fix. Empty
+  // nav_links falls back to the legacy auto-generated page list so
+  // existing sites that haven't customized still render identically.
+  const navLinks = site.nav_links as
+    | { label: string; href: string; children?: { label: string; href: string }[] }[]
+    | null;
 
-  // Map long page titles to short nav labels
-  const NAV_LABELS: Record<string, string> = {
-    'home': 'Home', 'index': 'Home', 'services': 'Services', 'about': 'About',
-    'portfolio': 'Portfolio', 'blog': 'Blog', 'contact': 'Contact',
-  };
-  const linkHtml = navItems.map(n => {
-    const active = (n.slug === currentSlug || (n.slug === 'home' && currentSlug === '') || (n.slug === 'index' && currentSlug === '')) ? ' active' : '';
-    const label = NAV_LABELS[n.slug] || n.title;
-    return `<a href="${navLink(n.slug)}" class="${active}">${esc(label)}</a>`;
-  }).join('\n          ');
+  let linkHtml: string;
+  let mobileLinkHtml: string;
 
-  const mobileLinkHtml = navItems.map(n => {
-    const active = (n.slug === currentSlug || (n.slug === 'home' && currentSlug === '')) ? ' active' : '';
-    return `<a href="${navLink(n.slug)}" class="${active}" onclick="closeMobileMenu()">${esc(n.title)}</a>`;
-  }).join('\n        ');
+  if (navLinks && navLinks.length > 0) {
+    // Custom mode: honor agency edits including dropdown groups.
+    const renderDesktopEntry = (l: { label: string; href: string; children?: { label: string; href: string }[] }): string => {
+      // Best-effort active-state: matches by trailing slug segment.
+      const tailSlug = l.href.replace(/^\/+|\/+$/g, '').split('/').pop() || '';
+      const active = tailSlug === currentSlug ? ' active' : '';
+      if (!l.children || l.children.length === 0) {
+        return `<a href="${esc(l.href)}" class="${active}">${esc(l.label)}</a>`;
+      }
+      const items = l.children.map(c =>
+        `<a href="${esc(c.href)}" class="dropdown-item">${esc(c.label)}</a>`
+      ).join('\n              ');
+      return `<div class="nav-dropdown" tabindex="0">
+            <button type="button" class="${active}" aria-haspopup="true">${esc(l.label)} <span class="dropdown-chevron">▾</span></button>
+            <div class="dropdown-menu">
+              ${items}
+            </div>
+          </div>`;
+    };
+    linkHtml = navLinks.map(renderDesktopEntry).join('\n          ');
+
+    // Mobile flattens parent + children (indented children) for tap-reach.
+    mobileLinkHtml = navLinks.flatMap(l => [
+      `<a href="${esc(l.href)}" onclick="closeMobileMenu()">${esc(l.label)}</a>`,
+      ...((l.children || []).map(c =>
+        `<a href="${esc(c.href)}" class="mobile-child" onclick="closeMobileMenu()">${esc(c.label)}</a>`,
+      )),
+    ]).join('\n        ');
+  } else {
+    // Legacy: auto-fill from allPages, fallback to a sensible default set.
+    const navItems = allPages.length > 0
+      ? allPages.filter(p => {
+          const s = ((p.slug as string) || '').replace(/^\/+/, '');
+          return ['home', '', 'index', 'services', 'about', 'portfolio', 'blog', 'contact'].includes(s);
+        }).map(p => ({
+          slug: ((p.slug as string) || '').replace(/^\/+/, '') || 'home',
+          title: p.title as string,
+        }))
+      : [
+          { slug: 'home', title: 'Home' },
+          { slug: 'services', title: 'Services' },
+          { slug: 'about', title: 'About' },
+          { slug: 'portfolio', title: 'Portfolio' },
+          { slug: 'blog', title: 'Blog' },
+          { slug: 'contact', title: 'Contact' },
+        ];
+
+    const NAV_LABELS: Record<string, string> = {
+      'home': 'Home', 'index': 'Home', 'services': 'Services', 'about': 'About',
+      'portfolio': 'Portfolio', 'blog': 'Blog', 'contact': 'Contact',
+    };
+    linkHtml = navItems.map(n => {
+      const active = (n.slug === currentSlug || (n.slug === 'home' && currentSlug === '') || (n.slug === 'index' && currentSlug === '')) ? ' active' : '';
+      const label = NAV_LABELS[n.slug] || n.title;
+      return `<a href="${navLink(n.slug)}" class="${active}">${esc(label)}</a>`;
+    }).join('\n          ');
+
+    mobileLinkHtml = navItems.map(n => {
+      const active = (n.slug === currentSlug || (n.slug === 'home' && currentSlug === '')) ? ' active' : '';
+      return `<a href="${navLink(n.slug)}" class="${active}" onclick="closeMobileMenu()">${esc(n.title)}</a>`;
+    }).join('\n        ');
+  }
 
   return `
   <header class="header" id="header">
@@ -596,29 +647,32 @@ function renderFooter(site: Record<string, any>): string {
   const phone = site.phone || DEFAULTS.phone;
   const email = site.email || DEFAULTS.email;
   const logoUrl = site.logo_url || IMG.logo;
-  const tagline = site.tagline || DEFAULTS.tagline;
+  // 2026-05-14 fix: prefer agency-configured footer_tagline over the
+  // site.tagline/DEFAULTS fallback. Mirrors the TN fix.
+  const tagline = site.footer_tagline || site.tagline || DEFAULTS.tagline;
   const license = normalizeLicense(site.license || DEFAULTS.license);
   const addr = getAddr(site);
   const services = getServices(site);
   const cities = getCities(site);
   const googlePlaceId = site.google_place_id || DEFAULTS.googlePlaceId;
+  const socialLinks = (site.social_links || {}) as Record<string, string>;
 
-  return `
-  <footer class="footer">
-    <div class="footer-top">
-      <div class="container">
-        <div class="footer-grid">
-          <div class="footer-brand">
-            <img src="${esc(logoUrl)}" alt="${esc(biz)}" class="footer-logo">
-            <p class="footer-tagline">${esc(tagline)}</p>
-            ${license ? `<div class="license-badge"><i class="fas fa-certificate"></i><span>CA LIC: ${esc(license)}</span></div>` : ''}
-            <div class="social-links">
-              <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-              <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-              <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-              <a href="https://search.google.com/local/writereview?placeid=${esc(googlePlaceId)}" target="_blank" aria-label="Google"><i class="fab fa-google"></i></a>
-            </div>
-          </div>
+  // 2026-05-14 fix: agency-configured footer_columns replaces the legacy
+  // Quick Links / Services / Service Areas middle columns. The Brand and
+  // Contact columns are always rendered (they pull from business details).
+  const footerColumns = site.footer_columns as
+    | { title: string; links: { label: string; href: string }[] }[]
+    | null;
+
+  const middleColumns = footerColumns && footerColumns.length > 0
+    ? footerColumns.map(col => `
+          <div class="footer-links">
+            <h4>${esc(col.title)}</h4>
+            <ul>
+              ${col.links.map(l => `<li><a href="${esc(l.href)}">${esc(l.label)}</a></li>`).join('\n              ')}
+            </ul>
+          </div>`).join('')
+    : `
           <div class="footer-links">
             <h4>Quick Links</h4>
             <ul>
@@ -641,7 +695,37 @@ function renderFooter(site: Record<string, any>): string {
             <ul>
               ${cities.slice(0, 5).map(c => `<li><a href="/locations/${esc(c.slug)}">${esc(c.name)}</a></li>`).join('\n              ')}
             </ul>
-          </div>
+          </div>`;
+
+  // 2026-05-14 fix: agency-configured social_links wins over the legacy
+  // placeholder anchors (which all pointed to '#' — useless).
+  const fb = socialLinks.facebook;
+  const ig = socialLinks.instagram;
+  const li = socialLinks.linkedin;
+  const tw = socialLinks.twitter;
+  const yelp = socialLinks.yelp;
+  const socialHtml = [
+    fb  && `<a href="${esc(fb)}"  target="_blank" rel="noopener" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>`,
+    ig  && `<a href="${esc(ig)}"  target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>`,
+    li  && `<a href="${esc(li)}"  target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>`,
+    tw  && `<a href="${esc(tw)}"  target="_blank" rel="noopener" aria-label="Twitter"><i class="fab fa-twitter"></i></a>`,
+    yelp && `<a href="${esc(yelp)}" target="_blank" rel="noopener" aria-label="Yelp"><i class="fab fa-yelp"></i></a>`,
+    `<a href="https://search.google.com/local/writereview?placeid=${esc(googlePlaceId)}" target="_blank" rel="noopener" aria-label="Google"><i class="fab fa-google"></i></a>`,
+  ].filter(Boolean).join('\n              ');
+
+  return `
+  <footer class="footer">
+    <div class="footer-top">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <img src="${esc(logoUrl)}" alt="${esc(biz)}" class="footer-logo">
+            <p class="footer-tagline">${esc(tagline)}</p>
+            ${license ? `<div class="license-badge"><i class="fas fa-certificate"></i><span>CA LIC: ${esc(license)}</span></div>` : ''}
+            <div class="social-links">
+              ${socialHtml}
+            </div>
+          </div>${middleColumns}
           <div class="footer-contact">
             <h4>Contact Us</h4>
             <ul>
