@@ -4508,13 +4508,14 @@ export default function PageEditor() {
                     )}
                     {siteUrl && (
                       <a
-                        href={`${siteUrl}/${selectedPage.slug === 'index' ? '' : selectedPage.slug}`}
+                        href={`${siteUrl}/${selectedPage.slug === 'home' ? '' : selectedPage.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="min-h-[44px] sm:min-h-0 px-2 sm:px-3 py-2 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
+                        title="Open the live (already-deployed) page in a new tab"
                       >
-                        <Eye className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
-                        <span className="hidden sm:inline">Preview</span>
+                        <ExternalLink className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+                        <span className="hidden sm:inline">View Live</span>
                       </a>
                     )}
                     <button
@@ -4524,7 +4525,7 @@ export default function PageEditor() {
                           ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
                           : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                       }`}
-                      title="Toggle live preview"
+                      title="Toggle in-editor preview of your unsaved changes"
                     >
                       <Eye className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
                       <span className="hidden sm:inline">Preview</span>
