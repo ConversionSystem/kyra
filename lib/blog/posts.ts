@@ -11,6 +11,197 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'openclaw-ai-automation-hooks-cron-tasks-2026',
+    title: 'OpenClaw AI Automation in 2026: Hooks, Cron, Heartbeats, and Task Flows Explained',
+    description: 'OpenClaw AI automation in 2026 runs on four mechanisms: event hooks, cron jobs, heartbeats, and the Task Brain ledger. This guide explains when to use each, with a comparison table, real CLI commands, a wiring walkthrough, and an FAQ for agency operators.',
+    date: '2026-05-14',
+    readMins: 13,
+    category: 'AI Infrastructure',
+    emoji: '⚙️',
+    content: `
+<p><em>Last updated: May 14, 2026</em></p>
+
+<p><strong>OpenClaw automation</strong> is the set of four built-in mechanisms an AI agent uses to do work without a human typing into a chat box. The four are hooks (event-driven), cron (time-driven), heartbeats (rhythm-driven), and the Task Brain ledger (state-driven). Each solves a different problem, and a real agency deployment uses all four together. Pick the wrong mechanism for a job and the agent looks broken even when every component is working as designed.</p>
+
+<p>This guide walks through what each automation type actually does in OpenClaw v2026.4.26, the order in which they fire, when to reach for which one, and the wiring pattern most agencies converge on after their first three clients. The goal is a mental model you can use to decide, in 30 seconds, where a new automation belongs.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>OpenClaw automation has four primitives in 2026: hooks fire on events, cron fires on time, heartbeats fire on a recurring rhythm, and Task Flows manage durable multi-step work.</li>
+    <li>The 2026.3.31 release introduced Task Brain, a unified SQLite-backed ledger that records every detached run from cron jobs, sub-agents, hooks, and background processes in one queryable place.</li>
+    <li>Task Flows shipped in 2026.4.2 as the orchestration layer above Task Brain. They handle sequential and branching steps with state that survives a gateway restart.</li>
+    <li>Cron jobs live in <code>~/.openclaw/cron/jobs.json</code> and runtime state in <code>jobs-state.json</code>, so the gateway can restart without losing schedules.</li>
+    <li>Hooks run synchronously on events like message receipt, tool call, and session start. They are the right mechanism for guardrails, not for long-running work.</li>
+    <li>HEARTBEAT.md sets a recurring "wake up and think" cadence. Cron jobs that need agent judgment can attach to the next heartbeat tick instead of firing as a separate API call.</li>
+    <li>Most agency outages with OpenClaw come from putting slow work in a hook. Move anything over two seconds into Task Flow or a detached background task.</li>
+  </ul>
+</div>
+
+<h2>What "OpenClaw automation" actually means in 2026</h2>
+
+<p>The word "automation" is doing a lot of work in 2026. People use it to mean cron jobs, webhooks, agentic loops, scheduled prompts, and event triggers, often in the same sentence. Inside OpenClaw the term has a more precise shape, and the precision matters because each mechanism has different cost, latency, and failure behavior.</p>
+
+<p>The honest definition is operational. Automation in OpenClaw is anything the gateway does without a fresh human prompt. That covers four primitives and one ledger:</p>
+
+<ul>
+  <li><strong>Hooks</strong> are scripts or prompts that fire when a specific event happens inside the gateway, for example a message arriving, a tool call completing, or a session starting.</li>
+  <li><strong>Cron jobs</strong> are time-based schedules. They fire at a wall-clock time or interval, regardless of whether anything else is happening.</li>
+  <li><strong>Heartbeats</strong> are a recurring "wake the agent and ask it to think" pattern, driven by the HEARTBEAT.md workspace file and the gateway's internal tick.</li>
+  <li><strong>Task Flows</strong> are durable multi-step plans the agent itself enqueues. Each step is recorded in Task Brain so the work survives a restart.</li>
+  <li><strong>Task Brain</strong> is the SQLite-backed ledger that records everything detached. It is not a primitive; it is the source of truth for what ran, when, and what came out.</li>
+</ul>
+
+<p>The split between primitives and ledger matters. Cron, hooks, heartbeats, and flows are how work starts. Task Brain is how the agent and the operator know what happened. Before 2026.3.31 these lived in four separate places and a partially failed cron job could vanish without trace. The unified ledger ended that whole category of bug.</p>
+
+<h2>The four automation types side by side</h2>
+
+<p>The table below is the one most agencies pin on the wall. It collapses the four primitives into one decision chart so a junior implementer can pick the right mechanism on the first try.</p>
+
+<table>
+<thead>
+<tr><th>Mechanism</th><th>Trigger</th><th>Latency budget</th><th>Survives restart?</th><th>Use it when</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Hooks</strong></td><td>Event inside the gateway</td><td>Under 2 seconds</td><td>Stateless, fires next time event happens</td><td>Guardrails, format checks, redaction, lightweight notifications</td></tr>
+<tr><td><strong>Cron</strong></td><td>Wall-clock time</td><td>Seconds to minutes</td><td>Yes, persisted in <code>jobs.json</code></td><td>Daily reports, weekly digests, one-shot reminders, time-bound polling</td></tr>
+<tr><td><strong>Heartbeat</strong></td><td>Gateway tick on a set rhythm</td><td>Seconds to minutes</td><td>Yes, configured in HEARTBEAT.md</td><td>Periodic "check the inbox and act on anything new" judgment loops</td></tr>
+<tr><td><strong>Task Flow</strong></td><td>Agent-enqueued plan</td><td>Minutes to hours</td><td>Yes, full state in Task Brain</td><td>Multi-step work that branches, has retries, or spans gateway restarts</td></tr>
+</tbody>
+</table>
+
+<p>The decision is almost always made by latency and shape. If the work is a yes/no decision on a single event, use a hook. If the work needs to happen at 9am on Tuesdays, use cron. If the work is "every hour, look around and decide what to do," use a heartbeat. If the work has more than three sequential steps with state between them, use a Task Flow.</p>
+
+<h2>Hooks: event-driven reactions inside the gateway</h2>
+
+<p>Hooks are the closest thing OpenClaw has to a real-time programming primitive. An event fires inside the gateway. A hook matched to that event runs. The hook returns a result that can modify, block, or augment what was about to happen. That is the whole model.</p>
+
+<p>The event surface is broad. Message-receive, message-send, tool-pre, tool-post, session-start, session-end, error-raised, and channel-connect are the seven most common, but the bundled hook plugins in <code>~/.openclaw/plugins/hooks/</code> ship handlers for far more. The naming and timing parallel Claude Code's own hooks system, which has been the reference design since the public hooks reference shipped at <a href="https://code.claude.com/docs/en/hooks">code.claude.com/docs/en/hooks</a>.</p>
+
+<p>The two patterns that pay back the most for an agency are PreToolUse and PostToolUse. PreToolUse runs before the agent calls a tool. It is the right place to deny dangerous operations, redact PII from arguments, or attach a client identifier the rest of the system can read. PostToolUse runs after the tool returns, and as of the Claude Code spring 2026 release it can fully replace the tool output that the model sees. That single capability turns hooks into a content rewriter for any tool, which is how most teams add observability without touching plugin code.</p>
+
+<p>Hooks run inline. If the hook takes three seconds, the user feels three seconds of delay before the agent replies. The hard rule that prevents most outages: do not put network calls in a hook unless the call has a strict 500 ms timeout and a non-blocking fallback. Slow work belongs in a Task Flow that the hook enqueues, not in the hook itself.</p>
+
+<h2>Cron: time-based schedules that survive restarts</h2>
+
+<p>Cron is the part of OpenClaw most people are already familiar with from Unix. The mental model is unchanged: a string in cron syntax, a command, a target. What changes is the target. In OpenClaw the target is not a shell command but an instruction to the agent, which means the schedule can carry intent rather than code.</p>
+
+<p>Two files matter on disk. Job definitions live at <code>~/.openclaw/cron/jobs.json</code>. Runtime execution state, including last-run timestamps and current status, lives at <code>~/.openclaw/cron/jobs-state.json</code>. Splitting definitions from state is a small detail with a real consequence: you can version-control the schedule file in git without leaking timestamps, and a restart never loses schedules because both files are flushed to disk on every change.</p>
+
+<p>The CLI surface is small. You add a job, list jobs, pause and resume, and remove. The agent itself can also add jobs through the cron tool, which is how a conversation like "remind me about this client every Tuesday at 9am" turns into a persisted schedule without anyone touching a file. The gateway then either runs the job in isolation or attaches it to the next heartbeat tick, which is a coalescing pattern that prevents three near-simultaneous jobs from spawning three separate model calls.</p>
+
+<h2>Heartbeats: the rhythm that lets an agent think on its own</h2>
+
+<p>Heartbeats are the least understood of the four primitives, partly because they sit in between cron and hooks and partly because the configuration lives in a Markdown file rather than a JSON one. The HEARTBEAT.md file in the agent's workspace is the operator's English-language description of the rhythm. "Every 10 minutes, check the unread inbox and reply to anything from a known client. Every hour, summarize what you did. Every day at 6pm, send a digest." That is what an HEARTBEAT.md looks like in practice.</p>
+
+<p>The gateway converts that file into a tick schedule. At each tick the agent wakes up, reads its own HEARTBEAT.md, decides what is due, and acts. The reason this exists as a separate primitive instead of as another cron job is the judgment step. Cron always fires. Heartbeats fire and then ask the agent whether the work is actually warranted. For tasks that should not run if nothing changed since the last tick, heartbeats are the right tool. For tasks that must run at 9am Tuesday no matter what, cron is the right tool.</p>
+
+<p>Heartbeats also pair naturally with the Sonnet 4.6 compaction behavior. Each tick can be a clean turn that benefits from the model's compacted memory, rather than a fresh session that loses everything from the last hour. That single property is why long-horizon agents in 2026 lean heavily on heartbeats, where in 2024 they leaned on raw cron loops that kept hitting context limits.</p>
+
+<h2>Task Flows and the Task Brain ledger</h2>
+
+<p>The biggest 2026 change in OpenClaw automation is Task Brain. The 2026.3.31 release replaced four separate execution paths (agent control protocol, sub-agents, cron jobs, and detached CLI processes) with a single SQLite-backed ledger that records every detached run. Before the change, a failed cron job could vanish without a trace. After it, every run has a row.</p>
+
+<p>Task Flow, which shipped in 2026.4.2, is the orchestration layer above Task Brain. It manages durable multi-step work with state, revision tracking, and recovery semantics. The mental model is a small workflow engine, but lighter than a BPM system. A flow is a sequence of steps with branching, each step is a discrete task in the ledger, and the flow itself has a status that survives a gateway restart.</p>
+
+<p>The shape that wins for agencies is two-layered. A heartbeat or cron job enqueues a flow. The flow handles the actual multi-step work. The hook layer enforces guardrails on the tools each step invokes. Task Brain records every step. If the gateway crashes mid-flow, the next start picks up exactly where it left off, with no operator action and no duplicate work, because the ledger knows which steps already completed.</p>
+
+<h2>Wire up your first multi-mechanism automation, step by step</h2>
+
+<p>This is the wiring pattern most agencies converge on for a client's first real automation. The example is "reply to unread WhatsApp messages every 10 minutes during business hours, log every reply, and send the agency a daily summary at 6pm." Four primitives, one ledger, one client.</p>
+
+<p><strong>1. Set the heartbeat rhythm.</strong></p>
+
+<pre><code>cat > /opt/openclaw/workspaces/acme/HEARTBEAT.md &lt;&lt; 'EOF'
+# Heartbeat schedule
+
+- Every 10 minutes between 9am and 6pm local time, check the WhatsApp
+  inbox for unread messages and reply if the sender is a known client.
+- Skip the tick entirely if nothing changed since the last run.
+EOF</code></pre>
+
+<p><strong>2. Add the cron job for the daily digest.</strong></p>
+
+<pre><code>openclaw cron add \\
+  --name "daily-digest" \\
+  --schedule "0 18 * * *" \\
+  --prompt "Summarize today's WhatsApp replies and email the digest to ops@acme.com."</code></pre>
+
+<p><strong>3. Enqueue a Task Flow for any reply longer than two steps.</strong> The heartbeat agent does this on its own when it detects a multi-step task, for example "the client asked for a quote, look up their pricing tier, draft the quote, and request approval before sending." The agent calls the <code>task_flow.start</code> tool with the step list, and Task Brain records every step.</p>
+
+<p><strong>4. Add the guardrail hooks.</strong></p>
+
+<pre><code>cat > /opt/openclaw/hooks/pre-tool-redact.json &lt;&lt; 'EOF'
+{
+  "event": "PreToolUse",
+  "match": { "tool": "send_message" },
+  "handler": { "type": "command", "command": "/opt/openclaw/hooks/redact-pii.sh" }
+}
+EOF</code></pre>
+
+<p><strong>5. Verify the ledger.</strong></p>
+
+<pre><code>openclaw tasks ls --since 1h --status all</code></pre>
+
+<p>That single command surfaces every cron firing, every heartbeat tick, every flow step, and every hook decision in one chronological view. It is the difference between "I think the automation worked" and "here is the audit trail." Detailed Task Brain documentation lives at <a href="https://docs.openclaw.ai/automation/taskflow">docs.openclaw.ai/automation/taskflow</a>.</p>
+
+<h2>Common automation anti-patterns to avoid</h2>
+
+<p>The same handful of mistakes show up in almost every new deployment. Naming them helps a team skip the painful version.</p>
+
+<ul>
+  <li><strong>Putting slow work in a hook.</strong> Anything over two seconds belongs in a flow, not inline. The hook can enqueue the flow and return immediately.</li>
+  <li><strong>Using cron when a heartbeat fits.</strong> If the work should sometimes be skipped, you want judgment, which means heartbeat. Cron always fires.</li>
+  <li><strong>Stuffing logic into HEARTBEAT.md.</strong> Heartbeats describe rhythm and intent. Implementation belongs in tools, sub-agents, or a flow.</li>
+  <li><strong>Skipping the ledger.</strong> If a job runs outside Task Brain, it is invisible. New code should always run through one of the four primitives so the ledger sees it.</li>
+  <li><strong>Treating Task Flow as a generic workflow engine.</strong> It is a lightweight orchestration layer for agent steps, not a replacement for n8n, Temporal, or Airflow.</li>
+</ul>
+
+<h2>When OpenClaw automation isn't for you</h2>
+
+<p>OpenClaw is not the right tool for every automation problem. A few honest cases where another tool is the better answer:</p>
+
+<ul>
+  <li><strong>Pure ETL with no agent judgment.</strong> If the work is "every hour, copy rows from this database to that warehouse," use Airbyte, Fivetran, or a scheduled function. There is no reason to pay for an agent call.</li>
+  <li><strong>High-volume webhook fan-out.</strong> OpenClaw handles agent-driven webhooks well but is not a Kafka replacement. For thousands of events per second, put a real queue in front.</li>
+  <li><strong>Strict deterministic state machines.</strong> Anything where every transition must be auditable and identical is better served by Temporal, AWS Step Functions, or a hand-written state machine. Task Flow is lighter and trades some determinism for flexibility.</li>
+  <li><strong>Single-tenant power users.</strong> If you are one person automating your own life, the overhead of running a gateway might not pay for itself versus a few Claude Code hooks on your laptop.</li>
+</ul>
+
+<p>The sweet spot is agencies running 5 to 500 client agents that all need to act on a schedule, react to events, and survive restarts without an operator babysitting them. That is exactly what the four-primitive model was built for.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Is OpenClaw Task Flow a replacement for n8n or Zapier?</h3>
+<p>No. Task Flow orchestrates agent steps inside a single gateway, where each step is a piece of agent work that lives in Task Brain. n8n and Zapier are integration platforms that connect SaaS apps over HTTP. They overlap at the edges, but the typical pattern is to use Zapier or n8n for SaaS plumbing and Task Flow for in-agent multi-step reasoning.</p>
+
+<h3>What is the difference between a hook and a webhook in OpenClaw?</h3>
+<p>A hook is an internal event handler that fires when something happens inside the gateway, like a tool call or a session start. A webhook is an external HTTP endpoint that the gateway either calls out to or accepts inbound from, like a GitHub push triggering a code review. Hooks run inline on every matching event; webhooks are network calls between separate systems.</p>
+
+<h3>How does Task Brain interact with Sonnet 4.6 context compaction?</h3>
+<p>Task Brain stores task state and step history outside the model context, so compaction can summarize the conversation freely without losing the record of what the agent already did. If a long-running flow gets compacted mid-stream, the agent can re-read the ledger and continue from the correct step. Compaction handles conversation memory; Task Brain handles work memory. The two are complementary.</p>
+
+<h3>Can I version-control my OpenClaw automation config?</h3>
+<p>Yes. HEARTBEAT.md is plain Markdown and belongs in the workspace folder. Cron definitions in <code>jobs.json</code> can be tracked separately from runtime state in <code>jobs-state.json</code>. Hook handlers are usually scripts or JSON files in the hooks directory. Most agencies put all of this in a per-client git repo and let the provisioner write the runtime files on deploy.</p>
+
+<h3>What happens to in-flight Task Flows when the gateway restarts?</h3>
+<p>They resume. Task Brain is the source of truth on disk, so on startup the gateway scans for flows in a non-terminal state and picks each one back up at its current step. Idempotency is the operator's responsibility inside each step, but the orchestration layer handles the rest.</p>
+
+<h3>Do I need all four automation types to deploy a useful agent?</h3>
+<p>No. Most first deployments use one cron job for a daily summary and one heartbeat for inbox handling. Hooks come in when the agent starts touching sensitive tools and you want a guardrail. Task Flows come in when a single agent action grows past three steps. Start small and add primitives as the failure modes appear.</p>
+
+<h2>Where to take this next</h2>
+
+<p>The pattern that wins is the boring one. Pick the right primitive for each piece of work, let Task Brain see everything, and resist the urge to put logic in places that were not built for it. The four-primitive model has been stable since 2026.4.2, the docs at <a href="https://docs.openclaw.ai/automation/taskflow">docs.openclaw.ai/automation/taskflow</a> are kept current, and the bundled hook plugins in the OpenClaw repo are the fastest way to see the surface area without writing custom code.</p>
+
+<p>For agencies that want the automation surface without managing the gateway, the Kyra platform deploys a per-client OpenClaw container with hooks, cron, heartbeats, and Task Flow already wired up, plus a dashboard view of the Task Brain ledger so client work is auditable end-to-end. That is the only Kyra mention in this post on purpose; the goal here is the mental model, not the product.</p>
+
+<p>Related reading inside Kyra: <a href="/blog/ai-agent-memory-systems-openclaw-2026">how OpenClaw memory layers fit alongside automation</a>, <a href="/blog/openclaw-agent-vs-chatbot-capabilities">the six things an OpenClaw agent does that a chatbot cannot</a>, and the deployment context for <a href="/ai-for/dental">dental practice AI</a> and <a href="/solo">solo operators running a single agent</a>.</p>
+
+<p>External references: <a href="https://github.com/openclaw/openclaw">OpenClaw on GitHub</a> · <a href="https://docs.openclaw.ai/automation/taskflow">Task Flow documentation</a> · <a href="https://code.claude.com/docs/en/hooks">Claude Code hooks reference</a> · <a href="https://docs.anthropic.com">Anthropic documentation</a> · <a href="https://modelcontextprotocol.io">Model Context Protocol</a>.</p>
+`,
+  },
+  {
     slug: 'ai-agent-memory-systems-openclaw-2026',
     title: 'AI Agent Memory Systems in 2026: How OpenClaw Workspaces, SOUL.md, and Context Compaction Actually Work',
     description: 'AI agent memory in 2026 is three layers: workspace files like SOUL.md and MEMORY.md, runtime context with Sonnet 4.6 compaction, and Anthropic’s memory tool for long-term storage. Step-by-step setup, comparison tables, anti-patterns, and FAQ for agency operators.',
