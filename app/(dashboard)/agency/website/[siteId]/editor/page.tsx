@@ -265,6 +265,102 @@ function formatRelativeTime(iso: string | null): string {
   return new Date(iso).toLocaleDateString();
 }
 
+// ── Live Preview Panel ────────────────────────────────────────────────────────
+
+/**
+ * PreviewPanel — Sprint 6 (2026-05-14).
+ *
+ * Renders the current page's assembled HTML inside an iframe pointed at
+ * `/api/agency/sites/[id]/preview/[slug]` (server-side assembled from
+ * CURRENT DB state, no VPS roundtrip). Includes a device-width switcher
+ * (mobile / tablet / desktop) and a manual refresh — though refreshes are
+ * also triggered automatically when saves bump previewRefreshKey.
+ */
+function PreviewPanel({
+  siteId,
+  pageSlug,
+  device,
+  refreshKey,
+  onDeviceChange,
+  onRefresh,
+  onClose,
+}: {
+  siteId: string;
+  pageSlug: string;
+  device: 'mobile' | 'tablet' | 'desktop';
+  refreshKey: number;
+  onDeviceChange: (d: 'mobile' | 'tablet' | 'desktop') => void;
+  onRefresh: () => void;
+  onClose: () => void;
+}) {
+  const widths: Record<'mobile' | 'tablet' | 'desktop', string> = {
+    mobile: '375px',
+    tablet: '768px',
+    desktop: '100%',
+  };
+  const encoded = encodeURIComponent(pageSlug);
+  // Append refreshKey to the URL so each refresh forces a fresh fetch even
+  // when the iframe's internal cache would otherwise short-circuit.
+  const src = `/api/agency/sites/${siteId}/preview/${encoded}?_r=${refreshKey}`;
+
+  return (
+    <div className="h-full flex flex-col bg-gray-100">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-2 px-3 py-2 bg-white border-b border-gray-200 shrink-0">
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+          {(['mobile', 'tablet', 'desktop'] as const).map((d) => (
+            <button
+              key={d}
+              onClick={() => onDeviceChange(d)}
+              className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors capitalize ${
+                device === d ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onRefresh}
+            className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+            title="Refresh preview"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+            title="Hide preview"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+      {/* Iframe — centered when narrower than the pane (mobile/tablet) */}
+      <div className="flex-1 overflow-auto p-3 flex items-start justify-center">
+        <div
+          className="bg-white shadow-md transition-all"
+          style={{
+            width: widths[device],
+            maxWidth: '100%',
+            height: '100%',
+            minHeight: '100%',
+          }}
+        >
+          <iframe
+            key={refreshKey}
+            src={src}
+            title="Live preview"
+            className="w-full h-full border-0"
+            sandbox="allow-scripts allow-same-origin allow-forms"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Deploy History Button ─────────────────────────────────────────────────────
 
 /**
@@ -2395,6 +2491,213 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
  * revision back, so every restore is itself reversible — there's no "point
  * of no return" in this flow.
  */
+/**
+ * NewPageFromTemplateModal — Sprint 6 (2026-05-14).
+ *
+ * Two-step picker: choose a template, fill title + slug, hit Create.
+ * Server hydrates content from /lib/sites/page-templates and inserts a
+ * Draft page so the agency can edit placeholders before publishing.
+ */
+function NewPageFromTemplateModal({
+  siteId,
+  onClose,
+  onCreated,
+}: {
+  siteId: string;
+  onClose: () => void;
+  onCreated: (page: SitePage) => void | Promise<void>;
+}) {
+  type Tpl = { id: string; label: string; description: string; icon: string; pageType: string };
+  const [catalog, setCatalog] = useState<Tpl[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
+  const [selected, setSelected] = useState<Tpl | null>(null);
+  const [title, setTitle] = useState('');
+  const [slug, setSlug] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/agency/sites/${siteId}/pages/from-template`, { cache: 'no-store' });
+        const result = await res.json();
+        if (!cancelled && res.ok) {
+          setCatalog(result.data || []);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Network error');
+      } finally {
+        if (!cancelled) setLoadingCatalog(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [siteId]);
+
+  // Auto-suggest a slug from the title — kebab-case the title, agency
+  // can override before submit.
+  useEffect(() => {
+    if (!title || slug) return;
+    const auto = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    setSlug(auto);
+  }, [title, slug]);
+
+  const onSubmit = async () => {
+    if (!selected || !title.trim() || !slug.trim()) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}/pages/from-template`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ template: selected.id, title: title.trim(), slug: slug.trim() }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        setError(result.error || 'Failed to create page');
+      } else {
+        await onCreated(result.data);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Reset title/slug when a different template is picked so the customer
+  // doesn't carry over half-typed values from the previous selection.
+  const pickTemplate = (t: Tpl) => {
+    setSelected(t);
+    setTitle('');
+    setSlug('');
+    setError(null);
+  };
+
+  // Map template icon name strings to actual Lucide components. Tightly
+  // scoped to the icons referenced in PAGE_TEMPLATES.
+  const iconFor = (name: string) => {
+    const map: Record<string, React.ReactNode> = {
+      FileText: <FileText className="h-4 w-4" />,
+      Star: <Star className="h-4 w-4" />,
+      Briefcase: <Briefcase className="h-4 w-4" />,
+      Phone: <Phone className="h-4 w-4" />,
+      Sparkles: <Sparkles className="h-4 w-4" />,
+    };
+    return map[name] || <FileText className="h-4 w-4" />;
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 shrink-0">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">New page from template</h3>
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              Pick a starter to skip the blank-page setup. Pages are created as Drafts.
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-700">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {loadingCatalog ? (
+            <div className="flex items-center justify-center text-xs text-gray-500 py-8">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading templates…
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {catalog.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => pickTemplate(t)}
+                  className={`text-left p-3 rounded-lg border transition ${
+                    selected?.id === t.id
+                      ? 'border-indigo-400 bg-indigo-50 ring-1 ring-indigo-300'
+                      : 'border-gray-200 bg-white hover:border-indigo-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={selected?.id === t.id ? 'text-indigo-600' : 'text-gray-500'}>
+                      {iconFor(t.icon)}
+                    </span>
+                    <span className={`text-sm font-semibold ${selected?.id === t.id ? 'text-indigo-900' : 'text-gray-900'}`}>
+                      {t.label}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 leading-snug">{t.description}</p>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {selected && (
+            <div className="border-t border-gray-100 pt-4 space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Page title</label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder={`e.g. ${selected.label}`}
+                  className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">URL slug</label>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-500 font-mono whitespace-nowrap pl-1">yoursite.com/</span>
+                  <input
+                    type="text"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    placeholder={selected.id}
+                    className="flex-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  Auto-normalized to kebab-case. The new page starts as a Draft.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="text-[11px] text-red-700 bg-red-50 border border-red-200 rounded-md px-2 py-1.5">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-100 shrink-0">
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onSubmit}
+            disabled={!selected || !title.trim() || !slug.trim() || submitting}
+            className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center gap-1.5"
+          >
+            {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+            Create Page
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PageHistoryModal({
   siteId,
   page,
@@ -3404,6 +3707,16 @@ export default function PageEditor() {
   const [activeTab, setActiveTab] = useState<'content' | 'design' | 'site'>('content');
   // Sprint 4: revision history modal — opens from the page header History button.
   const [historyOpen, setHistoryOpen] = useState(false);
+  // Sprint 6: live preview iframe — split-pane view alongside the edit cards.
+  // previewDevice constrains the iframe width to simulate phone / tablet /
+  // desktop. previewRefreshKey is bumped to bust the iframe's internal cache
+  // after a save so the next render reflects the latest DB state.
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
+  const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
+  // Sprint 6: page templates picker — opens from the "Add Page" affordance
+  // in the sidebar, mounted at the editor root so it overlays everything.
+  const [newPageOpen, setNewPageOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [editorSubTab, setEditorSubTab] = useState<'editor' | 'widget'>('editor');
 
@@ -3505,6 +3818,10 @@ export default function PageEditor() {
         const newSlug = (result?.data?.slug as string | undefined) || oldSlug;
         showToast(newSlug !== oldSlug ? `Page renamed → ${newSlug}` : 'Changes saved');
         await refreshPage(newSlug);
+        // Sprint 6: bump the preview iframe so it re-fetches the assembled
+        // HTML with the latest DB state. Saves are cheap; previews should
+        // never feel stale.
+        setPreviewRefreshKey((k) => k + 1);
         // After a slug rename, the pages array still has the old slug for
         // this row — refreshPage updates the matching row by ID, but the
         // sidebar grouping uses .slug, so also swap the slug locally.
@@ -3535,6 +3852,9 @@ export default function PageEditor() {
       if (res.ok) {
         showToast('Saved');
         await refreshSite();
+        // Sprint 6: site-level changes (theme, nav, footer) affect every
+        // page's render, so bump the preview key too.
+        setPreviewRefreshKey((k) => k + 1);
       } else {
         showToast('Failed to save', 'error');
       }
@@ -4040,10 +4360,17 @@ export default function PageEditor() {
         {/* Desktop Sidebar — Page List */}
         <div className="hidden md:block w-56 bg-white border-r border-gray-200 overflow-y-auto shrink-0">
           <div className="px-3 py-3 border-b border-gray-100">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center justify-between mb-2">
               Pages
               <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full text-[10px]">{pages.length}</span>
             </p>
+            {/* Sprint 6: Add Page CTA — opens the page templates picker. */}
+            <button
+              onClick={() => setNewPageOpen(true)}
+              className="w-full inline-flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition-colors"
+            >
+              <Plus className="h-3 w-3" /> New page
+            </button>
           </div>
 
           <div className="py-1">
@@ -4093,8 +4420,12 @@ export default function PageEditor() {
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Content Area — split-pane when preview is on (Sprint 6).
+            Left pane: the edit cards. Right pane: live preview iframe.
+            Each pane scrolls independently. On mobile we stack vertically
+            via flex-col so the preview drops below the edit cards. */}
+        <div className={`flex-1 flex min-w-0 ${previewOpen ? 'flex-col xl:flex-row' : ''}`}>
+        <div className={`${previewOpen ? 'xl:w-1/2 xl:border-r border-gray-200 h-1/2 xl:h-auto' : 'flex-1'} overflow-y-auto`}>
           {selectedPage ? (
             <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
               {/* Page Header */}
@@ -4186,6 +4517,18 @@ export default function PageEditor() {
                         <span className="hidden sm:inline">Preview</span>
                       </a>
                     )}
+                    <button
+                      onClick={() => setPreviewOpen((v) => !v)}
+                      className={`min-h-[44px] sm:min-h-0 px-2 sm:px-3 py-2 sm:py-1.5 text-xs font-medium border rounded-lg flex items-center gap-1.5 ${
+                        previewOpen
+                          ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                          : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      }`}
+                      title="Toggle live preview"
+                    >
+                      <Eye className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+                      <span className="hidden sm:inline">Preview</span>
+                    </button>
                     <button
                       onClick={() => setHistoryOpen(true)}
                       className="min-h-[44px] sm:min-h-0 px-2 sm:px-3 py-2 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
@@ -4498,7 +4841,49 @@ export default function PageEditor() {
             </div>
           )}
         </div>
+
+        {/* Sprint 6: Preview pane (right side on xl, below on smaller).
+            Mounted only when previewOpen so the iframe doesn't keep rendering
+            in the background. */}
+        {previewOpen && selectedPage && (
+          <div className="xl:w-1/2 h-1/2 xl:h-auto flex-1 xl:flex-none">
+            <PreviewPanel
+              siteId={siteId}
+              pageSlug={selectedPage.slug}
+              device={previewDevice}
+              refreshKey={previewRefreshKey}
+              onDeviceChange={setPreviewDevice}
+              onRefresh={() => setPreviewRefreshKey((k) => k + 1)}
+              onClose={() => setPreviewOpen(false)}
+            />
+          </div>
+        )}
+        </div>
       </div>
+
+      {/* Sprint 6: Page Templates picker — modal mounted at the root so it
+          overlays everything; opened from the sidebar's "Add page" affordance. */}
+      {newPageOpen && (
+        <NewPageFromTemplateModal
+          siteId={siteId}
+          onClose={() => setNewPageOpen(false)}
+          onCreated={async (page) => {
+            setNewPageOpen(false);
+            await refreshSite();
+            // Refresh pages list and select the new page.
+            const pagesRes = await fetch(`/api/agency/sites/${siteId}/pages`);
+            if (pagesRes.ok) {
+              const result = await pagesRes.json();
+              if (Array.isArray(result.data)) {
+                setPages(result.data);
+                const created = result.data.find((p: SitePage) => p.id === page.id);
+                if (created) setSelectedPage(created);
+              }
+            }
+            showToast(`Created "${page.title}" — it's a Draft. Customize then publish.`);
+          }}
+        />
+      )}
     </div>
   );
 }
