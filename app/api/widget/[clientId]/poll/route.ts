@@ -77,8 +77,17 @@ export async function GET(
   const sinceParam = url.searchParams.get('since');
   // Default cursor: 30 minutes ago. Long enough to catch recent agent activity
   // on a fresh page reload; short enough to avoid pulling ancient messages.
+  //
+  // ⚠️  Bug fix 2026-05-14: do NOT round-trip the client cursor through
+  // `new Date(...).toISOString()`. Postgres TIMESTAMPTZ stores microseconds
+  // (e.g. `2026-05-14T11:06:52.392052+00:00`) but JS Date precision tops out
+  // at milliseconds — the round-trip truncates to `...392Z` and Postgres
+  // then evaluates `392052 > 392000` as TRUE, returning the SAME row on
+  // every poll. Result: the same agent message rendered 20+ times in the
+  // widget. Pass the client's exact string straight to .gt() so comparisons
+  // happen at full DB precision.
   const sinceIso = sinceParam && !Number.isNaN(Date.parse(sinceParam))
-    ? new Date(sinceParam).toISOString()
+    ? sinceParam
     : new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
   const supabase = getSupabase();
