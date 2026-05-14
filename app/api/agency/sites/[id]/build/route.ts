@@ -467,6 +467,9 @@ async function buildAndDeploy(site: any, supabase: any) {
         // radius selections from the editor actually reach the live CSS.
         fontFamily: site.font_family || null,
         borderRadius: site.border_radius || null,
+        // Custom code injection (Sprint 3). Same as above — pure passthrough.
+        headCode: site.head_code || null,
+        bodyCode: site.body_code || null,
         domain,
         city: address.city || undefined,
         state: address.state || undefined,

@@ -47,6 +47,7 @@ import {
   Palette,
   Copy,
   Menu,
+  Search,
 } from 'lucide-react';
 
 import {
@@ -143,6 +144,7 @@ interface SiteData {
   color_primary: string;
   color_secondary: string;
   design_style: 'modern-dark' | 'clean-light' | 'bold' | 'minimal';
+  logo_url: string | null;
   nav_links: NavLink[] | null;
   navbar_variant: NavbarVariant | null;
   footer_tagline: string | null;
@@ -159,6 +161,10 @@ interface SiteData {
   // as CSS custom properties during build. NULL = use design_style defaults.
   font_family: string | null;
   border_radius: string | null;
+  // Custom code (Sprint 3). Raw HTML injected at build time before </head>
+  // and </body>. Not sanitized — agency pastes their own analytics/pixels.
+  head_code: string | null;
+  body_code: string | null;
   // Staleness tracking — compare these to determine if the live site is
   // behind the latest edits and the "Unpublished changes" pill should show.
   updated_at: string | null;
@@ -1635,6 +1641,119 @@ function FooterEditor({
 
 // ── Image Gallery / Upload ────────────────────────────────────────────────────
 
+/**
+ * CustomCodeEditor — raw HTML/JS injection slots for analytics, pixels, chat
+ * widgets, custom CSS. Two textareas:
+ *   - Head Code: injected just before </head> (GA4, GTM, Plausible, Meta Pixel)
+ *   - Body Code: injected just before </body> (chat widgets, late-loading scripts)
+ *
+ * We deliberately do NOT sanitize — these are agency-defined snippets and
+ * sanitization would break legitimate analytics. The card includes a strong
+ * warning so customers understand they're shipping raw code.
+ *
+ * Sprint 3 (2026-05-14).
+ */
+function CustomCodeEditor({
+  site,
+  onSave,
+  saving,
+}: {
+  site: SiteData;
+  onSave: (updates: Record<string, unknown>) => void;
+  saving: boolean;
+}) {
+  const [headCode, setHeadCode] = useState(site.head_code || '');
+  const [bodyCode, setBodyCode] = useState(site.body_code || '');
+  const [dirty, setDirty] = useState(false);
+
+  const SIZE_LIMIT = 16 * 1024; // 16KB per snippet — generous but bounds DB row growth.
+
+  return (
+    <CollapsibleCard title="Custom Code" icon={<Edit3 className="h-4 w-4" />} badge="Advanced">
+      <div className="space-y-4">
+        <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 leading-snug">
+          <strong>Heads up:</strong> Code here is injected into every page exactly as
+          written. Use it for analytics (GA4, GTM, Meta Pixel), chat widgets, or custom
+          CSS. Malformed code can break your site — test after publishing.
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-xs font-medium text-gray-600">
+              Head Code <span className="font-normal text-gray-400">— before <code className="text-[10px] bg-gray-100 px-1 rounded">&lt;/head&gt;</code></span>
+            </label>
+            <span className={`text-[10px] ${headCode.length > SIZE_LIMIT ? 'text-red-600 font-semibold' : 'text-gray-400'}`}>
+              {headCode.length.toLocaleString()} / {SIZE_LIMIT.toLocaleString()}
+            </span>
+          </div>
+          <textarea
+            value={headCode}
+            onChange={(e) => { setHeadCode(e.target.value); setDirty(true); }}
+            rows={6}
+            spellCheck={false}
+            placeholder={`<!-- Google Analytics 4 -->\n<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"></script>\n<script>\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n  gtag('js', new Date());\n  gtag('config', 'G-XXXXXXX');\n</script>`}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-[12px] font-mono leading-snug focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y bg-gray-50"
+          />
+          <p className="text-[10px] text-gray-400 mt-1">
+            Best for: page-load analytics, pixels, meta tags, custom CSS, third-party SDK init.
+          </p>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-xs font-medium text-gray-600">
+              Body Code <span className="font-normal text-gray-400">— before <code className="text-[10px] bg-gray-100 px-1 rounded">&lt;/body&gt;</code></span>
+            </label>
+            <span className={`text-[10px] ${bodyCode.length > SIZE_LIMIT ? 'text-red-600 font-semibold' : 'text-gray-400'}`}>
+              {bodyCode.length.toLocaleString()} / {SIZE_LIMIT.toLocaleString()}
+            </span>
+          </div>
+          <textarea
+            value={bodyCode}
+            onChange={(e) => { setBodyCode(e.target.value); setDirty(true); }}
+            rows={6}
+            spellCheck={false}
+            placeholder={`<!-- Intercom / Drift / Crisp -->\n<script>\n  // your chat widget snippet\n</script>`}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-[12px] font-mono leading-snug focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y bg-gray-50"
+          />
+          <p className="text-[10px] text-gray-400 mt-1">
+            Best for: chat widgets, conversion tracking that should fire after page render.
+          </p>
+        </div>
+
+        <button
+          onClick={() => {
+            if (headCode.length > SIZE_LIMIT || bodyCode.length > SIZE_LIMIT) return;
+            onSave({
+              head_code: headCode.trim() || null,
+              body_code: bodyCode.trim() || null,
+            });
+            setDirty(false);
+          }}
+          disabled={saving || !dirty || headCode.length > SIZE_LIMIT || bodyCode.length > SIZE_LIMIT}
+          className="w-full px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-1.5"
+        >
+          {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+          Save Custom Code
+        </button>
+      </div>
+    </CollapsibleCard>
+  );
+}
+
+/**
+ * ImageGallery — the Media Library card. Sprint 3 upgrade (2026-05-14):
+ *
+ *   - Multi-file upload (pick many at once)
+ *   - Per-photo "Edit details" modal for alt text + placement label
+ *   - Inline search filter across alt + placement
+ *   - "Copy URL" action per photo (use inside Custom Code / hero links)
+ *   - Photo count + filtered-count badge
+ *
+ * Metadata updates go via PATCH /sites/[id] sending the full mutated photos
+ * array (photos is already in the allowlist). The /photos POST + DELETE
+ * endpoints handle binary uploads / deletes; PATCH handles metadata-only.
+ */
 function ImageGallery({
   siteId,
   photos,
@@ -1645,36 +1764,41 @@ function ImageGallery({
   onPhotosChanged: () => void;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [savingMeta, setSavingMeta] = useState(false);
+  const [filter, setFilter] = useState('');
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
     setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('alt', file.name.replace(/\.[^.]+$/, ''));
-
-      const res = await fetch(`/api/agency/sites/${siteId}/photos`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (res.ok) {
-        onPhotosChanged();
+    setUploadProgress({ done: 0, total: files.length });
+    // Serialize uploads — Supabase Storage doesn't love many parallel
+    // multipart bodies and our row-update happens per upload anyway.
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('alt', file.name.replace(/\.[^.]+$/, ''));
+        await fetch(`/api/agency/sites/${siteId}/photos`, { method: 'POST', body: fd });
+      } catch (err) {
+        console.error('[media-library] upload failed', err);
       }
-    } catch {
-      // silent
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setUploadProgress({ done: i + 1, total: files.length });
     }
+    setUploading(false);
+    setUploadProgress(null);
+    onPhotosChanged();
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleDelete = async (url: string) => {
+    if (!window.confirm('Delete this photo? Pages that reference it will show a broken image until re-edited.')) return;
     setDeleting(url);
     try {
       const res = await fetch(`/api/agency/sites/${siteId}/photos`, {
@@ -1682,70 +1806,246 @@ function ImageGallery({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
       });
-      if (res.ok) {
-        onPhotosChanged();
-      }
-    } catch {
-      // silent
+      if (res.ok) onPhotosChanged();
+    } catch (err) {
+      console.error('[media-library] delete failed', err);
     } finally {
       setDeleting(null);
     }
   };
 
-  return (
-    <CollapsibleCard title="Photos" icon={<ImageIcon className="h-4 w-4" />} badge={`${photos.length} photos`}>
-      <div className="space-y-3">
-        {photos.length > 0 && (
-          <div className="grid grid-cols-3 gap-2">
-            {photos.map((photo, i) => (
-              <div key={i} className="relative group rounded-lg overflow-hidden aspect-video bg-gray-100">
-                <img
-                  src={photo.url}
-                  alt={photo.alt || ''}
-                  className="w-full h-full object-cover"
-                />
-                <button
-                  onClick={() => handleDelete(photo.url)}
-                  disabled={deleting === photo.url}
-                  className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
-                >
-                  {deleting === photo.url ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-3 w-3" />
-                  )}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+  const handleSaveMeta = async (index: number, alt: string, placement: string) => {
+    setSavingMeta(true);
+    try {
+      const next = photos.map((p, i) => (i === index ? { ...p, alt, placement } : p));
+      const res = await fetch(`/api/agency/sites/${siteId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photos: next }),
+      });
+      if (res.ok) {
+        onPhotosChanged();
+        setEditingIndex(null);
+      }
+    } catch (err) {
+      console.error('[media-library] save meta failed', err);
+    } finally {
+      setSavingMeta(false);
+    }
+  };
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          onChange={handleUpload}
-          className="hidden"
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="w-full px-4 py-2.5 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
-        >
-          {uploading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Uploading...
-            </>
-          ) : (
-            <>
-              <Upload className="h-4 w-4" />
-              Upload Photo
-            </>
+  const onCopyUrl = (url: string) => {
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        setCopiedUrl(url);
+        setTimeout(() => setCopiedUrl((v) => (v === url ? null : v)), 1500);
+      })
+      .catch(() => {});
+  };
+
+  // Filter — case-insensitive substring match against alt + placement.
+  const filterLower = filter.trim().toLowerCase();
+  const filtered = filterLower
+    ? photos
+        .map((p, i) => ({ p, i }))
+        .filter(({ p }) =>
+          (p.alt || '').toLowerCase().includes(filterLower) ||
+          (p.placement || '').toLowerCase().includes(filterLower),
+        )
+    : photos.map((p, i) => ({ p, i }));
+
+  return (
+    <>
+      <CollapsibleCard
+        title="Media Library"
+        icon={<ImageIcon className="h-4 w-4" />}
+        badge={filterLower ? `${filtered.length} / ${photos.length}` : `${photos.length} photos`}
+      >
+        <div className="space-y-3">
+          {photos.length > 3 && (
+            <div className="relative">
+              <Search className="h-3.5 w-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Filter by alt text or placement…"
+                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-md border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
           )}
-        </button>
+
+          {photos.length > 0 && filtered.length === 0 && (
+            <p className="text-xs text-gray-500 text-center py-4">No photos match &ldquo;{filter}&rdquo;.</p>
+          )}
+
+          {filtered.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {filtered.map(({ p: photo, i }) => (
+                <div key={i} className="group rounded-lg border border-gray-200 overflow-hidden bg-white">
+                  <div className="relative aspect-video bg-gray-100">
+                    <img src={photo.url} alt={photo.alt || ''} className="w-full h-full object-cover" />
+                    {/* Hover actions */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
+                      <button
+                        onClick={() => setEditingIndex(i)}
+                        className="p-1.5 bg-white/95 text-gray-700 rounded-md hover:bg-white"
+                        title="Edit details"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => onCopyUrl(photo.url)}
+                        className="p-1.5 bg-white/95 text-gray-700 rounded-md hover:bg-white"
+                        title="Copy URL"
+                      >
+                        {copiedUrl === photo.url ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(photo.url)}
+                        disabled={deleting === photo.url}
+                        className="p-1.5 bg-white/95 text-red-600 rounded-md hover:bg-white"
+                        title="Delete"
+                      >
+                        {deleting === photo.url ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                  {/* Metadata strip */}
+                  <div className="px-2 py-1.5">
+                    <p className="text-[11px] text-gray-700 truncate font-medium" title={photo.alt || '(no alt)'}>
+                      {photo.alt || <span className="text-gray-400 italic">no alt text</span>}
+                    </p>
+                    <p className="text-[10px] text-gray-400 truncate">{photo.placement || 'unplaced'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleUpload}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="w-full px-4 py-2.5 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {uploadProgress
+                  ? `Uploading ${uploadProgress.done} / ${uploadProgress.total}…`
+                  : 'Uploading…'}
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4" />
+                Upload Photos (multiple OK)
+              </>
+            )}
+          </button>
+        </div>
+      </CollapsibleCard>
+
+      {/* Per-photo metadata modal — outside the card so the backdrop covers
+          the whole viewport regardless of card scroll state. */}
+      {editingIndex !== null && photos[editingIndex] && (
+        <PhotoMetaModal
+          photo={photos[editingIndex]}
+          saving={savingMeta}
+          onSave={(alt, placement) => handleSaveMeta(editingIndex, alt, placement)}
+          onClose={() => setEditingIndex(null)}
+        />
+      )}
+    </>
+  );
+}
+
+/**
+ * PhotoMetaModal — edit alt text + placement label for a single photo.
+ * Placement is used by AI page generation as a hint for where to put the
+ * image; kept free-form rather than enumerated so customers can label
+ * however they want.
+ */
+function PhotoMetaModal({
+  photo,
+  saving,
+  onSave,
+  onClose,
+}: {
+  photo: SitePhoto;
+  saving: boolean;
+  onSave: (alt: string, placement: string) => void;
+  onClose: () => void;
+}) {
+  const [alt, setAlt] = useState(photo.alt || '');
+  const [placement, setPlacement] = useState(photo.placement || '');
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-gray-900">Edit photo details</h3>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-700">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden mb-4">
+          <img src={photo.url} alt={photo.alt || ''} className="w-full h-full object-cover" />
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Alt text</label>
+            <input
+              type="text"
+              value={alt}
+              onChange={(e) => setAlt(e.target.value)}
+              maxLength={120}
+              placeholder="e.g. Team photo at our Boston office"
+              className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">
+              Used by screen readers and search engines. Describe what&apos;s shown.
+            </p>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Placement label</label>
+            <input
+              type="text"
+              value={placement}
+              onChange={(e) => setPlacement(e.target.value)}
+              maxLength={60}
+              placeholder="e.g. hero, about, team, gallery"
+              className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">Hint for where this image should appear on the live site.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 mt-5">
+          <button onClick={onClose} className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+          <button
+            onClick={() => onSave(alt.trim(), placement.trim())}
+            disabled={saving}
+            className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center gap-1.5"
+          >
+            {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+            Save
+          </button>
+        </div>
       </div>
-    </CollapsibleCard>
+    </div>
   );
 }
 
@@ -1763,6 +2063,121 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
 };
 
 // ── Section Manager ───────────────────────────────────────────────────────────
+
+/**
+ * LogoUploader — single-file upload to `/api/agency/sites/[id]/logo` that
+ * sets `client_sites.logo_url`. Shows live preview, replace/remove actions.
+ * SVG accepted (logos commonly need vector fidelity) — see endpoint comment.
+ *
+ * Sprint 3 (2026-05-14).
+ */
+function LogoUploader({
+  siteId,
+  logoUrl,
+  onChanged,
+}: {
+  siteId: string;
+  logoUrl: string | null;
+  onChanged: () => Promise<void> | void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onPick = () => fileRef.current?.click();
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`/api/agency/sites/${siteId}/logo`, { method: 'POST', body: fd });
+      const result = await res.json();
+      if (!res.ok) {
+        setError(result.error || 'Upload failed');
+      } else {
+        await onChanged();
+      }
+    } catch (err) {
+      console.error('[logo-upload]', err);
+      setError('Network error');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const onRemove = async () => {
+    if (!window.confirm('Remove the site logo?')) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}/logo`, { method: 'DELETE' });
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        setError(result.error || 'Remove failed');
+      } else {
+        await onChanged();
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <CollapsibleCard title="Logo" icon={<ImageIcon className="h-4 w-4" />}>
+      <div className="space-y-3">
+        <div className="flex items-center gap-4">
+          <div className="h-20 w-20 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+            {logoUrl
+              ? <img src={logoUrl} alt="Site logo" className="max-h-full max-w-full object-contain" />
+              : <ImageIcon className="h-6 w-6 text-gray-300" />}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-600 mb-2">
+              {logoUrl
+                ? 'Used in the header (and footer where supported). PNG/SVG with transparent background renders best.'
+                : 'Add a logo to replace the auto-generated brand wordmark in the header.'}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={onPick}
+                disabled={uploading}
+                className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center gap-1.5"
+              >
+                {uploading
+                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                  : <Upload className="h-3 w-3" />}
+                {logoUrl ? 'Replace' : 'Upload Logo'}
+              </button>
+              {logoUrl && (
+                <button
+                  onClick={onRemove}
+                  disabled={uploading}
+                  className="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50 inline-flex items-center gap-1.5"
+                >
+                  <Trash2 className="h-3 w-3" /> Remove
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+        <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={onFile} />
+        {error && (
+          <div className="text-[11px] text-red-700 bg-red-50 border border-red-200 rounded-md px-2 py-1.5">
+            {error}
+          </div>
+        )}
+        <p className="text-[10px] text-gray-400">
+          Max 4MB · PNG, JPEG, WebP, or SVG · changes apply on next publish.
+        </p>
+      </div>
+    </CollapsibleCard>
+  );
+}
 
 /**
  * ThemeEditor — colors, design style, font family, and corner radius in one
@@ -3429,6 +3844,14 @@ export default function PageEditor() {
               {/* ─── Design Tab (homepage only) ─── */}
               {isHomepageRow(selectedPage) && activeTab === 'design' && site && (
                 <div className="space-y-4">
+                  {/* Logo first — most visible piece of branding, customers
+                      look for it before anything else. */}
+                  <LogoUploader
+                    siteId={siteId}
+                    logoUrl={site.logo_url}
+                    onChanged={refreshSite}
+                  />
+
                   {/* Theme tokens — colors, font, radius, design style.
                       Single card so customers find every visual control in
                       one place (was previously fragmented to the wizard). */}
@@ -3464,6 +3887,11 @@ export default function PageEditor() {
                   <BusinessDetailsEditor site={site} onSave={saveSiteEdits} saving={savingSite} />
                   <NavLinkEditor site={site} onSave={saveSiteEdits} saving={savingSite} />
                   <FooterEditor site={site} onSave={saveSiteEdits} saving={savingSite} />
+                  {/* Custom Code lives in Site Settings (not Design) because
+                      analytics + tracking pixels are operational concerns,
+                      not visual ones. Kept at the bottom — most agencies
+                      configure once at launch and never touch again. */}
+                  <CustomCodeEditor site={site} onSave={saveSiteEdits} saving={savingSite} />
                 </div>
               )}
 

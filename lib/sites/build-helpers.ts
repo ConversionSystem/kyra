@@ -225,6 +225,10 @@ export async function assembleSitePages(
         // back to FONT_OPTIONS[0].stack and RADIUS_PRESETS.default.
         fontFamily: site.font_family || null,
         borderRadius: site.border_radius || null,
+        // Custom code injection (Sprint 3). Raw HTML — NOT sanitized; agency
+        // pastes their own analytics/pixel snippets and we honor them verbatim.
+        headCode: site.head_code || null,
+        bodyCode: site.body_code || null,
         reviews: siteReviews,
         navLinks: site.nav_links || null,
         navbarVariant: site.navbar_variant || null,
