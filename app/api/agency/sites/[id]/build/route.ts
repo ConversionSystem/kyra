@@ -253,6 +253,8 @@ async function buildAndDeploy(site: any, supabase: any) {
     meta_title: string; meta_description: string;
     hero_h1: string; hero_subtitle: string;
     content_sections: unknown; faq: unknown; schema_markup: unknown;
+    // Sprint 5: per-page form field definitions for the form-embed CTA.
+    cta_form_fields?: unknown;
   }) => ({
     slug: p.slug,
     type: p.page_type,
@@ -264,6 +266,7 @@ async function buildAndDeploy(site: any, supabase: any) {
     sections: p.content_sections,
     faq: p.faq,
     schema: p.schema_markup,
+    ctaFormFields: p.cta_form_fields ?? null,
   }));
 
   // Resolve the template recipe — prefer user-selected template, fall back to industry default
@@ -439,6 +442,12 @@ async function buildAndDeploy(site: any, supabase: any) {
         content_sections: (p.sections || []) as { heading: string; body: string; bullets?: string[] }[],
         faq: (p.faq || []) as { question: string; answer: string }[],
         schema_markup: p.schema,
+        // Sprint 5: forwarded to the form-embed CTA.
+        slug: p.slug,
+        cta_form_fields: p.ctaFormFields as Array<{
+          id: string; label: string; type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'number';
+          required?: boolean; placeholder?: string; options?: string[];
+        }> | null,
       },
       siteData: {
         business_name: constants.name,
