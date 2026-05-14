@@ -133,7 +133,41 @@ export function WidgetBuilderEmbedded({
     funnel?: FunnelStage[];
     cardCTR?: number;
     cardsShownTotal?: number;
+    // v5 additions (2026-05-14)
+    periodComparison?: {
+      sampleDelta: number;
+      deflectionDelta: number;
+      escalationDelta: number;
+      fallbackDelta: number;
+      prevSample: number;
+      prevDeflection: number;
+      prevEscalations: number;
+      prevFallbackRate: number;
+    };
+    fallbackQueries?: Array<{ query: string; count: number }>;
+    todayConversations?: number;
+    todayEscalations?: number;
+    todayDeflection?: number;
+    activeNow?: number;
+    topSources?: Array<{ page: string; count: number }>;
   } | null>(null);
+
+  // Drill-down modal state — click any aggregate row to inspect the
+  // actual conversations behind that count. Closes on backdrop click or X.
+  type DrillFilter =
+    | { kind: 'query'; value: string; title: string }
+    | { kind: 'fallback'; title: string }
+    | { kind: 'escalation'; title: string }
+    | { kind: 'session'; sessionId: string; title: string };
+  const [drillFilter, setDrillFilter] = useState<DrillFilter | null>(null);
+  const [drillRows, setDrillRows] = useState<Array<{
+    user_message: string;
+    ai_response: string;
+    created_at: string;
+    session_id?: string;
+    source_url?: string;
+  }> | null>(null);
+  const [drillLoading, setDrillLoading] = useState(false);
 
   useEffect(() => {
     if (!clientId) return;
@@ -142,6 +176,21 @@ export function WidgetBuilderEmbedded({
       .then(d => d && setStats(d))
       .catch(() => {});
   }, [clientId, insightsWindow]);
+
+  useEffect(() => {
+    if (!drillFilter || !clientId) return;
+    setDrillLoading(true);
+    setDrillRows(null);
+    const params = new URLSearchParams({ windowDays: String(insightsWindow), limit: '25' });
+    if (drillFilter.kind === 'query')      params.set('query', drillFilter.value);
+    if (drillFilter.kind === 'fallback')   params.set('fallback', '1');
+    if (drillFilter.kind === 'escalation') params.set('escalation', '1');
+    if (drillFilter.kind === 'session')    params.set('session_id', drillFilter.sessionId);
+    fetch(`/api/agency/clients/${clientId}/widget-stats/conversations?${params}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { setDrillRows(d?.conversations ?? []); setDrillLoading(false); })
+      .catch(() => { setDrillRows([]); setDrillLoading(false); });
+  }, [drillFilter, clientId, insightsWindow]);
 
   // Refresh config from the API on every mount, EVEN when initialConfig
   // was provided. The initialConfig prop seeds the initial state to avoid
@@ -848,28 +897,89 @@ export function WidgetBuilderEmbedded({
                     </div>
                   ) : (
                     <>
-                      {/* Top-line cards: deflection + escalation + sample size */}
+                      {/* Period-over-period delta helper. Up arrow for growth,
+                          down for decline. For deflection delta UP is GOOD;
+                          for escalation+fallback UP is BAD — caller decides. */}
+                      {(() => null)()}
+
+                      {/* Today's pulse — separate row so the operator sees
+                          what's happening RIGHT NOW vs. windowed averages. */}
+                      <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+                        <div className="flex items-center justify-between flex-wrap gap-3">
+                          <div>
+                            <div className="text-[11px] font-semibold uppercase tracking-wider opacity-80 mb-1 flex items-center gap-1.5">
+                              <span className="inline-block w-2 h-2 rounded-full bg-green-300 animate-pulse" />
+                              Live pulse
+                            </div>
+                            <div className="text-sm">
+                              <strong className="text-2xl font-extrabold">{stats.todayConversations ?? 0}</strong> conversations today
+                              <span className="opacity-75 mx-2">·</span>
+                              <strong>{stats.todayEscalations ?? 0}</strong> escalations
+                              <span className="opacity-75 mx-2">·</span>
+                              <strong>{stats.todayDeflection ?? 0}%</strong> deflection
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[11px] font-semibold uppercase tracking-wider opacity-80 mb-1">Active now</div>
+                            <div className="text-2xl font-extrabold">{stats.activeNow ?? 0}</div>
+                            <p className="text-[10px] opacity-75">last 60 minutes</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Top-line cards with period-over-period deltas */}
                       <div className="grid grid-cols-3 gap-3">
                         <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/40 border border-emerald-200/50">
                           <div className="flex items-center gap-1.5 mb-1 text-emerald-700 text-xs font-semibold uppercase tracking-wider">
                             <TrendingUp className="h-3.5 w-3.5" /> Deflection
                           </div>
-                          <div className="text-2xl font-extrabold text-emerald-900">{stats.deflectionRate}%</div>
+                          <div className="flex items-baseline gap-2">
+                            <div className="text-2xl font-extrabold text-emerald-900">{stats.deflectionRate}%</div>
+                            {stats.periodComparison && stats.periodComparison.prevSample > 0 && (
+                              <span className={`text-[10px] font-bold ${
+                                (stats.periodComparison.deflectionDelta) >= 0 ? 'text-emerald-600' : 'text-red-600'
+                              }`}>
+                                {stats.periodComparison.deflectionDelta >= 0 ? '↑' : '↓'} {Math.abs(stats.periodComparison.deflectionDelta)}%
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[11px] text-emerald-700/70 mt-0.5">resolved without escalation</p>
                         </div>
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/40 border border-amber-200/50">
+                        <button
+                          onClick={() => setDrillFilter({ kind: 'escalation', title: 'Escalations' })}
+                          className="text-left p-4 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/40 border border-amber-200/50 hover:border-amber-300 hover:shadow-sm transition-all"
+                          title="Click to see actual escalation conversations"
+                        >
                           <div className="flex items-center gap-1.5 mb-1 text-amber-700 text-xs font-semibold uppercase tracking-wider">
                             <AlertTriangle className="h-3.5 w-3.5" /> Escalations
                           </div>
-                          <div className="text-2xl font-extrabold text-amber-900">{stats.escalationCount}</div>
-                          <p className="text-[11px] text-amber-700/70 mt-0.5">flagged in last {stats.windowDays}d</p>
-                        </div>
+                          <div className="flex items-baseline gap-2">
+                            <div className="text-2xl font-extrabold text-amber-900">{stats.escalationCount}</div>
+                            {stats.periodComparison && stats.periodComparison.prevSample > 0 && (
+                              <span className={`text-[10px] font-bold ${
+                                stats.periodComparison.escalationDelta <= 0 ? 'text-emerald-600' : 'text-red-600'
+                              }`}>
+                                {stats.periodComparison.escalationDelta >= 0 ? '↑' : '↓'} {Math.abs(stats.periodComparison.escalationDelta)}%
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-amber-700/70 mt-0.5">flagged in last {stats.windowDays}d · tap to inspect</p>
+                        </button>
                         <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100/40 border border-indigo-200/50">
                           <div className="flex items-center gap-1.5 mb-1 text-indigo-700 text-xs font-semibold uppercase tracking-wider">
                             <BarChart3 className="h-3.5 w-3.5" /> Sample
                           </div>
-                          <div className="text-2xl font-extrabold text-indigo-900">{stats.sampleSize}</div>
-                          <p className="text-[11px] text-indigo-700/70 mt-0.5">conversations analyzed</p>
+                          <div className="flex items-baseline gap-2">
+                            <div className="text-2xl font-extrabold text-indigo-900">{stats.sampleSize}</div>
+                            {stats.periodComparison && stats.periodComparison.prevSample > 0 && (
+                              <span className={`text-[10px] font-bold ${
+                                stats.periodComparison.sampleDelta >= 0 ? 'text-emerald-600' : 'text-gray-500'
+                              }`}>
+                                {stats.periodComparison.sampleDelta >= 0 ? '↑' : '↓'} {Math.abs(stats.periodComparison.sampleDelta)}%
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-indigo-700/70 mt-0.5">vs prev {stats.windowDays}d</p>
                         </div>
                       </div>
 
@@ -996,26 +1106,82 @@ export function WidgetBuilderEmbedded({
                         </div>
                       </div>
 
-                      {/* Top customer queries */}
+                      {/* Top customer queries — clickable for drill-down */}
                       <div className="p-4 rounded-xl bg-white border border-gray-200">
                         <p className="text-sm font-semibold text-gray-700 mb-3">Top customer questions</p>
                         {(stats.topQueries ?? []).length === 0 ? (
                           <p className="text-xs text-gray-500 italic">Not enough data yet.</p>
                         ) : (
-                          <ol className="space-y-1.5">
+                          <ol className="space-y-0.5">
                             {(stats.topQueries ?? []).slice(0, 8).map((q, i) => (
-                              <li key={i} className="flex items-center gap-3 text-sm">
-                                <span className="w-5 text-xs text-gray-400 font-mono">{i + 1}.</span>
-                                <span className="flex-1 text-gray-700 truncate" title={q.query}>{q.query}</span>
-                                <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">×{q.count}</span>
+                              <li key={i}>
+                                <button
+                                  onClick={() => setDrillFilter({ kind: 'query', value: q.query, title: `"${q.query}"` })}
+                                  className="w-full flex items-center gap-3 text-sm py-1 px-2 -mx-2 rounded-md hover:bg-indigo-50 transition-colors"
+                                  title="Click to see actual conversations"
+                                >
+                                  <span className="w-5 text-xs text-gray-400 font-mono">{i + 1}.</span>
+                                  <span className="flex-1 text-left text-gray-700 truncate">{q.query}</span>
+                                  <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">×{q.count}</span>
+                                </button>
                               </li>
                             ))}
                           </ol>
                         )}
                         <p className="text-[11px] text-gray-500 mt-3 italic">
-                          Spot patterns? Add answers to your training doc to deflect these directly.
+                          Click any question to read the actual conversations behind it. Add answers to your training doc to deflect these directly.
                         </p>
                       </div>
+
+                      {/* KB-gap drill-down — questions where the bot punted to phone.
+                          Direct signal for what's missing in the training doc. */}
+                      {(stats.fallbackQueries ?? []).length > 0 && (
+                        <div className="p-4 rounded-xl bg-red-50/50 border border-red-200/60">
+                          <div className="flex items-baseline justify-between mb-3">
+                            <p className="text-sm font-semibold text-red-900 flex items-center gap-1.5">
+                              <AlertTriangle className="h-3.5 w-3.5" /> KB gaps — questions the bot punted to phone
+                            </p>
+                            <span className="text-xs text-red-700">{stats.fallbackCount} fallback replies in {stats.windowDays}d</span>
+                          </div>
+                          <ol className="space-y-0.5">
+                            {(stats.fallbackQueries ?? []).slice(0, 6).map((q, i) => (
+                              <li key={i}>
+                                <button
+                                  onClick={() => setDrillFilter({ kind: 'query', value: q.query, title: `Fallback: "${q.query}"` })}
+                                  className="w-full flex items-center gap-3 text-sm py-1 px-2 -mx-2 rounded-md hover:bg-red-100/60 transition-colors"
+                                  title="Click to read the bot's actual fallback response"
+                                >
+                                  <span className="w-5 text-xs text-red-400 font-mono">{i + 1}.</span>
+                                  <span className="flex-1 text-left text-red-900 truncate">{q.query}</span>
+                                  <span className="text-xs font-semibold text-red-700 bg-red-100 rounded-full px-2 py-0.5">×{q.count}</span>
+                                </button>
+                              </li>
+                            ))}
+                          </ol>
+                          <p className="text-[11px] text-red-700/80 mt-3 italic">
+                            These questions caused the bot to fall back to &quot;please call us&quot; — add direct answers to your training doc and the deflection rate will climb.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Top source pages — where visitors start their chats */}
+                      {(stats.topSources ?? []).length > 0 && (
+                        <div className="p-4 rounded-xl bg-white border border-gray-200">
+                          <p className="text-sm font-semibold text-gray-700 mb-3">Top referring pages</p>
+                          <ol className="space-y-1.5">
+                            {(stats.topSources ?? []).slice(0, 6).map((s, i) => (
+                              <li key={i} className="flex items-center gap-3 text-sm">
+                                <span className="w-5 text-xs text-gray-400 font-mono">{i + 1}.</span>
+                                <span className="flex-1 text-gray-700 font-mono text-xs truncate" title={s.page}>{s.page}</span>
+                                <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">×{s.count}</span>
+                              </li>
+                            ))}
+                          </ol>
+                          <p className="text-[11px] text-gray-500 mt-3 italic">
+                            Pages where the widget was opened. High-traffic pages with low engagement may need a more inviting greeting or contextual chips.
+                          </p>
+                        </div>
+                      )}
 
                       {/* Channel mix */}
                       {stats.channelMix && Object.keys(stats.channelMix).length > 0 && (
@@ -1109,6 +1275,80 @@ export function WidgetBuilderEmbedded({
                         </div>
                       )}
                     </>
+                  )}
+
+                  {/* ── Drill-down modal — read the actual conversations ── */}
+                  {drillFilter && (
+                    <div
+                      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+                      onClick={() => setDrillFilter(null)}
+                    >
+                      <div
+                        className="bg-white rounded-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+                          <div>
+                            <h3 className="text-base font-semibold text-gray-900">
+                              {drillFilter.title}
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              Recent conversations matching this filter (last {insightsWindow} days)
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setDrillFilter(null)}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                            aria-label="Close"
+                          >
+                            <X className="h-5 w-5 text-gray-500" />
+                          </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                          {drillLoading ? (
+                            <div className="text-center py-10 text-sm text-gray-500">Loading conversations…</div>
+                          ) : !drillRows || drillRows.length === 0 ? (
+                            <div className="text-center py-10 text-sm text-gray-500">No matching conversations found.</div>
+                          ) : (
+                            drillRows.map((row, i) => (
+                              <div key={i} className="border border-gray-100 rounded-xl p-3 hover:bg-gray-50/50 transition-colors">
+                                <div className="flex items-baseline justify-between mb-2 text-[11px] text-gray-500">
+                                  <span>{new Date(row.created_at).toLocaleString()}</span>
+                                  {row.source_url && (
+                                    <span className="font-mono truncate ml-3 max-w-[200px]" title={row.source_url}>
+                                      {(() => {
+                                        try { return new URL(row.source_url).pathname; } catch { return row.source_url; }
+                                      })()}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="mb-2">
+                                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Customer</div>
+                                  <p className="text-sm text-gray-900 bg-indigo-50/50 px-3 py-2 rounded-lg">{row.user_message || '—'}</p>
+                                </div>
+                                <div>
+                                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Bot reply</div>
+                                  <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-lg whitespace-pre-wrap line-clamp-6">{row.ai_response || '—'}</p>
+                                </div>
+                                {row.session_id && (
+                                  <button
+                                    onClick={() => setDrillFilter({ kind: 'session', sessionId: row.session_id!, title: `Session: ${row.session_id}` })}
+                                    className="mt-2 text-[11px] text-indigo-600 hover:text-indigo-700 font-medium"
+                                  >
+                                    See full session →
+                                  </button>
+                                )}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        <div className="p-3 border-t border-gray-100 bg-gray-50/50 text-[11px] text-gray-500 text-center">
+                          {drillRows && drillRows.length > 0
+                            ? `Showing ${drillRows.length} most recent`
+                            : 'Use CSV export for the full dataset'}
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
