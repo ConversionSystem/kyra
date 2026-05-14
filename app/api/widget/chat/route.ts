@@ -247,6 +247,42 @@ export async function POST(request: NextRequest) {
   // Build session ID (persist conversation across messages)
   const resolvedSessionId = sessionId || `web:${clientId.slice(0, 8)}:${Date.now()}`;
 
+  // ── Agent-takeover gate ──────────────────────────────────────────────────
+  // If a human agent has replied via the Inbox in the last 15 min for this
+  // session, pause the AI entirely. The visitor still sees their message
+  // (the panel echoes it locally) and we respond with a short notice that
+  // a team member is here. The agent's reply lands via the poll endpoint.
+  // No LLM call, no credit deduction, no Algolia search — fully bypassed.
+  try {
+    const { getRecentAgentMessage } = await import('@/lib/widget/agent-messages');
+    const recentAgent = await getRecentAgentMessage(supabase, resolvedSessionId);
+    if (recentAgent) {
+      const agentDisplay = recentAgent.agent_name?.trim() || 'A team member';
+      const holding = `${agentDisplay} is helping you here — they'll reply shortly. Feel free to keep typing and they'll see your message.`;
+      console.log(`[widget/chat] AI paused (agent active) session=${resolvedSessionId.slice(0, 32)}`);
+      // Persist visitor's message so the agent sees it in the Inbox even
+      // though no AI reply was generated. Mirror saveConversation's shape.
+      void saveConversation({
+        clientId: client.id,
+        agencyId: client.agency_id,
+        sessionId: resolvedSessionId,
+        userMessage: message.trim(),
+        aiResponse: holding,
+        channel: 'web_chat',
+        sourceUrl: sourceUrl ?? null,
+      }).catch((err: unknown) => {
+        console.warn('[widget/chat] takeover save failed:', err instanceof Error ? err.message : err);
+      });
+      return NextResponse.json(
+        { response: holding, sessionId: resolvedSessionId, paused: true },
+        { headers: CORS },
+      );
+    }
+  } catch (err) {
+    // Fail open — never let the takeover check black-hole the AI.
+    console.warn('[widget/chat] takeover gate threw:', err instanceof Error ? err.message : err);
+  }
+
   // ── Session memory for returning visitors ────────────────────────────────
   // Fetch prior DB history when client sends a known sessionId but no in-memory
   // history (e.g., returning visitor on a fresh page load).
