@@ -199,6 +199,7 @@ function renderHead(site: Record<string, any>, page: Record<string, any>, schema
     gtag('js', new Date());
     gtag('config', '${gid}');
   </script>` : ''; })()}
+  ${site.head_code ? `<!-- Agency-defined head code -->\n  ${site.head_code}\n  <!-- /Agency-defined head code -->` : ''}
 </head>
 <body class="bg-black text-white min-h-screen">`;
 }
@@ -214,11 +215,61 @@ function renderEmergencyBanner(site: Record<string, any>): string {
 
 function renderNavbar(site: Record<string, any>): string {
   const businessName = site.business_name || 'HVAC San Mateo';
-  const dba = site.dba || businessName;
-  const license = site.license || '';
   const phone = site.phone || '';
   const href = phoneHref(phone);
-  const ownerCompany = site.owner_company || 'Air Temp Co';
+  const logoUrl = site.logo_url as string | null;
+
+  // 2026-05-14 fix: agency-configured nav_links (with optional dropdown
+  // children) are now honored. Mirrors the TrustedNetworx + Arana fixes.
+  const navLinks = site.nav_links as
+    | { label: string; href: string; children?: { label: string; href: string }[] }[]
+    | null;
+
+  const renderDesktopEntry = (l: { label: string; href: string; children?: { label: string; href: string }[] }): string => {
+    if (!l.children || l.children.length === 0) {
+      return `<a href="${esc(l.href)}" class="text-sm text-gray-300 hover:text-white transition">${esc(l.label)}</a>`;
+    }
+    const items = l.children.map(c =>
+      `<a href="${esc(c.href)}" class="block px-4 py-2 text-sm text-gray-200 hover:bg-white/10">${esc(c.label)}</a>`
+    ).join('');
+    return `<div class="relative group">
+            <button type="button" class="text-sm text-gray-300 hover:text-white transition inline-flex items-center gap-1">${esc(l.label)} <span class="text-[10px]">▾</span></button>
+            <div class="hidden group-hover:block absolute left-0 top-full pt-2 z-50">
+              <div class="min-w-[200px] bg-gray-900 border border-white/10 rounded-lg shadow-lg py-1">${items}</div>
+            </div>
+          </div>`;
+  };
+
+  const desktopNavInner = navLinks && navLinks.length > 0
+    ? navLinks.map(renderDesktopEntry).join('\n          ')
+    : `<a href="/services/ac-repair" class="text-sm text-gray-300 hover:text-white transition">Services</a>
+          <a href="/about" class="text-sm text-gray-300 hover:text-white transition">About</a>
+          <a href="/reviews" class="text-sm text-gray-300 hover:text-white transition">Reviews</a>
+          <a href="/faq" class="text-sm text-gray-300 hover:text-white transition">FAQ</a>
+          <a href="/contact" class="text-sm text-gray-300 hover:text-white transition">Contact</a>`;
+
+  // Mobile flattens parent + children (indented children) for tap-reach.
+  const mobileNavInner = navLinks && navLinks.length > 0
+    ? navLinks.flatMap(l => [
+        `<a href="${esc(l.href)}" class="block py-2 text-gray-300 hover:text-white font-medium">${esc(l.label)}</a>`,
+        ...((l.children || []).map(c =>
+          `<a href="${esc(c.href)}" class="block py-2 pl-4 text-sm text-gray-400 hover:text-white">${esc(c.label)}</a>`,
+        )),
+      ]).join('\n      ')
+    : `<a href="/services/ac-repair" class="block py-2 text-gray-300 hover:text-white">Services</a>
+      <a href="/about" class="block py-2 text-gray-300 hover:text-white">About</a>
+      <a href="/reviews" class="block py-2 text-gray-300 hover:text-white">Reviews</a>
+      <a href="/faq" class="block py-2 text-gray-300 hover:text-white">FAQ</a>
+      <a href="/contact" class="block py-2 text-gray-300 hover:text-white">Contact</a>`;
+
+  // Logo: agency upload wins; otherwise the legacy red-thermometer mark.
+  const brandHtml = logoUrl
+    ? `<img src="${esc(logoUrl)}" alt="${esc(businessName)}" class="h-10 w-auto" />`
+    : `<div class="h-10 w-10 rounded-lg bg-red-600 flex items-center justify-center">${SVG.thermometer('h-6 w-6 text-white')}</div>
+          <div>
+            <div class="text-lg font-bold text-white leading-tight">HVAC San Mateo</div>
+            <div class="text-[10px] text-gray-400 uppercase tracking-wider">Air Temp Co &middot; CA Lic. #889684</div>
+          </div>`;
 
   return `
   <header class="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/10">
@@ -226,21 +277,11 @@ function renderNavbar(site: Record<string, any>): string {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <a href="/" class="flex items-center gap-3">
-          <div class="h-10 w-10 rounded-lg bg-red-600 flex items-center justify-center">
-            ${SVG.thermometer('h-6 w-6 text-white')}
-          </div>
-          <div>
-            <div class="text-lg font-bold text-white leading-tight">HVAC San Mateo</div>
-            <div class="text-[10px] text-gray-400 uppercase tracking-wider">Air Temp Co &middot; CA Lic. #889684</div>
-          </div>
+          ${brandHtml}
         </a>
 
         <nav class="hidden md:flex items-center gap-6">
-          <a href="/services/ac-repair" class="text-sm text-gray-300 hover:text-white transition">Services</a>
-          <a href="/about" class="text-sm text-gray-300 hover:text-white transition">About</a>
-          <a href="/reviews" class="text-sm text-gray-300 hover:text-white transition">Reviews</a>
-          <a href="/faq" class="text-sm text-gray-300 hover:text-white transition">FAQ</a>
-          <a href="/contact" class="text-sm text-gray-300 hover:text-white transition">Contact</a>
+          ${desktopNavInner}
           <a href="${href}" class="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
             ${SVG.phone('h-4 w-4')}
             ${esc(phone)}
@@ -255,11 +296,7 @@ function renderNavbar(site: Record<string, any>): string {
     </div>
 
     <div id="mobile-menu" class="md:hidden hidden bg-gray-900 border-t border-white/10 px-4 pb-4 space-y-2">
-      <a href="/services/ac-repair" class="block py-2 text-gray-300 hover:text-white">Services</a>
-      <a href="/about" class="block py-2 text-gray-300 hover:text-white">About</a>
-      <a href="/reviews" class="block py-2 text-gray-300 hover:text-white">Reviews</a>
-      <a href="/faq" class="block py-2 text-gray-300 hover:text-white">FAQ</a>
-      <a href="/contact" class="block py-2 text-gray-300 hover:text-white">Contact</a>
+      ${mobileNavInner}
       <a href="${href}" class="flex items-center justify-center gap-2 bg-red-600 text-white px-4 py-3 rounded-lg font-semibold mt-2">
         ${SVG.phone('h-4 w-4')}
         Call ${esc(phone)}
@@ -280,22 +317,27 @@ function renderFooter(site: Record<string, any>): string {
   const services = getServices(site);
   const cities = getCities(site);
   const year = new Date().getFullYear();
+  const logoUrl = site.logo_url as string | null;
 
-  return `
-  <footer class="border-t border-white/10 bg-gray-900/50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div class="grid md:grid-cols-4 gap-8">
+  // 2026-05-14 fix: prefer agency-configured footer_tagline; if unset,
+  // keep the legacy ownerCompany/license blurb.
+  const footerTagline = site.footer_tagline as string | null;
+
+  // 2026-05-14 fix: agency-configured footer_columns replaces the legacy
+  // Services + Service Areas middle columns. Brand + Contact always render.
+  const footerColumns = site.footer_columns as
+    | { title: string; links: { label: string; href: string }[] }[]
+    | null;
+
+  const middleColumns = footerColumns && footerColumns.length > 0
+    ? footerColumns.map(col => `
         <div>
-          <div class="flex items-center gap-2 mb-3">
-            <div class="h-8 w-8 rounded-lg bg-red-600 flex items-center justify-center">
-              ${SVG.thermometer('h-5 w-5 text-white')}
-            </div>
-            <span class="font-bold text-white">${esc(dba)}</span>
+          <h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">${esc(col.title)}</h4>
+          <div class="space-y-2">
+            ${col.links.map(l => `<a href="${esc(l.href)}" class="block text-sm text-gray-400 hover:text-white transition">${esc(l.label)}</a>`).join('\n            ')}
           </div>
-          <p class="text-sm text-gray-400 mb-3">${esc(ownerCompany)} - ${esc(license)}</p>
-          <p class="text-sm text-gray-400">Serving San Mateo County since ${yearFounded}.</p>
-        </div>
-
+        </div>`).join('')
+    : `
         <div>
           <h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Services</h4>
           <div class="space-y-2">
@@ -308,8 +350,29 @@ function renderFooter(site: Record<string, any>): string {
           <div class="space-y-2">
             ${cities.slice(0, 6).map(c => `<a href="/${esc(c.slug)}" class="block text-sm text-gray-400 hover:text-white transition">${esc(c.name)}</a>`).join('\n            ')}
           </div>
-        </div>
+        </div>`;
 
+  const brandColumnHtml = logoUrl
+    ? `<img src="${esc(logoUrl)}" alt="${esc(dba)}" class="h-10 w-auto mb-3" />`
+    : `<div class="flex items-center gap-2 mb-3">
+            <div class="h-8 w-8 rounded-lg bg-red-600 flex items-center justify-center">
+              ${SVG.thermometer('h-5 w-5 text-white')}
+            </div>
+            <span class="font-bold text-white">${esc(dba)}</span>
+          </div>`;
+
+  return `
+  <footer class="border-t border-white/10 bg-gray-900/50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="grid md:grid-cols-4 gap-8">
+        <div>
+          ${brandColumnHtml}
+          ${footerTagline
+            ? `<p class="text-sm text-gray-400 mb-3">${esc(footerTagline)}</p>`
+            : `<p class="text-sm text-gray-400 mb-3">${esc(ownerCompany)} - ${esc(license)}</p>
+          <p class="text-sm text-gray-400">Serving San Mateo County since ${yearFounded}.</p>`}
+        </div>
+${middleColumns}
         <div>
           <h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Contact</h4>
           <div class="space-y-3">
@@ -2150,10 +2213,16 @@ export function assembleHvacSanMateoPage(
       : breadcrumbJson;
   }
 
+  // 2026-05-14: agency-defined body_code injected just before </body>.
+  const bodyCode = site.body_code
+    ? `\n<!-- Agency-defined body code -->\n${site.body_code}\n<!-- /Agency-defined body code -->`
+    : '';
+
   return renderHead(site, page, allSchema || undefined)
     + renderNavbar(site)
     + body
     + renderFooter(site)
     + renderScripts(site)
+    + bodyCode
     + '\n</body>\n</html>';
 }
