@@ -50,6 +50,7 @@ import {
 } from '@/lib/chat/core';
 import { isRateLimited } from '@/lib/rate-limit';
 import { classifyUsage } from '@/lib/billing/classify-usage';
+import { matchStoreByText } from '@/lib/widget/store-match';
 
 // Default chat-widget model. Sonnet 4.6 across the board — better tool-use,
 // stronger KB grounding, fewer "make-something-up" cases than gpt-4o-mini in
@@ -155,6 +156,13 @@ export async function POST(request: NextRequest) {
   const history = body.history as Array<{ role: 'user' | 'assistant'; content: string }> | undefined;
   const sourceUrl = body.sourceUrl as string | undefined;
   const storeId = body.storeId as string | undefined; // Jane store ID from embed param
+  // Visible store text scraped from the page (header picker, __NEXT_DATA__,
+  // Apollo cache). Used to resolve the active store when storeId is missing
+  // or doesn't match a configured store — covers Roots builds that never
+  // write to localStorage. Fuzzy-matched against jane_stores[].address +
+  // .name below.
+  const janeStoreText = typeof body.janeStoreText === 'string' ? body.janeStoreText.slice(0, 200) : '';
+  const janeStoreSource = typeof body.janeStoreSource === 'string' ? body.janeStoreSource.slice(0, 60) : '';
 
   // Jane frontend context (read client-side from cookies + localStorage by the
   // widget script, sent here so the AI is store/order/cart aware). All optional
@@ -592,8 +600,27 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
   ].filter(Boolean).join('\n');
 
   // ── Store Selection Detection (for multi-store dispensaries) ────────────────
-  // When user picks a store from the widget buttons, detect it and acknowledge
-  const resolvedStoreId = storeId || (cfg.jane_default_store_id as string) || '';
+  // Resolution priority:
+  //   1. storeId param (widget read it from cookies/localStorage/__NEXT_DATA__)
+  //   2. Fuzzy-match janeStoreText against configured store name/address
+  //      (rescues Roots builds that don't write store ID anywhere we can read)
+  //   3. jane_default_store_id from container config
+  //
+  // Address-first fuzzy match — implementation lives in
+  // lib/widget/store-match.ts (so it's unit-testable). See that file for
+  // the three-pass strategy.
+  const configuredStores =
+    (cfg.jane_stores as Array<{ id: string; name?: string; address?: string }>) || [];
+  const matchedFromText = !storeId && janeStoreText
+    ? matchStoreByText(janeStoreText, configuredStores)
+    : null;
+  const resolvedStoreId = storeId || matchedFromText || (cfg.jane_default_store_id as string) || '';
+  if (matchedFromText) {
+    console.log(
+      `[widget/chat] store text-match: "${janeStoreText.slice(0, 60)}" → ${matchedFromText} ` +
+      `(source=${janeStoreSource})`,
+    );
+  }
   let storeContext = '';
   if (janeActive && resolvedStoreId) {
     // Load store info from config or defaults
@@ -730,13 +757,30 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
       // specials, with the special title attached to each card so the
       // LLM can describe the actual promo (e.g. "30% OFF STIIIZY VAPES").
       const dealKeywords = /\b(deal|deals|special|specials|sale|sales|on sale|discount|discounts|promo|promos|coupon|coupons|today'?s? deals?|what'?s? on sale|markdown|markdowns|offers?)\b/i;
-      if (dealKeywords.test(searchInput)) {
+      // dealsQueryDetected stays true whether or not Algolia returned hits,
+      // so the LLM context below can give an honest answer instead of
+      // falling back to generic training-doc promo copy.
+      const dealsQueryDetected = dealKeywords.test(searchInput);
+      if (dealsQueryDetected) {
         const dealStoreId = resolvedStoreId || janeConfig.defaultStore;
-        const onSaleResult = await getOnSaleProducts(janeConfig, {
+        // Try the channel-narrowed search first. If 0 hits, retry without
+        // channel filter — operators report 0-result false-negatives when
+        // the visitor has "pickup" selected but the discounted SKUs are
+        // delivery-only this week (or vice versa).
+        let onSaleResult = await getOnSaleProducts(janeConfig, {
           storeId: dealStoreId,
           channel: orderType,
           limit: 6,
         });
+        if (onSaleResult.products.length === 0 && orderType) {
+          onSaleResult = await getOnSaleProducts(janeConfig, {
+            storeId: dealStoreId,
+            channel: 'either',
+            limit: 6,
+          });
+        }
+        const dealStoreName =
+          configuredStores.find(s => s.id === dealStoreId)?.name || 'this store';
         if (onSaleResult.products.length > 0) {
           productCards = onSaleResult.products.slice(0, 6).map((p) => ({
             id: String(p.id),
@@ -765,12 +809,41 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
             await stampOutOfStockFlags(productCards, clientId, algoliaStoreNum, orderType);
           }
           productCards = productCards.filter((c) => !c.outOfStock);
+          // Pin a strong context so the LLM narrates the ACTUAL specials
+          // rather than reciting hardcoded promo copy from the training
+          // doc (which previously caused "code new25 / 5% back" replies
+          // to "what's today's deals").
+          const specialsList = onSaleResult.specialTitles.slice(0, 4).filter(Boolean);
+          const specialsLine = specialsList.length > 0
+            ? `Active promos: ${specialsList.map(s => `"${s}"`).join(', ')}.`
+            : 'These products carry an active Jane special_id but no banner title was returned.';
+          productContext =
+            `\n\nTODAY'S DEALS — LIVE INVENTORY for ${dealStoreName} (${productCards.length} on-sale items already rendered as cards BELOW your reply):\n` +
+            `${specialsLine}\n\n` +
+            `ABSOLUTE RULES for this reply:\n` +
+            `  • Lead with the actual specials — name 1-2 promos by title and call out 1 standout product by name.\n` +
+            `  • Do NOT recite generic "new customer" / "code new25" / "5% back" copy as if it were today's deals. Those are STANDING rewards, not today's specials. You may mention them in 1 sentence AT THE END as additional value, prefaced with "On top of today's deals, …".\n` +
+            `  • Do NOT promise a specific discount % unless it appears in the Active promos list above.\n` +
+            `  • Reply in 2-3 sentences total. The cards handle the product detail — don't paste prices or markdown lists.`;
           console.log(
             `[widget/chat] DEALS short-circuit ${clientId.slice(0, 8)} → ${productCards.length} on-sale cards; ` +
-            `specials=${JSON.stringify(onSaleResult.specialTitles.slice(0, 3))}`,
+            `specials=${JSON.stringify(specialsList)}`,
           );
           // Skip the regular searchProducts path entirely — we've already
           // populated productCards with on-sale items.
+        } else {
+          // Honest empty-state context — prevents the LLM from inventing
+          // "today's deals" out of standing rewards / training-doc copy.
+          productContext =
+            `\n\nTODAY'S DEALS — LIVE INVENTORY CHECK for ${dealStoreName}: 0 active specials in Jane right now.\n\n` +
+            `ABSOLUTE RULES for this reply:\n` +
+            `  • Be honest: tell the visitor there are no Jane-specific specials active at this location right now.\n` +
+            `  • You MAY mention the standing rewards (new25 code, free pre-roll on 2nd order, 5% back) — but FRAME THEM CORRECTLY as standing rewards / new-customer perks, NOT as "today's deals".\n` +
+            `  • Offer to check back, or invite them to browse a category they're interested in.\n` +
+            `  • Reply in 2-3 sentences. Do not list every reward as bullets — speak conversationally.`;
+          console.log(
+            `[widget/chat] DEALS short-circuit ${clientId.slice(0, 8)} → 0 on-sale items for store=${dealStoreId} channel=${orderType ?? 'either'}`,
+          );
         }
       }
 
