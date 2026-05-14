@@ -1286,6 +1286,99 @@ export async function GET(
       }
     } catch(e) {}
 
+    // ── Window state — Next.js / Apollo initial state ───────────────────
+    // Many Jane-Roots builds embed the selected store inside the SSR'd
+    // __NEXT_DATA__ blob or Apollo cache before localStorage is populated.
+    // Reading these gives us the store the moment the page loads, with no
+    // dependency on Roots persisting to a key we recognise.
+    if (!ctx.janeStore) {
+      try {
+        var nd = document.getElementById('__NEXT_DATA__');
+        if (nd && nd.textContent) {
+          var ndJson = JSON.parse(nd.textContent);
+          // Walk a few likely paths — Roots versions vary.
+          var pageProps = ndJson && ndJson.props && ndJson.props.pageProps;
+          var candidate = pageProps && (
+            pageProps.store || pageProps.currentStore ||
+            pageProps.selectedStore || pageProps.dispensary ||
+            (pageProps.initialState && pageProps.initialState.store)
+          );
+          if (candidate) {
+            ctx.janeStore = String(candidate.id || candidate.storeId || candidate.algolia_id || '') || '';
+            ctx.janeStoreText = String(candidate.name || candidate.title || candidate.address || '') || '';
+            if (ctx.janeStore) ctx.janeStoreSource = '__NEXT_DATA__';
+          }
+        }
+      } catch(e) {}
+    }
+    if (!ctx.janeStore) {
+      try {
+        var apollo = window.__APOLLO_STATE__ || window.__INITIAL_STATE__;
+        if (apollo && typeof apollo === 'object') {
+          // Apollo cache keys look like "Store:1234" or "Dispensary:567"
+          for (var k in apollo) {
+            if (/^(Store|Dispensary):/i.test(k)) {
+              var s = apollo[k];
+              if (s && (s.id || s.storeId)) {
+                ctx.janeStore = String(s.id || s.storeId);
+                ctx.janeStoreText = String(s.name || s.address || '');
+                ctx.janeStoreSource = '__APOLLO_STATE__:' + k;
+                break;
+              }
+            }
+          }
+        }
+      } catch(e) {}
+    }
+
+    // ── DOM scraping — last-resort but the ONLY signal that always
+    // matches what the visitor sees in the picker. Jane Roots renders the
+    // selected store name + street address in the header dropdown; we
+    // grab the visible text and let the backend fuzzy-match it against
+    // the configured store list. Works even when Roots is using internal
+    // React state that never lands in storage. ────────────────────────────
+    if (!ctx.janeStoreText) {
+      try {
+        var SELECTORS = [
+          '[data-testid*="store" i] [class*="address" i]',
+          '[data-testid*="location" i]',
+          '[data-testid*="store-selector" i]',
+          '[aria-label*="store" i][aria-label*="select" i]',
+          '[aria-label*="pickup" i]',
+          '[aria-label*="location" i]',
+          '[class*="store-selector" i]',
+          '[class*="location-picker" i]',
+          '[class*="StorePicker" i]',
+          'header [class*="address" i]',
+        ];
+        var STREET_RE = /\\b\\d{1,5}\\s+(?:[NSEW]\\.?\\s+)?[A-Z][a-zA-Z'.-]+(?:\\s+[A-Z][a-zA-Z'.-]+)*\\s+(?:St|Street|Ave|Avenue|Blvd|Boulevard|Rd|Road|Dr|Drive|Ln|Lane|Way|Pl|Place|Ct|Court|Pkwy|Parkway|Hwy|Highway)\\b/i;
+        for (var si = 0; si < SELECTORS.length && !ctx.janeStoreText; si++) {
+          var nodes = document.querySelectorAll(SELECTORS[si]);
+          for (var ni = 0; ni < nodes.length && !ctx.janeStoreText; ni++) {
+            var t = (nodes[ni].textContent || '').trim().replace(/\\s+/g, ' ');
+            if (t && t.length >= 4 && t.length <= 200) {
+              ctx.janeStoreText = t;
+              ctx.janeStoreSource = 'dom:' + SELECTORS[si];
+            }
+          }
+        }
+        // Pure-text scan as final fallback: scan visible header text for
+        // a street-address pattern (works on Roots builds that don't
+        // expose useful selectors).
+        if (!ctx.janeStoreText) {
+          var hdr = document.querySelector('header') || document.body;
+          if (hdr) {
+            var hText = (hdr.textContent || '').replace(/\\s+/g, ' ');
+            var match = hText.match(STREET_RE);
+            if (match) {
+              ctx.janeStoreText = match[0];
+              ctx.janeStoreSource = 'dom:street-regex';
+            }
+          }
+        }
+      } catch(e) {}
+    }
+
     // ── Cart (existing, unchanged) ───────────────────────────────────────
     try {
       var raw = localStorage.getItem('shopping-cart');
@@ -1369,6 +1462,13 @@ export async function GET(
       history: history.slice(-10),
       sourceUrl: window.location.href,
       storeId: jane.janeStore || window.__kyraStoreId || selectedStoreId || STORE_ID,
+      // janeStoreText: visible store name/address scraped from the page —
+      // backend address-matches this against the configured store list when
+      // storeId is missing or doesn't match a known store. This is what
+      // catches Roots builds that don't write to ANY of our localStorage
+      // keys but DO show the address in the header picker.
+      janeStoreText: jane.janeStoreText || '',
+      janeStoreSource: jane.janeStoreSource || '',
       orderType: effectiveOrderType,
       cart: jane.cart,
     });
