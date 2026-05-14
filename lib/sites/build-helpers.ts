@@ -145,6 +145,8 @@ export async function assembleSitePages(
     hero_cta_text?: string; hero_cta_link?: string;
     content_sections: unknown; faq: unknown; schema_markup: unknown;
     hidden?: boolean;
+    // Sprint 5: per-page form field definitions for the form-embed CTA.
+    cta_form_fields?: unknown;
   }) => ({
     slug: p.slug,
     type: p.page_type,
@@ -159,6 +161,7 @@ export async function assembleSitePages(
     faq: p.faq,
     schema: p.schema_markup,
     hidden: p.hidden || false,
+    ctaFormFields: p.cta_form_fields ?? null,
   }));
 
   // Filter out hidden pages (P1: section visibility)
@@ -197,6 +200,13 @@ export async function assembleSitePages(
         content_sections: (p.sections || []) as { heading: string; body: string; bullets?: string[]; cta_text?: string; cta_link?: string }[],
         faq: (p.faq || []) as { question: string; answer: string }[],
         schema_markup: p.schema,
+        // Sprint 5: forwarded to the form-embed CTA so the customer's custom
+        // field set renders in place of the legacy hardcoded fields.
+        slug: p.slug,
+        cta_form_fields: p.ctaFormFields as Array<{
+          id: string; label: string; type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'number';
+          required?: boolean; placeholder?: string; options?: string[];
+        }> | null,
       },
       siteData: {
         business_name: constants.name,

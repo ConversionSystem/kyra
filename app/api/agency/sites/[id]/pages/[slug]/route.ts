@@ -18,6 +18,10 @@ const PAGE_REVISION_FIELDS = [
   'hero_h1', 'hero_subtitle', 'hero_cta_text', 'hero_cta_link',
   'content_sections', 'faq', 'schema_markup',
   'hidden',
+  // Sprint 5 — Form Builder + Scheduled Publishing. These are part of the
+  // page edit surface so we snapshot them alongside the rest; Restore would
+  // otherwise silently drop form definitions / schedule changes.
+  'cta_form_fields', 'form_webhook_url', 'publish_at',
 ] as const;
 
 /** Retain the most recent N revisions per page; older rows pruned post-write. */
@@ -110,6 +114,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     'hero_h1', 'hero_subtitle', 'hero_cta_text', 'hero_cta_link',
     'content_sections', 'faq', 'schema_markup',
     'hidden',
+    // Sprint 5 — Form Builder + Scheduled Publishing.
+    'cta_form_fields', 'form_webhook_url', 'publish_at',
   ];
 
   const updates: Record<string, unknown> = {

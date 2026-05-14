@@ -60,6 +60,16 @@ import { WidgetBuilderEmbedded } from '@/components/dashboard/widget-builder-emb
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+/** Sprint 5: a single configurable form field on a page's form-embed CTA. */
+interface FormFieldDef {
+  id: string;
+  label: string;
+  type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'number';
+  required?: boolean;
+  placeholder?: string;
+  options?: string[];
+}
+
 interface SitePage {
   id: string;
   site_id: string;
@@ -77,6 +87,10 @@ interface SitePage {
   edited: boolean;
   edited_at: string | null;
   hidden: boolean;
+  // Sprint 5 additions
+  cta_form_fields: FormFieldDef[] | null;
+  form_webhook_url: string | null;
+  publish_at: string | null;
 }
 
 interface ContentSection {
@@ -217,6 +231,21 @@ function hasUnpublishedChanges(
     if (!Number.isNaN(editedAt) && editedAt > deployedAt + 5_000) return true;
   }
   return false;
+}
+
+/**
+ * Convert a UTC ISO string to the local `YYYY-MM-DDTHH:mm` format expected
+ * by `<input type="datetime-local">`. The native control doesn't accept
+ * timezone offsets, so we have to render in local time. Reverse direction
+ * (input value → ISO) is handled at save time via `new Date(value).toISOString()`.
+ *
+ * Sprint 5 helper.
+ */
+function toLocalDateTimeInput(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 /** Format a UTC ISO string into a relative time like "5 min ago", "2 h ago". */
@@ -699,6 +728,12 @@ function PageSettingsCard({
 }) {
   const [title, setTitle] = useState(page.title || '');
   const [slug, setSlug] = useState(page.slug || '');
+  // Sprint 5: schedule a draft page to auto-publish at a future moment. We
+  // store ISO at the API and bind a `<input type="datetime-local">` here
+  // which gives an OS-native picker without a heavyweight date-lib dep.
+  const [publishAt, setPublishAt] = useState<string>(
+    page.publish_at ? toLocalDateTimeInput(page.publish_at) : ''
+  );
   const [dirty, setDirty] = useState(false);
   // Homepage detection via page_type (the canonical DB signal) — slug ===
   // '/' is unreliable because the DB convention is actually slug='home'
@@ -711,8 +746,9 @@ function PageSettingsCard({
   useEffect(() => {
     setTitle(page.title || '');
     setSlug(page.slug || '');
+    setPublishAt(page.publish_at ? toLocalDateTimeInput(page.publish_at) : '');
     setDirty(false);
-  }, [page.id, page.title, page.slug]);
+  }, [page.id, page.title, page.slug, page.publish_at]);
 
   function normalizeSlug(raw: string): string {
     // DB convention: slugs are stored WITHOUT a leading slash
@@ -731,6 +767,13 @@ function PageSettingsCard({
     const updates: Partial<SitePage> = {};
     if (title.trim() && title !== page.title) updates.title = title.trim();
     if (!isHome && cleanedSlug && cleanedSlug !== page.slug) updates.slug = cleanedSlug;
+    // Sprint 5: publish_at — datetime-local input → ISO UTC. Empty string
+    // means "no schedule"; we send null so the DB column clears.
+    const nextPublishIso = publishAt ? new Date(publishAt).toISOString() : null;
+    const prevPublishIso = page.publish_at ?? null;
+    if (nextPublishIso !== prevPublishIso) {
+      (updates as Record<string, unknown>).publish_at = nextPublishIso;
+    }
     if (Object.keys(updates).length === 0) {
       setDirty(false);
       return;
@@ -787,6 +830,37 @@ function PageSettingsCard({
           </p>
         </div>
 
+        {/* Sprint 5: Scheduled publish. Only meaningful for currently-hidden
+            pages; we still show the control on live pages but explain it's
+            ignored until the page is moved to Draft. */}
+        <div className="space-y-1.5 pt-2 border-t border-gray-100">
+          <label className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+            <Clock className="h-3 w-3" /> Publish at <span className="text-gray-400 font-normal">(optional)</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="datetime-local"
+              value={publishAt}
+              onChange={(e) => { setPublishAt(e.target.value); setDirty(true); }}
+              className="flex-1 h-10 px-3 rounded-md border border-gray-200 bg-white text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+            />
+            {publishAt && (
+              <button
+                onClick={() => { setPublishAt(''); setDirty(true); }}
+                className="px-2 py-1.5 text-[11px] text-gray-500 hover:text-red-500 inline-flex items-center gap-1"
+                title="Clear schedule"
+              >
+                <X className="h-3 w-3" /> Clear
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-gray-500">
+            {page.hidden
+              ? 'This page is a draft. It will auto-publish at the chosen moment (a hourly cron flips it to live).'
+              : 'This page is already live — a schedule has no effect. Move to Draft first if you want auto-publish.'}
+          </p>
+        </div>
+
         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
           <p className="text-[11px] text-gray-400">
             Page type: <span className="font-mono uppercase">{page.page_type || 'page'}</span>
@@ -805,6 +879,254 @@ function PageSettingsCard({
 }
 
 // ── Hero Editor ───────────────────────────────────────────────────────────────
+
+/**
+ * FormBuilderEditor — Sprint 5 (2026-05-14).
+ *
+ * Lets the agency define a custom field set for the page's form-embed CTA,
+ * plus an optional webhook URL that the form-submit endpoint will POST raw
+ * submissions to (Zapier / n8n / custom integrations).
+ *
+ * Empty fields[] means "use the legacy hardcoded Name/Phone/Email/Message"
+ * so existing pages don't change appearance until an agency opts in.
+ *
+ * Submissions inbox is rendered via the SubmissionsInboxButton in the
+ * page header — kept as a separate component to keep this card focused on
+ * configuration vs. data review.
+ */
+function FormBuilderEditor({
+  page,
+  onSave,
+  saving,
+}: {
+  page: SitePage;
+  onSave: (updates: Record<string, unknown>) => void;
+  saving: boolean;
+}) {
+  const [fields, setFields] = useState<FormFieldDef[]>(
+    (page.cta_form_fields && page.cta_form_fields.length > 0)
+      ? page.cta_form_fields
+      : []
+  );
+  const [webhookUrl, setWebhookUrl] = useState(page.form_webhook_url || '');
+  const [dirty, setDirty] = useState(false);
+
+  const fieldTypes: { id: FormFieldDef['type']; label: string }[] = [
+    { id: 'text',     label: 'Text' },
+    { id: 'email',    label: 'Email' },
+    { id: 'tel',      label: 'Phone' },
+    { id: 'textarea', label: 'Long text' },
+    { id: 'select',   label: 'Dropdown' },
+    { id: 'number',   label: 'Number' },
+  ];
+
+  const addField = () => {
+    const newId = `field_${Date.now().toString(36).slice(-5)}`;
+    setFields([...fields, { id: newId, label: '', type: 'text', required: false }]);
+    setDirty(true);
+  };
+  const updateField = (i: number, patch: Partial<FormFieldDef>) => {
+    const next = [...fields];
+    next[i] = { ...next[i], ...patch };
+    setFields(next);
+    setDirty(true);
+  };
+  const removeField = (i: number) => {
+    setFields(fields.filter((_, x) => x !== i));
+    setDirty(true);
+  };
+  const moveField = (i: number, dir: -1 | 1) => {
+    const target = i + dir;
+    if (target < 0 || target >= fields.length) return;
+    const next = [...fields];
+    [next[i], next[target]] = [next[target], next[i]];
+    setFields(next);
+    setDirty(true);
+  };
+  const useDefaults = () => {
+    // Snap to a sensible default contact form.
+    setFields([
+      { id: 'name',    label: 'Full Name',    type: 'text',     required: true,  placeholder: 'Your full name' },
+      { id: 'email',   label: 'Email',        type: 'email',    required: true,  placeholder: 'you@example.com' },
+      { id: 'phone',   label: 'Phone',        type: 'tel',      required: false, placeholder: '(555) 123-4567' },
+      { id: 'message', label: 'How Can We Help?', type: 'textarea', required: true, placeholder: 'Tell us about your project…' },
+    ]);
+    setDirty(true);
+  };
+
+  // Reserved keys: keep the projection columns (`name`/`email`/`phone`) safe
+  // so the submissions inbox can sort by them. Show a hint when the agency
+  // names a field something we extract into a column.
+  const projectionKeys = new Set(['name', 'email', 'phone']);
+
+  return (
+    <CollapsibleCard
+      title="Form Builder"
+      icon={<Edit3 className="h-4 w-4" />}
+      badge={fields.length > 0 ? `${fields.length} fields` : 'Using defaults'}
+    >
+      <div className="space-y-4">
+        <p className="text-[11px] text-gray-500 leading-snug">
+          Configure the contact form embedded on this page. With no fields below, the page
+          uses the standard <strong>Name · Phone · Email · Message</strong> form. Add custom fields to
+          replace it — submissions land in your CRM and the Submissions inbox.
+        </p>
+
+        {fields.length === 0 ? (
+          <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center">
+            <p className="text-xs text-gray-500 mb-3">No custom fields configured. Pages use the default contact form.</p>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={useDefaults}
+                className="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 inline-flex items-center gap-1"
+              >
+                <Sparkles className="h-3 w-3" /> Start from default
+              </button>
+              <button
+                onClick={addField}
+                className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 inline-flex items-center gap-1"
+              >
+                <Plus className="h-3 w-3" /> Add empty field
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {fields.map((f, i) => (
+              <div key={i} className="border border-gray-200 rounded-lg p-2.5 bg-gray-50/50 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-0.5 shrink-0">
+                    <button
+                      onClick={() => moveField(i, -1)}
+                      disabled={i === 0}
+                      className="p-0.5 text-gray-300 hover:text-gray-500 disabled:opacity-30"
+                    >
+                      <ArrowUp className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => moveField(i, 1)}
+                      disabled={i === fields.length - 1}
+                      className="p-0.5 text-gray-300 hover:text-gray-500 disabled:opacity-30"
+                    >
+                      <ArrowDown className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={f.label}
+                    onChange={(e) => updateField(i, { label: e.target.value })}
+                    placeholder="Field label"
+                    className="flex-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <select
+                    value={f.type}
+                    onChange={(e) => updateField(i, { type: e.target.value as FormFieldDef['type'] })}
+                    className="rounded-md border border-gray-200 px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    {fieldTypes.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                  </select>
+                  <button
+                    onClick={() => removeField(i)}
+                    className="p-1.5 text-gray-300 hover:text-red-500"
+                    title="Remove field"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 pl-7">
+                  <input
+                    type="text"
+                    value={f.placeholder || ''}
+                    onChange={(e) => updateField(i, { placeholder: e.target.value })}
+                    placeholder="Placeholder (optional)"
+                    className="flex-1 rounded-md border border-gray-200 px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                  <label className="flex items-center gap-1 text-[11px] text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!f.required}
+                      onChange={(e) => updateField(i, { required: e.target.checked })}
+                      className="h-3.5 w-3.5"
+                    />
+                    Required
+                  </label>
+                </div>
+                {/* Field key + reserved-key hint */}
+                <div className="pl-7 flex items-center gap-2 text-[10px] text-gray-400">
+                  <span className="font-mono">key: {f.id}</span>
+                  {projectionKeys.has(f.id) && (
+                    <span className="text-indigo-500" title="This key is indexed in the submissions inbox for sorting/filtering">
+                      · indexed
+                    </span>
+                  )}
+                </div>
+                {f.type === 'select' && (
+                  <div className="pl-7">
+                    <textarea
+                      value={(f.options || []).join('\n')}
+                      onChange={(e) => updateField(i, { options: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
+                      rows={3}
+                      placeholder="One option per line&#10;e.g. Residential&#10;Commercial&#10;Multi-family"
+                      className="w-full rounded-md border border-gray-200 px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-y bg-white"
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+            <button
+              onClick={addField}
+              className="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 inline-flex items-center gap-1"
+            >
+              <Plus className="h-3 w-3" /> Add Field
+            </button>
+          </div>
+        )}
+
+        {/* Webhook URL */}
+        <div className="pt-2 border-t border-gray-100">
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Webhook URL <span className="text-gray-400 font-normal">(optional)</span>
+          </label>
+          <input
+            type="url"
+            value={webhookUrl}
+            onChange={(e) => { setWebhookUrl(e.target.value); setDirty(true); }}
+            placeholder="https://hooks.zapier.com/..."
+            className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <p className="text-[10px] text-gray-400 mt-1">
+            We&apos;ll POST each submission as JSON to this URL in addition to saving it in your CRM.
+            Delivery status appears in the Submissions inbox.
+          </p>
+        </div>
+
+        <button
+          onClick={() => {
+            // Drop blank labels — they'd render label-less inputs on the live site.
+            const cleaned = fields
+              .filter(f => f.label.trim())
+              .map(f => ({
+                ...f,
+                label: f.label.trim(),
+                placeholder: f.placeholder?.trim() || undefined,
+                options: f.type === 'select' ? (f.options || []) : undefined,
+              }));
+            onSave({
+              cta_form_fields: cleaned.length > 0 ? cleaned : null,
+              form_webhook_url: webhookUrl.trim() || null,
+            });
+            setDirty(false);
+          }}
+          disabled={saving || !dirty}
+          className="w-full px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-1.5"
+        >
+          {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+          Save Form
+        </button>
+      </div>
+    </CollapsibleCard>
+  );
+}
 
 function HeroEditor({
   page,
@@ -3964,6 +4286,15 @@ export default function PageEditor() {
                   <HeroEditor
                     page={selectedPage}
                     photos={site?.photos || []}
+                    onSave={savePageEdits}
+                    saving={saving}
+                  />
+
+                  {/* Sprint 5: Form Builder — configures cta_form_fields +
+                      form_webhook_url for this page's form-embed CTA. Empty
+                      fields[] preserves the legacy contact form. */}
+                  <FormBuilderEditor
+                    page={selectedPage}
                     onSave={savePageEdits}
                     saving={saving}
                   />

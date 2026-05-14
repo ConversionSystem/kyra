@@ -26,6 +26,9 @@ const RESTORABLE_FIELDS = [
   'hero_h1', 'hero_subtitle', 'hero_cta_text', 'hero_cta_link',
   'content_sections', 'faq', 'schema_markup',
   'hidden',
+  // Sprint 5 — kept aligned with PAGE_REVISION_FIELDS so Restore rolls
+  // these back too (form definitions, webhook, scheduled publish).
+  'cta_form_fields', 'form_webhook_url', 'publish_at',
 ] as const;
 
 export async function POST(_request: NextRequest, { params }: RouteContext) {

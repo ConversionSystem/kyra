@@ -156,6 +156,17 @@ export interface AssemblePageOptions {
     content_sections?: ContentSection[];
     faq?: FaqItem[];
     schema_markup?: unknown;
+    /** Slug — used by the form-embed CTA for submission attribution. Sprint 5. */
+    slug?: string;
+    /** Per-page form field definitions for the form-embed CTA. Sprint 5. */
+    cta_form_fields?: Array<{
+      id: string;
+      label: string;
+      type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'number';
+      required?: boolean;
+      placeholder?: string;
+      options?: string[];
+    }> | null;
   };
   siteData: {
     business_name: string;
@@ -400,6 +411,10 @@ export function assemblePage(options: AssemblePageOptions): string {
     businessName: siteData.business_name,
     emergencyText: siteData.emergencyText,
     clientId: siteData.widget_client_id,
+    // Sprint 5: per-page custom form fields. When set, the form-embed
+    // template switches its render + posts to /api/sites/form-submit.
+    customFields: pageData.cta_form_fields || undefined,
+    pageSlug: pageData.slug,
     colors,
     designStyle: activeDesignStyle,
   });

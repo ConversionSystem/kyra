@@ -226,6 +226,14 @@ export async function GET(
   var STORE_ID = ${JSON.stringify((cfg.jane_default_store_id as string) || '')};
   var JANE_STORES = ${JSON.stringify((cfg.jane_stores as Array<{ id: string; name: string; address?: string }>) || [])};
   var STORAGE_KEY = 'kyra_session_' + CLIENT_ID;
+  // Agent-takeover poll loop state. Cursor lives in localStorage so reloads
+  // and page nav don't re-render the same agent reply twice. The 6s poll
+  // interval is the floor that keeps the experience feeling live without
+  // burning the 30/min rate limit at /api/widget/.../poll.
+  var POLL_CURSOR_KEY = 'kyra_agent_cursor_' + CLIENT_ID;
+  var AGENT_POLL_INTERVAL_MS = 6000;
+  var agentPollTimer = null;
+  var agentJoinedAnnounced = false;
   // Age gate (cannabis compliance) — strictly OPT-IN per client.
   // Most dispensary websites already have a site-wide 21+ gate, so doubling
   // up inside the widget is redundant and adds an extra click for every
