@@ -4,6 +4,25 @@ import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { regeneratePage } from '@/lib/sites/content-engine';
 import type { ClientSite } from '@/lib/sites/types';
 
+/**
+ * Canonical list of fields snapshotted into `page_revisions` before each
+ * PATCH. Keep this aligned with `allowedFields` below — they're the same
+ * surface, but the revisions table needs an explicit projection because
+ * we don't want to snapshot derived/generated columns (html_content,
+ * generated_at, generation_cost, etc.) that aren't customer-edited.
+ *
+ * Sprint 4 — Page Version History (2026-05-14).
+ */
+const PAGE_REVISION_FIELDS = [
+  'title', 'slug', 'meta_title', 'meta_description',
+  'hero_h1', 'hero_subtitle', 'hero_cta_text', 'hero_cta_link',
+  'content_sections', 'faq', 'schema_markup',
+  'hidden',
+] as const;
+
+/** Retain the most recent N revisions per page; older rows pruned post-write. */
+const PAGE_REVISION_RETENTION = 30;
+
 interface RouteContext {
   params: Promise<{ id: string; slug: string }>;
 }
@@ -157,6 +176,31 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
   const supabase = createServiceClientWithoutCookies();
 
+  // ── Version-history snapshot (Sprint 4) ───────────────────────────────
+  // Snapshot the PREVIOUS page state before writing the update. This is
+  // best-effort: a snapshot failure must NOT block the customer's save
+  // (e.g. if the page_revisions table is missing during migration window,
+  // we'd rather lose history for that one save than reject the edit).
+  // The actual write happens via Promise so we can await + log but never
+  // throw to the caller path.
+  const currentPage = result.page!;
+  const snapshot: Record<string, unknown> = {};
+  for (const f of PAGE_REVISION_FIELDS) {
+    snapshot[f] = (currentPage as Record<string, unknown>)[f];
+  }
+  await supabase
+    .from('page_revisions')
+    .insert({
+      site_id: siteId,
+      page_id: currentPage.id,
+      snapshot,
+      edited_by: auth.data.user.id,
+      note: 'note' in body ? String(body.note).slice(0, 200) : null,
+    })
+    .then(({ error: revErr }) => {
+      if (revErr) console.error('[sites/pages] snapshot insert failed:', revErr);
+    }, () => {});
+
   const { data: page, error } = await supabase
     .from('site_pages')
     .update(updates)
@@ -168,6 +212,31 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     console.error('[sites/pages] Failed to update page:', error);
     return NextResponse.json({ error: 'Failed to update page' }, { status: 500 });
   }
+
+  // Retention sweep — keep the latest N revisions, drop older ones. This
+  // runs after the success path so a sweep failure can't reject the save.
+  // Postgres-native delete-by-subquery: select the ids beyond the retention
+  // window, then delete them. Cheaper than a full ORDER BY DESC scan.
+  void (async () => {
+    try {
+      const { data: keep } = await supabase
+        .from('page_revisions')
+        .select('id')
+        .eq('page_id', currentPage.id)
+        .order('created_at', { ascending: false })
+        .limit(PAGE_REVISION_RETENTION);
+      const keepIds = (keep || []).map((r) => r.id);
+      if (keepIds.length === PAGE_REVISION_RETENTION) {
+        await supabase
+          .from('page_revisions')
+          .delete()
+          .eq('page_id', currentPage.id)
+          .not('id', 'in', `(${keepIds.map((id) => `"${id}"`).join(',')})`);
+      }
+    } catch (err) {
+      console.error('[sites/pages] revision retention sweep failed:', err);
+    }
+  })();
 
   // NOTE: Rebuild is triggered explicitly by the user via the "Publish to Live Site" button
   // which calls POST /api/agency/sites/[id]/build — do NOT auto-trigger here.
