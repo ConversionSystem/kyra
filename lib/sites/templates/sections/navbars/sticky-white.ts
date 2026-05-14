@@ -1,13 +1,55 @@
+interface NavbarLink {
+  label: string;
+  href: string;
+  /** Optional dropdown children — when present the link renders as a menu group. */
+  children?: Array<{ label: string; href: string }>;
+}
+
 interface NavbarData {
   businessName: string;
   logoUrl?: string;
   phone?: string;
   phoneHref?: string;
   bookingUrl?: string;
-  links?: Array<{ label: string; href: string }>;
+  links?: NavbarLink[];
   colors: { primary: string; secondary: string };
   designStyle?: string;
   emergencyText?: string;
+}
+
+/**
+ * Render a single nav entry — flat link or hover-dropdown group. Pure CSS
+ * dropdown (group-hover) so it works without JS in the static HTML output.
+ * Kept here so all navbar variants can share the same dropdown markup.
+ */
+function renderNavEntry(
+  l: NavbarLink,
+  opts: { primary: string; baseColor: string; isDark: boolean },
+): string {
+  const baseLinkCss = opts.isDark
+    ? `class="text-sm text-gray-300 hover:text-white transition"`
+    : `class="text-sm font-semibold transition-colors" style="color: ${opts.baseColor}; text-decoration: none;" onmouseover="this.style.color='${opts.primary}'" onmouseout="this.style.color='${opts.baseColor}'"`;
+
+  if (!l.children || l.children.length === 0) {
+    return `<a href="${l.href}" ${baseLinkCss}>${l.label}</a>`;
+  }
+  // Dropdown group
+  const itemCss = opts.isDark
+    ? `class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition"`
+    : `class="block px-4 py-2 text-sm" style="color: #374151;" onmouseover="this.style.background='#f9fafb'; this.style.color='${opts.primary}'" onmouseout="this.style.background='transparent'; this.style.color='#374151'"`;
+  const items = l.children.map(c => `<a href="${c.href}" ${itemCss}>${c.label}</a>`).join('');
+  const panelBg = opts.isDark ? 'background: #111827; border: 1px solid rgba(255,255,255,0.08);' : 'background: #ffffff; border: 1px solid #e5e7eb;';
+  return `<div class="relative group">
+    <button type="button" ${baseLinkCss} aria-haspopup="true" aria-expanded="false" style="display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; padding: 0; cursor: pointer;">
+      ${l.label}
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="absolute left-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-opacity" style="min-width: 200px; z-index: 60;">
+      <div style="${panelBg} border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.12); padding: 6px 0;">
+        ${items}
+      </div>
+    </div>
+  </div>`;
 }
 
 // ─── SVG Icons (Lucide-compatible) ───────────────────────────────────────────
@@ -27,21 +69,28 @@ export function stickyWhiteNavbar(data: NavbarData): string {
     ? `<img src="${data.logoUrl}" alt="${data.businessName}" style="height: 36px; width: auto;">`
     : `<span style="font-size: 1.25rem; font-weight: 900; color: ${primary}; letter-spacing: -0.02em;">${data.businessName}</span>`;
 
-  const defaultLinks = [
+  const defaultLinks: NavbarLink[] = [
     { label: 'Home', href: '#top' },
     { label: 'Services', href: '#services' },
     { label: 'About', href: '#about' },
     { label: 'Reviews', href: '#testimonials' },
     { label: 'Contact', href: '#contact' },
   ];
-  const links = data.links || defaultLinks;
+  const links: NavbarLink[] = data.links || defaultLinks;
   const navLinks = links.map(l =>
-    `<a href="${l.href}" class="text-sm font-semibold transition-colors" style="color: #374151; text-decoration: none;" onmouseover="this.style.color='${primary}'" onmouseout="this.style.color='#374151'">${l.label}</a>`
+    renderNavEntry(l, { primary, baseColor: '#374151', isDark: false })
   ).join('\n      ');
 
-  const mobileLinks = links.map(l =>
-    `<a href="${l.href}" class="block py-2.5 px-3 text-sm font-semibold rounded-lg transition-colors" style="color: #374151;" onmouseover="this.style.color='${primary}'" onmouseout="this.style.color='#374151'" onclick="document.getElementById('kyra-mobile-menu').classList.add('hidden')">${l.label}</a>`
-  ).join('\n    ');
+  // Mobile menu flattens dropdowns — parent + its children all render as
+  // tappable rows. The parent gets a subtle disclosure label suffix.
+  const mobileLinks = links.flatMap(l => {
+    const parent = `<a href="${l.href}" class="block py-2.5 px-3 text-sm font-semibold rounded-lg transition-colors" style="color: #374151;" onmouseover="this.style.color='${primary}'" onmouseout="this.style.color='#374151'" onclick="document.getElementById('kyra-mobile-menu').classList.add('hidden')">${l.label}</a>`;
+    if (!l.children || l.children.length === 0) return [parent];
+    const kids = l.children.map(c =>
+      `<a href="${c.href}" class="block py-2 pl-7 pr-3 text-sm rounded-lg transition-colors" style="color: #6b7280;" onmouseover="this.style.color='${primary}'" onmouseout="this.style.color='#6b7280'" onclick="document.getElementById('kyra-mobile-menu').classList.add('hidden')">${c.label}</a>`
+    );
+    return [parent, ...kids];
+  }).join('\n    ');
 
   const phoneCta = data.phone
     ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="hidden sm:flex items-center gap-2 font-bold text-sm px-5 py-2.5 rounded-lg whitespace-nowrap transition-opacity hover:opacity-85" style="background: ${primary}; color: #ffffff; text-decoration: none;">
@@ -108,17 +157,17 @@ export function stickyWhiteNavbar(data: NavbarData): string {
 }
 
 function modernDarkNavbar(data: NavbarData, _primary: string): string {
-  const defaultLinks = [
+  const defaultLinks: NavbarLink[] = [
     { label: 'Services', href: '#services' },
     { label: 'About', href: '#about' },
     { label: 'Reviews', href: '#testimonials' },
     { label: 'FAQ', href: '#faq' },
     { label: 'Contact', href: '#contact' },
   ];
-  const links = data.links || defaultLinks;
+  const links: NavbarLink[] = data.links || defaultLinks;
 
   const navLinks = links.map(l =>
-    `<a class="text-sm text-gray-300 hover:text-white transition" href="${l.href}">${l.label}</a>`
+    renderNavEntry(l, { primary: _primary, baseColor: '#d1d5db', isDark: true })
   ).join('');
 
   const phoneHref = data.phoneHref || (data.phone ? `tel:${data.phone}` : '#');

@@ -26,6 +26,8 @@ import {
   Plus,
   BookOpen,
   Send,
+  ChevronDown,
+  Copy,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -71,6 +73,30 @@ interface WebsiteTabProps {
 }
 
 // ── Status Badge ──────────────────────────────────────────────────────────────
+
+/**
+ * Squeeze the raw `site_deploys.notes` blob (provisioner output + stack
+ * traces) down to a single readable sentence for the banner headline. Common
+ * shapes we want to surface cleanly:
+ *   - "fetch failed: ECONNREFUSED" → "Provisioner unreachable"
+ *   - "timeout after 180s"          → "Build timed out (180s)"
+ *   - "HTTP 502 Bad Gateway"        → "Provisioner returned 502"
+ *   - Anything else                 → first line, trimmed to 120 chars
+ */
+function summarizeDeployError(raw: string): string {
+  const text = raw.trim();
+  if (/econnrefused|fetch failed|enotfound|network/i.test(text)) return 'Provisioner unreachable';
+  if (/timeout|timed? out/i.test(text)) {
+    const m = text.match(/(\d+)\s*s/i);
+    return m ? `Build timed out (${m[1]}s)` : 'Build timed out';
+  }
+  const httpMatch = text.match(/HTTP\s+(\d{3})/i) || text.match(/status[:\s]+(\d{3})/i);
+  if (httpMatch) return `Provisioner returned ${httpMatch[1]}`;
+  if (/no domain|domain not configured/i.test(text)) return 'No domain configured';
+  if (/sanitiz|invalid html|malformed/i.test(text)) return 'Generated HTML failed validation';
+  const firstLine = text.split('\n')[0].replace(/^\[.*?\]\s*/, '').trim();
+  return firstLine.length > 120 ? firstLine.slice(0, 117) + '...' : firstLine;
+}
 
 function StatusBadge({ status }: { status: SiteData['status'] }) {
   const styles: Record<string, string> = {
@@ -661,6 +687,12 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
   const [site, setSite] = useState<SiteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  // Last failed deploy — fetched when site.status === 'error' so we can show
+  // the actual provisioner error instead of a generic "Last action failed".
+  const [lastFailedDeploy, setLastFailedDeploy] = useState<{
+    id: string; status: string; notes: string | null; deployed_at: string;
+  } | null>(null);
+  const [showFailureDetails, setShowFailureDetails] = useState(false);
 
   useEffect(() => {
     async function fetchSite() {
@@ -692,6 +724,29 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
       if (siteData?.id) setSite(siteData);
     }
   }, [clientId]);
+
+  // When the site lands in `error`, pull the most-recent failed deploy so the
+  // banner can show the actual reason. Cleared otherwise so the banner doesn't
+  // flash stale errors after a successful retry.
+  useEffect(() => {
+    if (!site || site.status !== 'error') {
+      setLastFailedDeploy(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/agency/sites/${site.id}/deploys`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const result = await res.json();
+        const failed = (result.data || []).find((d: { status: string }) => d.status === 'failed');
+        if (!cancelled && failed) setLastFailedDeploy(failed);
+      } catch (err) {
+        console.error('[website-tab] fetch deploys', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [site?.status, site?.id]);
 
   // Poll for status updates while site is generating/building/deploying
   // Auto-calls sync-status to self-heal if build finished on VPS but DB is stuck
@@ -827,22 +882,59 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
       )}
 
       {/* ── Error banner ──────────────────────────────────────────── */}
-      {site.status === 'error' && site.last_deployed_at && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-amber-800">Last action failed</p>
-            <p className="text-xs text-amber-700 mt-0.5">
-              The site is still live from its last successful deploy. Click <strong>Redeploy</strong> to retry.
-            </p>
+      {/* Shows the actual provisioner error from site_deploys.notes when
+          available, plus expandable raw error + Copy button. Previously this
+          was a generic "Last action failed" with no path to debug. */}
+      {site.status === 'error' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-amber-800">Last action failed</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                {site.last_deployed_at
+                  ? 'The site is still live from its last successful deploy. '
+                  : 'No successful deploys yet. '}
+                {lastFailedDeploy?.notes
+                  ? <>Reason: <span className="font-medium">{summarizeDeployError(lastFailedDeploy.notes)}</span></>
+                  : 'Click Redeploy to retry.'}
+              </p>
+              {lastFailedDeploy?.notes && (
+                <button
+                  onClick={() => setShowFailureDetails(v => !v)}
+                  className="text-xs text-amber-700 hover:text-amber-900 mt-1.5 inline-flex items-center gap-1 font-medium"
+                >
+                  <ChevronDown className={`h-3 w-3 transition-transform ${showFailureDetails ? 'rotate-180' : ''}`} />
+                  {showFailureDetails ? 'Hide details' : 'Show full error'}
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => handleAction('redeploy')}
+              disabled={!!actionLoading}
+              className="shrink-0 text-xs font-medium bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg transition"
+            >
+              {actionLoading === 'redeploy' ? 'Deploying\u2026' : 'Redeploy Now'}
+            </button>
           </div>
-          <button
-            onClick={() => handleAction('redeploy')}
-            disabled={!!actionLoading}
-            className="shrink-0 text-xs font-medium bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg transition"
-          >
-            {actionLoading === 'redeploy' ? 'Deploying\u2026' : 'Redeploy Now'}
-          </button>
+          {showFailureDetails && lastFailedDeploy?.notes && (
+            <div className="mt-3 ml-8 bg-amber-100/60 border border-amber-200 rounded-lg p-3">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <span className="text-[10px] uppercase tracking-wide text-amber-700 font-semibold">
+                  Build log {'\u00b7'} {new Date(lastFailedDeploy.deployed_at).toLocaleString()}
+                </span>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(lastFailedDeploy.notes || '').catch(() => {}); }}
+                  className="text-[10px] text-amber-700 hover:text-amber-900 inline-flex items-center gap-1 font-medium"
+                >
+                  <Copy className="h-3 w-3" /> Copy
+                </button>
+              </div>
+              <pre className="text-[11px] text-amber-900 whitespace-pre-wrap break-words font-mono max-h-48 overflow-y-auto">
+                {lastFailedDeploy.notes}
+              </pre>
+            </div>
+          )}
         </div>
       )}
 

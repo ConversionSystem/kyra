@@ -13,6 +13,9 @@ interface FooterData {
   designStyle?: string;
   footerTagline?: string;
   socialLinks?: Record<string, string>;
+  /** Forwarded from the Footer Builder; this variant ignores it but accepts
+   *  it so the assembler's call site stays uniform across all footer variants. */
+  customColumns?: Array<{ title: string; links: Array<{ label: string; href: string }> }>;
 }
 
 export function mapContactFooter(data: FooterData): string {

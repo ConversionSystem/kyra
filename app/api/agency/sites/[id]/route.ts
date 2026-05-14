@@ -74,8 +74,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     'logo_url', 'photos', 'color_primary', 'color_secondary', 'design_style', 'tagline',
     'ai_name', 'ai_tone', 'ai_capabilities', 'booking_url', 'email',
     'template_id', 'site_domain', 'site_subdomain',
-    // Navigation & Footer
-    'nav_links', 'footer_tagline', 'social_links',
+    // Navigation & Footer (2026-05-14: added variant pickers + custom footer columns
+    // as part of the Header/Footer Builder upgrade — see migration 20260514001).
+    'nav_links', 'navbar_variant',
+    'footer_tagline', 'footer_variant', 'footer_columns',
+    'social_links',
     // P2: Visual Section Management
     'section_order', 'section_overrides',
     // Settings page fields

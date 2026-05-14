@@ -185,10 +185,16 @@ export interface AssemblePageOptions {
     state?: string;
     /** Real Google/site reviews — used instead of placeholders when available */
     reviews?: Array<{ author_name: string; text: string; rating: number; time_description?: string }>;
-    /** Custom nav links from DB */
-    navLinks?: Array<{ label: string; href: string }> | null;
+    /** Custom nav links from DB. Each link may include `children` for dropdowns. */
+    navLinks?: Array<{ label: string; href: string; children?: Array<{ label: string; href: string }> }> | null;
+    /** Navbar variant override (e.g. 'sticky-white'). Falls back to recipe.navbar. */
+    navbarVariant?: string | null;
     /** Custom footer tagline from DB */
     footerTagline?: string | null;
+    /** Footer variant override (e.g. 'four-column'). Falls back to recipe.footer. */
+    footerVariant?: string | null;
+    /** Custom footer columns. When non-empty, overrides auto-fill from services/cities. */
+    footerColumns?: Array<{ title: string; links: Array<{ label: string; href: string }> }> | null;
     /** Social media links from DB */
     socialLinks?: Record<string, string> | null;
     whyChoose?: Array<{ title: string; description: string }>;
@@ -230,8 +236,13 @@ export function assemblePage(options: AssemblePageOptions): string {
   const testimonialsFn = TESTIMONIALS[effectiveRecipe.testimonials] || TESTIMONIALS['grid-cards'];
   const ctaFn = CTAS[effectiveRecipe.cta] || CTAS['form-embed'];
   const faqFn = FAQS[effectiveRecipe.faq] || FAQS['accordion'];
-  const footerFn = FOOTERS[effectiveRecipe.footer] || FOOTERS['four-column'];
-  const navbarFn = NAVBARS[effectiveRecipe.navbar] || NAVBARS['sticky-white'];
+  // 2026-05-14: site-level variant overrides from agency Header/Footer
+  // builders. They win over the template recipe so customers can swap the
+  // header/footer without changing template. NULL falls back to recipe.
+  const effectiveNavbar = siteData.navbarVariant || effectiveRecipe.navbar;
+  const effectiveFooter = siteData.footerVariant || effectiveRecipe.footer;
+  const footerFn = FOOTERS[effectiveFooter] || FOOTERS['four-column'];
+  const navbarFn = NAVBARS[effectiveNavbar] || NAVBARS['sticky-white'];
 
   // Colors object passed to every section (required after main branch section refactor)
   const colors = {
@@ -409,6 +420,11 @@ export function assemblePage(options: AssemblePageOptions): string {
     footerTagline: siteData.footerTagline || undefined,
     socialLinks: siteData.socialLinks || undefined,
     designStyle: activeDesignStyle,
+    // Custom column override from the Footer Builder. The four-column template
+    // checks this first and falls back to auto-fill from services/cities.
+    customColumns: siteData.footerColumns && siteData.footerColumns.length > 0
+      ? siteData.footerColumns
+      : undefined,
   });
 
   // Schema markup — build comprehensive schemas based on page type

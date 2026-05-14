@@ -60,6 +60,29 @@ export interface SitePhoto {
 export interface NavLink {
   label: string;
   href: string;
+  /**
+   * Optional dropdown children. When present, the navbar renders this entry
+   * as a menu group instead of a flat link. The parent `href` becomes the
+   * group's clickable label; if you want the parent label to be inert, pass
+   * href='#'. Added 2026-05-14 with the Header Builder upgrade.
+   */
+  children?: { label: string; href: string }[];
+}
+
+/** Navbar variant — must match a key in `NAVBARS` map in templates/assembler.ts. */
+export type NavbarVariant = 'sticky-white' | 'transparent-overlay' | 'hamburger';
+
+/** Footer variant — must match a key in `FOOTERS` map. */
+export type FooterVariant = 'map-contact' | 'four-column' | 'minimal';
+
+/**
+ * A custom footer column — overrides the auto-generated services / cities /
+ * contact columns when present. Empty `footer_columns` falls back to the
+ * variant's default auto-fill behavior for backwards compatibility.
+ */
+export interface FooterColumn {
+  title: string;
+  links: { label: string; href: string }[];
 }
 
 export interface SocialLinks {
@@ -122,7 +145,17 @@ export interface ClientSite {
 
   // Navigation & Footer
   nav_links: NavLink[] | null;
+  /** Navbar variant chosen by the agency. NULL = use template recipe default. */
+  navbar_variant: NavbarVariant | null;
   footer_tagline: string | null;
+  /** Footer variant chosen by the agency. NULL = use template recipe default. */
+  footer_variant: FooterVariant | null;
+  /**
+   * Custom footer columns. When non-empty, the footer template uses these
+   * instead of auto-generating service/city columns. Backwards-compatible:
+   * NULL or [] preserves the legacy auto-fill behavior.
+   */
+  footer_columns: FooterColumn[] | null;
   social_links: SocialLinks | null;
 
   // P2: Visual Section Management

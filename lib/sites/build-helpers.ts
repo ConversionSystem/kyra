@@ -223,7 +223,10 @@ export async function assembleSitePages(
         colorSecondary: theme.colorSecondary,
         reviews: siteReviews,
         navLinks: site.nav_links || null,
+        navbarVariant: site.navbar_variant || null,
         footerTagline: site.footer_tagline || null,
+        footerVariant: site.footer_variant || null,
+        footerColumns: site.footer_columns || null,
         socialLinks: site.social_links || null,
         // Auto-generate Why Choose items for modern-dark sites
         whyChoose: [

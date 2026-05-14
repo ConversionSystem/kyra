@@ -4,7 +4,9 @@ interface NavbarData {
   phone?: string;
   phoneHref?: string;
   bookingUrl?: string;
-  links?: Array<{ label: string; href: string }>;
+  /** Children accepted for type compatibility with other navbar variants; this
+   *  variant renders only the parent label (no dropdown UI). */
+  links?: Array<{ label: string; href: string; children?: Array<{ label: string; href: string }> }>;
   colors: { primary: string; secondary: string };
 }
 
