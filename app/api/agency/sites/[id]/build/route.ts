@@ -313,6 +313,8 @@ async function buildAndDeploy(site: any, supabase: any) {
     metaTitle: string; metaDescription: string;
     heroH1: string; heroSubtitle: string;
     sections: unknown; faq: unknown; schema: unknown;
+    // Sprint 5: forwarded from the first mapper above.
+    ctaFormFields?: unknown;
   }) => ({
     slug: p.slug,
     type: p.type,
