@@ -180,6 +180,10 @@ export interface AssemblePageOptions {
     tagline?: string;
     colorPrimary?: string;
     colorSecondary?: string;
+    /** Font-family id (preset key) — see FONT_OPTIONS in design-system.ts. */
+    fontFamily?: string | null;
+    /** Border-radius preset id (sharp/subtle/default/rounded/pill) or raw CSS. */
+    borderRadius?: string | null;
     domain?: string;
     city?: string;
     state?: string;
@@ -514,7 +518,13 @@ export function assemblePage(options: AssemblePageOptions): string {
   const colorPrimary = colorVars.match(/--color-primary:\s*([^;]+);/)?.[1]?.trim() || '#4f46e5';
   const colorSecondary = colorVars.match(/--color-secondary:\s*([^;]+);/)?.[1]?.trim() || '#111827';
   // getDesignCSS returns a full block starting with :root { ... } — we only want the rules after that
-  const fullDesignCSS = getDesignCSS(activeDesignStyle, colorPrimary, colorSecondary);
+  const fullDesignCSS = getDesignCSS(
+    activeDesignStyle,
+    colorPrimary,
+    colorSecondary,
+    siteData.fontFamily,
+    siteData.borderRadius,
+  );
   // Strip the :root block (already handled by colorVars) to avoid duplication
   const designOverrideCSS = fullDesignCSS.replace(/:root\s*\{[^}]*\}\s*/g, '').trim();
 

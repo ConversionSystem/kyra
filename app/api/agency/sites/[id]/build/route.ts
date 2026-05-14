@@ -463,6 +463,10 @@ async function buildAndDeploy(site: any, supabase: any) {
         tagline: constants.tagline,
         colorPrimary: theme.colorPrimary,
         colorSecondary: theme.colorSecondary,
+        // Theme tokens (2026-05-14): forwarded into the assembler so font +
+        // radius selections from the editor actually reach the live CSS.
+        fontFamily: site.font_family || null,
+        borderRadius: site.border_radius || null,
         domain,
         city: address.city || undefined,
         state: address.state || undefined,

@@ -72,6 +72,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     'business_name', 'industry', 'phone', 'address', 'owner_name', 'owner_story',
     'years_in_business', 'license', 'services', 'cities', 'hours', 'rating', 'review_count',
     'logo_url', 'photos', 'color_primary', 'color_secondary', 'design_style', 'tagline',
+    // Theme tokens (2026-05-14 Sprint 2 — see migration 20260514002).
+    'font_family', 'border_radius',
     'ai_name', 'ai_tone', 'ai_capabilities', 'booking_url', 'email',
     'template_id', 'site_domain', 'site_subdomain',
     // Navigation & Footer (2026-05-14: added variant pickers + custom footer columns

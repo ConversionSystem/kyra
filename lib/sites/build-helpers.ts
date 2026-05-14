@@ -221,6 +221,10 @@ export async function assembleSitePages(
         tagline: constants.tagline,
         colorPrimary: theme.colorPrimary,
         colorSecondary: theme.colorSecondary,
+        // Theme tokens (2026-05-14). NULL on legacy rows → assembler falls
+        // back to FONT_OPTIONS[0].stack and RADIUS_PRESETS.default.
+        fontFamily: site.font_family || null,
+        borderRadius: site.border_radius || null,
         reviews: siteReviews,
         navLinks: site.nav_links || null,
         navbarVariant: site.navbar_variant || null,
