@@ -1,3 +1,20 @@
+/**
+ * A single form field definition. Mirrors the editor's FormFieldEditor shape
+ * exactly so cta_form_fields can be saved + rendered with no transform.
+ *
+ * Sprint 5 (2026-05-14).
+ */
+export interface FormField {
+  id: string;
+  label: string;
+  /** HTML input type — restricted to safe set to avoid e.g. type="file". */
+  type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'number';
+  required?: boolean;
+  placeholder?: string;
+  /** Options for type='select' — array of plain strings. */
+  options?: string[];
+}
+
 interface CtaData {
   heading?: string;
   subtitle?: string;
@@ -7,7 +24,15 @@ interface CtaData {
   businessName?: string;
   emergencyText?: string;
   clientId?: string;
+  /** Sprint 5: when set, the form renders these instead of the legacy
+   *  Name/Phone/Email/Message defaults, and posts to /api/sites/form-submit. */
+  customFields?: FormField[];
+  /** Site ID for the form-submit endpoint (sets agency scope server-side). */
+  siteId?: string;
+  /** Slug of the current page — used for attribution + per-page webhook lookup. */
+  pageSlug?: string;
   colors: { primary: string; secondary: string };
+  designStyle?: string;
 }
 
 export function formEmbedCta(data: CtaData): string {
@@ -24,6 +49,37 @@ export function formEmbedCta(data: CtaData): string {
   ];
 
   const inputStyle = 'style="width: 100%; box-sizing: border-box; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 0.95rem; color: #111827; background: #ffffff; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor=\'' + primary + '\'" onblur="this.style.borderColor=\'#e5e7eb\'"';
+
+  // Sprint 5: when the agency has defined custom fields, render those and
+  // point the form at /api/sites/form-submit. Otherwise fall back to the
+  // legacy hardcoded name/phone/email/message shape pointing at
+  // /api/sites/contact so existing live sites are unaffected.
+  const useCustomFields = !!(data.customFields && data.customFields.length > 0);
+  const esc = (s: string) =>
+    String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const attr = (s: string) => esc(s).replace(/'/g, '&#39;');
+
+  const renderCustomFields = (): string => {
+    if (!data.customFields) return '';
+    return data.customFields
+      .map((f) => {
+        const id = `kyra-field-${attr(f.id)}`;
+        const name = attr(f.id);
+        const label = `<label for="${id}" style="display: block; font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 6px;">${esc(f.label)}${f.required ? ' *' : ''}</label>`;
+        const ph = f.placeholder ? `placeholder="${attr(f.placeholder)}"` : '';
+        const req = f.required ? 'required' : '';
+        if (f.type === 'textarea') {
+          return `<div>${label}<textarea id="${id}" name="${name}" ${req} ${ph} rows="4" style="width: 100%; box-sizing: border-box; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 0.95rem; color: #111827; background: #ffffff; outline: none; transition: border-color 0.2s; resize: vertical; font-family: inherit;" onfocus="this.style.borderColor='${primary}'" onblur="this.style.borderColor='#e5e7eb'"></textarea></div>`;
+        }
+        if (f.type === 'select') {
+          const opts = (f.options || []).map((o) => `<option value="${attr(o)}">${esc(o)}</option>`).join('');
+          return `<div>${label}<select id="${id}" name="${name}" ${req} ${inputStyle}><option value="">${esc(f.placeholder || 'Select…')}</option>${opts}</select></div>`;
+        }
+        const htmlType = f.type === 'number' ? 'number' : f.type === 'email' ? 'email' : f.type === 'tel' ? 'tel' : 'text';
+        return `<div>${label}<input type="${htmlType}" id="${id}" name="${name}" ${req} ${ph} ${inputStyle} /></div>`;
+      })
+      .join('\n          ');
+  };
 
   return `<section class="py-16 sm:py-20 px-4 sm:px-6 lg:px-8" style="background: #f8fafc;" aria-label="Contact form section" id="contact">
   <div class="max-w-5xl mx-auto">
@@ -53,8 +109,8 @@ export function formEmbedCta(data: CtaData): string {
       <div class="px-8 py-10 sm:p-14" style="background: #ffffff;">
         <h3 style="font-size: 1.4rem; font-weight: 800; color: #111827; margin: 0 0 0.5rem 0;">Send Us a Message</h3>
         <p style="color: #6b7280; font-size: 0.9rem; margin: 0 0 2rem 0;">We'll get back to you within 1 hour.</p>
-        <form id="kyra-contact-form" onsubmit="kyraSubmitForm(event)" data-client-id="${data.clientId || ''}" data-business-name="${data.businessName || ''}" style="display: flex; flex-direction: column; gap: 1.1rem;">
-          <div>
+        <form id="kyra-contact-form" onsubmit="kyraSubmitForm(event)" data-client-id="${data.clientId || ''}" data-business-name="${data.businessName || ''}" data-site-id="${attr(data.siteId || '')}" data-page-slug="${attr(data.pageSlug || '')}" data-use-fields="${useCustomFields ? '1' : '0'}" style="display: flex; flex-direction: column; gap: 1.1rem;">
+          ${useCustomFields ? renderCustomFields() : `<div>
             <label for="kyra-name" style="display: block; font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 6px;">Full Name *</label>
             <input type="text" id="kyra-name" name="name" required placeholder="Your full name" ${inputStyle} />
           </div>
@@ -69,7 +125,7 @@ export function formEmbedCta(data: CtaData): string {
           <div>
             <label for="kyra-message" style="display: block; font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 6px;">How Can We Help? *</label>
             <textarea id="kyra-message" name="message" rows="4" required placeholder="Tell us about your project or question..." style="width: 100%; box-sizing: border-box; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 0.95rem; color: #111827; background: #ffffff; outline: none; transition: border-color 0.2s; resize: vertical; font-family: inherit;" onfocus="this.style.borderColor='${primary}'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
-          </div>
+          </div>`}
           <button type="submit" style="width: 100%; padding: 14px; background: ${primary}; color: #ffffff; font-weight: 800; font-size: 1.05rem; border: none; border-radius: 12px; cursor: pointer; transition: opacity 0.2s, transform 0.2s; box-shadow: 0 6px 20px ${primary}50;" onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'" onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
             Get My Free Quote →
           </button>
@@ -82,19 +138,43 @@ export function formEmbedCta(data: CtaData): string {
           var form = document.getElementById("kyra-contact-form");
           var btn = form.querySelector("button[type=submit]");
           var status = document.getElementById("kyra-form-status");
-          var data = {
-            name: form.querySelector("[name=name]").value,
-            email: form.querySelector("[name=email]").value,
-            phone: form.querySelector("[name=phone]") ? form.querySelector("[name=phone]").value : "",
-            message: form.querySelector("[name=message]") ? form.querySelector("[name=message]").value : "",
-            clientId: form.dataset.clientId || "",
-            businessName: form.dataset.businessName || "",
-            source: "website_form"
-          };
+          var useFields = form.dataset.useFields === "1";
+          var endpoint;
+          var data;
+          if (useFields) {
+            // Sprint 5 — modern field-driven payload. Collect ALL named inputs
+            // (including the agency's custom field set) into a flat key-value
+            // object the /form-submit endpoint stores verbatim.
+            var fields = {};
+            form.querySelectorAll("input[name], textarea[name], select[name]").forEach(function (el) {
+              fields[el.name] = el.value;
+            });
+            data = {
+              siteId: form.dataset.siteId || undefined,
+              clientId: form.dataset.clientId || undefined,
+              pageSlug: form.dataset.pageSlug || undefined,
+              fields: fields,
+              source: "website_form"
+            };
+            endpoint = "https://kyra.conversionsystem.com/api/sites/form-submit";
+          } else {
+            // Legacy — preserves the original payload shape so live sites
+            // built before Sprint 5 keep working without a rebuild.
+            data = {
+              name: form.querySelector("[name=name]").value,
+              email: form.querySelector("[name=email]").value,
+              phone: form.querySelector("[name=phone]") ? form.querySelector("[name=phone]").value : "",
+              message: form.querySelector("[name=message]") ? form.querySelector("[name=message]").value : "",
+              clientId: form.dataset.clientId || "",
+              businessName: form.dataset.businessName || "",
+              source: "website_form"
+            };
+            endpoint = "https://kyra.conversionsystem.com/api/sites/contact";
+          }
           btn.disabled = true;
           btn.textContent = "Sending...";
           status.style.display = "none";
-          fetch("https://kyra.conversionsystem.com/api/sites/contact", {
+          fetch(endpoint, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(data)
