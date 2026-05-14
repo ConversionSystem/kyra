@@ -232,6 +232,90 @@ export async function GET(
   // ── Cards-to-clicks CTR ───────────────────────────────────────────────
   const cardCTR = cardsShownTotal === 0 ? 0 : Math.round(((eventCounts.card_click ?? 0) / cardsShownTotal) * 100);
 
+  // ── Period-over-period comparison (vs previous window of same length) ─
+  // Same query shape, just offset by `windowDays`. We only re-fetch the
+  // count + escalation + fallback signals for the prior window — no need
+  // to recompute trends / categories / top queries since the UI just
+  // shows a delta arrow for headline metrics.
+  const prevSince = new Date(Date.now() - 2 * windowDays * 24 * 60 * 60 * 1000);
+  const prevUntil = since;
+  const { data: prevRows } = await supabase
+    .from('client_conversations')
+    .select('id, user_message, ai_response, channel')
+    .eq('client_id', clientId)
+    .gte('created_at', prevSince.toISOString())
+    .lt('created_at', prevUntil.toISOString())
+    .neq('channel', 'widget_event')
+    .limit(2000);
+  const prevConv = prevRows ?? [];
+  const prevSample = prevConv.length;
+  const prevEscalations = prevConv.filter(r => ESCALATION_PATTERNS.test(r.user_message || '')).length;
+  const prevFallback = prevConv.filter(r => FALLBACK_PATTERNS.test(r.ai_response || '')).length;
+  const prevDeflection = prevSample === 0 ? 0 : Math.round(((prevSample - prevEscalations) / prevSample) * 100);
+  const prevFallbackRate = prevSample === 0 ? 0 : Math.round((prevFallback / prevSample) * 100);
+  function delta(curr: number, prev: number) {
+    if (prev === 0) return curr === 0 ? 0 : 100;
+    return Math.round(((curr - prev) / prev) * 100);
+  }
+  const periodComparison = {
+    sampleDelta: delta(totalRecent, prevSample),
+    deflectionDelta: delta(deflectionRate, prevDeflection),
+    escalationDelta: delta(escalationCount, prevEscalations),
+    fallbackDelta: delta(fallbackRate, prevFallbackRate),
+    prevSample,
+    prevDeflection,
+    prevEscalations,
+    prevFallbackRate,
+  };
+
+  // ── KB-gap drill-down: questions that triggered bot fallback ─────────
+  // Show operators the SPECIFIC questions where the bot punted to "call
+  // us" — direct signal for what to add to the training doc.
+  const fallbackQueryCounts = new Map<string, number>();
+  for (const r of rows) {
+    if (!FALLBACK_PATTERNS.test(r.ai_response || '')) continue;
+    const msg = (r.user_message || '').trim().toLowerCase().slice(0, 80);
+    if (!msg) continue;
+    fallbackQueryCounts.set(msg, (fallbackQueryCounts.get(msg) ?? 0) + 1);
+  }
+  const fallbackQueries = Array.from(fallbackQueryCounts.entries())
+    .map(([query, count]) => ({ query, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+
+  // ── Today's pulse — separate from windowed stats ─────────────────────
+  // Live-ish metrics for "what's happening right now": conversations
+  // today, escalations today, active sessions in the last hour.
+  const todayRows = rows.filter(r => new Date(r.created_at) >= today);
+  const todayEscalations = todayRows.filter(r => ESCALATION_PATTERNS.test(r.user_message || '')).length;
+  const todayDeflection = todayRows.length === 0 ? 0
+    : Math.round(((todayRows.length - todayEscalations) / todayRows.length) * 100);
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const activeNow = new Set(
+    allRows
+      .filter(r => new Date(r.created_at) >= oneHourAgo)
+      .map(r => (r as { session_id?: string }).session_id || '')
+      .filter(Boolean)
+  ).size;
+
+  // ── Source URL breakdown — where visitors start their chats ──────────
+  const sourceCounts = new Map<string, number>();
+  for (const r of rows) {
+    const src = (r as { source_url?: string }).source_url || '';
+    if (!src) continue;
+    // Normalize to path-only for cleaner grouping (drops protocol + host)
+    let path = src;
+    try {
+      const u = new URL(src);
+      path = u.pathname || '/';
+    } catch { /* keep raw */ }
+    sourceCounts.set(path, (sourceCounts.get(path) ?? 0) + 1);
+  }
+  const topSources = Array.from(sourceCounts.entries())
+    .map(([page, count]) => ({ page, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+
   return NextResponse.json({
     // Lifetime stats (unchanged)
     conversations: conversations ?? 0,
@@ -267,5 +351,13 @@ export async function GET(
     totalFirstMessages: eventCounts.first_message_sent ?? 0,
     topChipClicks,
     topCardClicks,
+    // v5 additions (2026-05-14): period comparison, KB gaps, today pulse, sources
+    periodComparison,
+    fallbackQueries,
+    todayConversations: todayRows.length,
+    todayEscalations,
+    todayDeflection,
+    activeNow,
+    topSources,
   });
 }
