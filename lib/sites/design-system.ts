@@ -23,10 +23,53 @@ function hexToRgb(hex: string): string {
 
 // ---------- Color Variables ----------
 
+/**
+ * Theme token registry — Sprint 2 of the website builder overhaul (2026-05-14).
+ *
+ * Each entry is a CSS-safe font stack that we trust to render reliably across
+ * agency client browsers. We deliberately keep the list short and curated
+ * rather than letting customers paste arbitrary @font-face URLs (security +
+ * FOUT concerns for v1). System fonts only — no Google Fonts CDN dependency.
+ */
+export const FONT_OPTIONS: Array<{ id: string; label: string; stack: string }> = [
+  { id: 'inter',     label: 'Inter (default)',     stack: `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif` },
+  { id: 'system',    label: 'System UI',           stack: `-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif` },
+  { id: 'serif',     label: 'Serif (editorial)',   stack: `'Georgia', 'Times New Roman', serif` },
+  { id: 'rounded',   label: 'Rounded',             stack: `'Nunito', 'Quicksand', -apple-system, sans-serif` },
+  { id: 'mono',      label: 'Monospace',           stack: `'JetBrains Mono', 'SF Mono', Consolas, monospace` },
+  { id: 'humanist',  label: 'Humanist Sans',       stack: `'Avenir Next', 'Avenir', 'Segoe UI', sans-serif` },
+];
+
+/** Radius preset → pixel value. 'sharp' nukes rounded corners site-wide. */
+export const RADIUS_PRESETS: Record<string, string> = {
+  sharp:   '0px',
+  subtle:  '4px',
+  default: '8px',
+  rounded: '12px',
+  pill:    '999px',
+};
+
+/** Resolve a font ID (or arbitrary stack) to a CSS font-family value. */
+function resolveFontStack(fontFamily: string | null | undefined): string {
+  if (!fontFamily) return FONT_OPTIONS[0].stack;
+  const preset = FONT_OPTIONS.find(f => f.id === fontFamily);
+  if (preset) return preset.stack;
+  // Allow raw font-family strings too (e.g. saved before the picker existed).
+  return fontFamily;
+}
+
+/** Resolve a radius preset id (or raw value like '6px') to a CSS length. */
+function resolveRadius(borderRadius: string | null | undefined): string {
+  if (!borderRadius) return RADIUS_PRESETS.default;
+  return RADIUS_PRESETS[borderRadius] ?? borderRadius;
+}
+
 export function generateColorVariables(
   colorPrimary: string,
   colorSecondary: string,
   designStyle: DesignStyle | string,
+  fontFamily?: string | null,
+  borderRadius?: string | null,
 ): string {
   const primaryRgb = hexToRgb(colorPrimary);
   const secondaryRgb = hexToRgb(colorSecondary);
@@ -37,6 +80,8 @@ export function generateColorVariables(
   const textMuted = isDark ? '#94a3b8' : '#6b7280';
   const border = isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb';
   const accent = colorSecondary || colorPrimary;
+  const fontStack = resolveFontStack(fontFamily);
+  const radius = resolveRadius(borderRadius);
 
   return `:root {
   --color-primary: ${colorPrimary};
@@ -48,7 +93,15 @@ export function generateColorVariables(
   --color-text-muted: ${textMuted};
   --color-border: ${border};
   --color-accent: ${accent};
-}`;
+  --font-sans: ${fontStack};
+  --radius-base: ${radius};
+}
+/* Site-wide font override — applied here so all design styles inherit the
+   customer's font choice without each style needing its own font-family. */
+body { font-family: var(--font-sans); }
+/* Site-wide radius override — buttons/cards that use this var pick it up
+   automatically. Templates can still hard-code radii for special cases. */
+.themed-radius, .btn-themed, [data-themed-radius] { border-radius: var(--radius-base); }`;
 }
 
 // ---------- Design Style CSS ----------
@@ -57,8 +110,10 @@ export function getDesignCSS(
   designStyle: DesignStyle | string,
   colorPrimary: string,
   colorSecondary: string,
+  fontFamily?: string | null,
+  borderRadius?: string | null,
 ): string {
-  const vars = generateColorVariables(colorPrimary, colorSecondary, designStyle);
+  const vars = generateColorVariables(colorPrimary, colorSecondary, designStyle, fontFamily, borderRadius);
 
   switch (designStyle) {
     case 'modern-dark':

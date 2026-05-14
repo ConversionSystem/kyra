@@ -139,6 +139,10 @@ interface SiteData {
   booking_url: string | null;
   google_review_url: string | null;
   tagline: string | null;
+  // Theme — colors + design style + font + radius. Sprint 2 added the last two.
+  color_primary: string;
+  color_secondary: string;
+  design_style: 'modern-dark' | 'clean-light' | 'bold' | 'minimal';
   nav_links: NavLink[] | null;
   navbar_variant: NavbarVariant | null;
   footer_tagline: string | null;
@@ -151,6 +155,14 @@ interface SiteData {
   section_overrides: Record<string, string> | null;
   template_id: string | null;
   client_id?: string | null;
+  // Theme tokens (2026-05-14 Sprint 2). Site-level design overrides applied
+  // as CSS custom properties during build. NULL = use design_style defaults.
+  font_family: string | null;
+  border_radius: string | null;
+  // Staleness tracking — compare these to determine if the live site is
+  // behind the latest edits and the "Unpublished changes" pill should show.
+  updated_at: string | null;
+  last_deployed_at: string | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -165,6 +177,176 @@ interface SiteData {
  */
 function isHomepageRow(page: { page_type?: string; slug?: string }): boolean {
   return page.page_type === 'homepage' || page.slug === 'home' || page.slug === '/';
+}
+
+/**
+ * Are there edits in Supabase that haven't been pushed to the live site yet?
+ *
+ * Compares site.updated_at and any page.edited_at against last_deployed_at.
+ * Returns true when ANY edit is newer than the most recent live build, so
+ * the header can show an "Unpublished changes" pill nudging the customer
+ * to hit Rebuild & Deploy. We deliberately don't auto-rebuild on save —
+ * each rebuild is a multi-minute VPS job, so customers batch edits and
+ * deploy once when they're ready.
+ */
+function hasUnpublishedChanges(
+  site: { updated_at: string | null; last_deployed_at: string | null } | null,
+  pages: Array<{ edited_at: string | null }>,
+): boolean {
+  if (!site) return false;
+  // Site never deployed → nothing to compare against, treat as not-stale
+  // so we don't spam a brand-new draft with the pill before first deploy.
+  if (!site.last_deployed_at) return false;
+  const deployedAt = new Date(site.last_deployed_at).getTime();
+  if (Number.isNaN(deployedAt)) return false;
+
+  if (site.updated_at) {
+    const updatedAt = new Date(site.updated_at).getTime();
+    // 5s tolerance for clock skew between DB write and deploy timestamp.
+    if (!Number.isNaN(updatedAt) && updatedAt > deployedAt + 5_000) return true;
+  }
+  for (const p of pages) {
+    if (!p.edited_at) continue;
+    const editedAt = new Date(p.edited_at).getTime();
+    if (!Number.isNaN(editedAt) && editedAt > deployedAt + 5_000) return true;
+  }
+  return false;
+}
+
+/** Format a UTC ISO string into a relative time like "5 min ago", "2 h ago". */
+function formatRelativeTime(iso: string | null): string {
+  if (!iso) return 'never';
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return '—';
+  const diffMs = Date.now() - then;
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return 'just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 30) return `${diffDay} d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
+// ── Deploy History Button ─────────────────────────────────────────────────────
+
+/**
+ * Header dropdown that fetches the last 10 deploys from
+ * `/api/agency/sites/[id]/deploys` and renders them as a popover list. Lets
+ * customers verify that recent edits actually shipped, and surfaces failure
+ * notes inline so they're not blocked waiting on us to investigate.
+ *
+ * Fetches lazily on open — the editor pulls this often enough that we don't
+ * want to load 20 rows on every editor mount.
+ */
+function DeployHistoryButton({ siteId, siteUrl }: { siteId: string; siteUrl: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [deploys, setDeploys] = useState<Array<{
+    id: string;
+    status: string;
+    pages_deployed: number;
+    deployed_at: string;
+    notes: string | null;
+    triggered_by: string;
+  }>>([]);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click — keeps the popover from sticking around when
+  // customers navigate to another control.
+  useEffect(() => {
+    if (!open) return;
+    function onClick(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [open]);
+
+  const toggle = async () => {
+    const next = !open;
+    setOpen(next);
+    if (next && deploys.length === 0) {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/agency/sites/${siteId}/deploys`, { cache: 'no-store' });
+        if (res.ok) {
+          const result = await res.json();
+          setDeploys((result.data || []).slice(0, 10));
+        }
+      } catch (err) {
+        console.error('[editor] deploy history fetch', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <button
+        onClick={toggle}
+        className="min-h-[44px] sm:min-h-0 px-2 sm:px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
+        title="Deploy history"
+      >
+        <Clock className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+        <span className="hidden sm:inline">History</span>
+        <ChevronDown className={`h-3 w-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-[28rem] overflow-y-auto"
+        >
+          <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-700">Recent deploys</span>
+            {siteUrl && (
+              <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-indigo-600 hover:underline inline-flex items-center gap-1">
+                Visit live <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+            )}
+          </div>
+          {loading && (
+            <div className="px-3 py-6 flex items-center justify-center text-xs text-gray-400">
+              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Loading…
+            </div>
+          )}
+          {!loading && deploys.length === 0 && (
+            <div className="px-3 py-6 text-xs text-gray-500 text-center">No deploys yet.</div>
+          )}
+          {!loading && deploys.map(d => {
+            const success = d.status === 'success';
+            return (
+              <div key={d.id} className="px-3 py-2.5 border-b border-gray-100 last:border-b-0 hover:bg-gray-50/60">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {success
+                      ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                      : <X className="h-3.5 w-3.5 text-red-500 shrink-0" />}
+                    <span className={`text-xs font-medium ${success ? 'text-gray-800' : 'text-red-700'}`}>
+                      {success ? `${d.pages_deployed} pages deployed` : 'Failed'}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-gray-400 shrink-0">{formatRelativeTime(d.deployed_at)}</span>
+                </div>
+                <div className="text-[10px] text-gray-400 mt-0.5 ml-5.5 pl-5">
+                  via {d.triggered_by}
+                </div>
+                {!success && d.notes && (
+                  <div className="mt-1.5 ml-5 text-[10px] text-red-600 bg-red-50 border border-red-200 rounded p-1.5 font-mono whitespace-pre-wrap break-words max-h-20 overflow-y-auto">
+                    {d.notes.length > 200 ? `${d.notes.slice(0, 200)}…` : d.notes}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Page Type Icons ───────────────────────────────────────────────────────────
@@ -681,21 +863,28 @@ function HeroEditor({
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
           <Edit3 className="h-4 w-4 text-indigo-500" />
-          Edit Hero & SEO
+          Hero &amp; SEO
         </h4>
       </div>
       <div className="space-y-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Headline (H1)</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Hero Headline (H1)</label>
           <input
             type="text"
             value={heroH1}
             onChange={(e) => setHeroH1(e.target.value)}
             className="w-full rounded-lg border border-gray-200 px-3 py-3 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
+          {/* Disambiguates from "Page title" in Page Settings. Customers
+              consistently confused the two; this caption locks down the
+              distinction without forcing a label rename. */}
+          <p className="text-[11px] text-gray-500 mt-1">
+            The big headline visible at the top of this page. Different from <strong>Page title</strong>
+            above, which is the sidebar / browser tab label.
+          </p>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Subtitle</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Hero Subtitle</label>
           <input
             type="text"
             value={heroSubtitle}
@@ -1575,6 +1764,187 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
 
 // ── Section Manager ───────────────────────────────────────────────────────────
 
+/**
+ * ThemeEditor — colors, design style, font family, and corner radius in one
+ * card. Replaces fragmented controls that previously lived only in the
+ * wizard. Saves to client_sites and is picked up by `getDesignCSS()` at
+ * build time as CSS custom properties (--color-primary, --font-sans,
+ * --radius-base).
+ *
+ * Sprint 2 of the website builder overhaul (2026-05-14).
+ */
+function ThemeEditor({
+  site,
+  onSave,
+  saving,
+}: {
+  site: SiteData;
+  onSave: (updates: Record<string, unknown>) => void;
+  saving: boolean;
+}) {
+  const [colorPrimary, setColorPrimary] = useState(site.color_primary || '#4f46e5');
+  const [colorSecondary, setColorSecondary] = useState(site.color_secondary || '#111827');
+  const [designStyle, setDesignStyle] = useState(site.design_style || 'clean-light');
+  const [fontFamily, setFontFamily] = useState(site.font_family || 'inter');
+  const [borderRadius, setBorderRadius] = useState(site.border_radius || 'default');
+  const [dirty, setDirty] = useState(false);
+
+  const designStyles: { id: 'modern-dark' | 'clean-light' | 'bold' | 'minimal'; label: string; desc: string }[] = [
+    { id: 'clean-light', label: 'Clean Light',  desc: 'White, professional, easy-read.' },
+    { id: 'modern-dark', label: 'Modern Dark',  desc: 'Dark slate, glow accents.' },
+    { id: 'bold',        label: 'Bold',         desc: 'High-contrast, thick borders.' },
+    { id: 'minimal',     label: 'Minimal',      desc: 'Whitespace-heavy, refined.' },
+  ];
+
+  const fontOptions: { id: string; label: string; preview: string }[] = [
+    { id: 'inter',    label: 'Inter',        preview: 'Aa · Modern neutral' },
+    { id: 'system',   label: 'System UI',    preview: 'Aa · Native feel' },
+    { id: 'serif',    label: 'Serif',        preview: 'Aa · Editorial' },
+    { id: 'rounded',  label: 'Rounded',      preview: 'Aa · Friendly' },
+    { id: 'mono',     label: 'Monospace',    preview: 'Aa · Technical' },
+    { id: 'humanist', label: 'Humanist',     preview: 'Aa · Avenir-style' },
+  ];
+
+  const radiusOptions: { id: string; label: string; px: string }[] = [
+    { id: 'sharp',   label: 'Sharp',   px: '0' },
+    { id: 'subtle',  label: 'Subtle',  px: '4' },
+    { id: 'default', label: 'Default', px: '8' },
+    { id: 'rounded', label: 'Rounded', px: '12' },
+    { id: 'pill',    label: 'Pill',    px: '999' },
+  ];
+
+  return (
+    <CollapsibleCard title="Theme" icon={<Palette className="h-4 w-4" />}>
+      <div className="space-y-5">
+        {/* Colors */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-2">Brand Colors</label>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="color"
+                value={colorPrimary}
+                onChange={(e) => { setColorPrimary(e.target.value); setDirty(true); }}
+                className="h-9 w-12 rounded-md border border-gray-200 cursor-pointer"
+              />
+              <div>
+                <div className="text-[10px] text-gray-500 uppercase tracking-wide">Primary</div>
+                <div className="text-xs font-mono text-gray-700">{colorPrimary}</div>
+              </div>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="color"
+                value={colorSecondary}
+                onChange={(e) => { setColorSecondary(e.target.value); setDirty(true); }}
+                className="h-9 w-12 rounded-md border border-gray-200 cursor-pointer"
+              />
+              <div>
+                <div className="text-[10px] text-gray-500 uppercase tracking-wide">Secondary</div>
+                <div className="text-xs font-mono text-gray-700">{colorSecondary}</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* Design style */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-2">Design Style</label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {designStyles.map(s => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => { setDesignStyle(s.id); setDirty(true); }}
+                className={`text-left p-2.5 rounded-lg border transition ${
+                  designStyle === s.id
+                    ? 'border-indigo-400 bg-indigo-50 ring-1 ring-indigo-300'
+                    : 'border-gray-200 bg-white hover:border-indigo-200'
+                }`}
+              >
+                <div className={`text-xs font-semibold ${designStyle === s.id ? 'text-indigo-900' : 'text-gray-900'}`}>{s.label}</div>
+                <div className="text-[10px] text-gray-500 mt-0.5 leading-tight">{s.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Font family */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-2">Font Family</label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {fontOptions.map(f => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => { setFontFamily(f.id); setDirty(true); }}
+                className={`text-left p-2.5 rounded-lg border transition ${
+                  fontFamily === f.id
+                    ? 'border-indigo-400 bg-indigo-50 ring-1 ring-indigo-300'
+                    : 'border-gray-200 bg-white hover:border-indigo-200'
+                }`}
+              >
+                <div className={`text-xs font-semibold ${fontFamily === f.id ? 'text-indigo-900' : 'text-gray-900'}`}>{f.label}</div>
+                <div className="text-[10px] text-gray-500 mt-0.5">{f.preview}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Corner radius */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-2">Corner Radius</label>
+          <div className="flex flex-wrap gap-2">
+            {radiusOptions.map(r => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => { setBorderRadius(r.id); setDirty(true); }}
+                className={`flex items-center gap-2 px-3 py-1.5 border transition ${
+                  borderRadius === r.id
+                    ? 'border-indigo-400 bg-indigo-50 ring-1 ring-indigo-300'
+                    : 'border-gray-200 bg-white hover:border-indigo-200'
+                }`}
+                style={{ borderRadius: r.id === 'pill' ? '999px' : `${r.px}px` }}
+              >
+                <span
+                  className="h-4 w-4 bg-indigo-500"
+                  style={{ borderRadius: r.id === 'pill' ? '999px' : `${r.px}px` }}
+                />
+                <span className={`text-xs font-medium ${borderRadius === r.id ? 'text-indigo-900' : 'text-gray-900'}`}>{r.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            onSave({
+              color_primary: colorPrimary,
+              color_secondary: colorSecondary,
+              design_style: designStyle,
+              font_family: fontFamily,
+              border_radius: borderRadius,
+            });
+            setDirty(false);
+          }}
+          disabled={saving || !dirty}
+          className="w-full px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-1.5"
+        >
+          {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+          Save Theme
+        </button>
+
+        <p className="text-[10px] text-gray-400 leading-snug">
+          Changes apply to the live site the next time you click <strong>Publish to Live</strong>.
+          Colors and fonts flow through CSS custom properties, so all template variants pick them
+          up automatically.
+        </p>
+      </div>
+    </CollapsibleCard>
+  );
+}
+
 function SectionManager({
   site,
   onSave,
@@ -1607,6 +1977,42 @@ function SectionManager({
 
   // Section picker state
   const [showSectionPicker, setShowSectionPicker] = useState(false);
+
+  // Drag-and-drop state (Sprint 2). Native HTML5 DnD keeps this dependency-
+  // free; index-based tracking is sufficient since sectionOrder is a stable
+  // array of unique section-type strings. dragOverIndex drives the insertion
+  // indicator so the customer sees where the dropped item will land.
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const onDragStart = (index: number) => (e: React.DragEvent) => {
+    setDragIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    // Required for Firefox to fire dragstart at all.
+    e.dataTransfer.setData('text/plain', String(index));
+  };
+  const onDragOver = (index: number) => (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverIndex !== index) setDragOverIndex(index);
+  };
+  const onDragLeave = () => setDragOverIndex(null);
+  const onDrop = (index: number) => (e: React.DragEvent) => {
+    e.preventDefault();
+    const from = dragIndex;
+    setDragIndex(null);
+    setDragOverIndex(null);
+    if (from === null || from === index) return;
+    const next = [...sectionOrder];
+    const [moved] = next.splice(from, 1);
+    next.splice(index, 0, moved);
+    setSectionOrder(next);
+    setDirty(true);
+  };
+  const onDragEnd = () => {
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
 
   const getEffectiveVariant = (sectionType: string): string => {
     return overrides[sectionType] || recipeDefaults[sectionType] || '';
@@ -1710,10 +2116,43 @@ function SectionManager({
           const isOverridden = sectionType in overrides;
           const isExpanded = expandedSection === sectionType;
 
+          const isDragging = dragIndex === index;
+          const isDragOver = dragOverIndex === index && dragIndex !== null && dragIndex !== index;
+
           return (
-            <div key={sectionType} className="group">
+            <div
+              key={sectionType}
+              className="group"
+              draggable
+              onDragStart={onDragStart(index)}
+              onDragOver={onDragOver(index)}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop(index)}
+              onDragEnd={onDragEnd}
+            >
+              {/* Drop indicator — thin indigo line above the hover target so
+                  the customer sees exactly where the dragged section lands.
+                  Only renders when something is being dragged over a *different*
+                  row, never on the source row itself. */}
+              {isDragOver && (
+                <div className="h-0.5 bg-indigo-500 mx-4 sm:mx-5" aria-hidden="true" />
+              )}
               {/* Section row */}
-              <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-5 py-3 hover:bg-gray-50/50 transition-colors">
+              <div
+                className={`flex items-center gap-2 sm:gap-3 px-4 sm:px-5 py-3 transition-colors ${
+                  isDragging ? 'opacity-40 bg-indigo-50' : 'hover:bg-gray-50/50'
+                }`}
+              >
+                {/* Drag handle — visible affordance for the DnD. The whole row
+                    is draggable so customers can grab anywhere, but the handle
+                    is the clearest signal of "this can be reordered". */}
+                <span
+                  className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0 -ml-1"
+                  title="Drag to reorder"
+                  aria-hidden="true"
+                >
+                  <GripVertical className="h-4 w-4" />
+                </span>
                 {/* Icon */}
                 <span className="text-indigo-400 shrink-0">
                   {SECTION_ICONS[sectionType] || <Layers className="h-4 w-4" />}
@@ -2473,13 +2912,26 @@ export default function PageEditor() {
                 <span className="hidden sm:inline">View Live</span>
               </a>
             )}
+            {/* Unpublished-changes pill. Lit when any save (site or page)
+                has happened since the last successful deploy. Pure visual
+                nudge — does not block; customers may want to keep editing. */}
+            {site && hasUnpublishedChanges(site, pages) && !rebuilding && (
+              <span
+                className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200 rounded-md"
+                title={`Last deploy ${formatRelativeTime(site.last_deployed_at)} · changes saved since`}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                Unpublished
+              </span>
+            )}
+            <DeployHistoryButton siteId={siteId} siteUrl={siteUrl} />
             <button
               onClick={rebuildSite}
               disabled={rebuilding}
               className="min-h-[44px] sm:min-h-0 px-2 sm:px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5"
             >
               {rebuilding ? <Loader2 className="h-3.5 w-3.5 sm:h-3 sm:w-3 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 sm:h-3 sm:w-3" />}
-              <span className="hidden sm:inline">Rebuild & Deploy</span>
+              <span className="hidden sm:inline">{rebuilding ? 'Deploying…' : 'Publish to Live'}</span>
             </button>
           </div>
         </div>
@@ -2977,6 +3429,15 @@ export default function PageEditor() {
               {/* ─── Design Tab (homepage only) ─── */}
               {isHomepageRow(selectedPage) && activeTab === 'design' && site && (
                 <div className="space-y-4">
+                  {/* Theme tokens — colors, font, radius, design style.
+                      Single card so customers find every visual control in
+                      one place (was previously fragmented to the wizard). */}
+                  <ThemeEditor
+                    site={site}
+                    onSave={saveSiteEdits}
+                    saving={savingSite}
+                  />
+
                   {/* Section Manager — reorder + variant switching */}
                   <SectionManager
                     site={site}

@@ -134,6 +134,17 @@ export interface ClientSite {
   color_primary: string;
   color_secondary: string;
   design_style: DesignStyle;
+  /**
+   * Optional font preset id (see FONT_OPTIONS in design-system.ts). NULL =
+   * Inter (default stack). Saved as a preset id so we can re-render reliably
+   * even if FONT_OPTIONS changes server-side.
+   */
+  font_family: string | null;
+  /**
+   * Optional radius preset id (sharp/subtle/default/rounded/pill) or raw CSS
+   * length. NULL = 8px default. Drives the --radius-base CSS var.
+   */
+  border_radius: string | null;
   tagline: string | null;
 
   // AI Personality
