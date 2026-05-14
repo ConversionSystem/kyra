@@ -91,11 +91,38 @@ export async function POST(
         { status: 400 },
       );
     }
-    // Best-effort agent display name for the visitor-facing notice
-    const agentMeta = (auth.data.user.user_metadata ?? {}) as { full_name?: string };
+    // Best-effort agent display name for the visitor-facing notice.
+    //
+    // Resolution priority (refined 2026-05-14 after a customer audit found
+    // the visitor seeing "Conversion System just joined the chat" — that's
+    // because the operator's user_metadata.full_name was set to the AGENCY
+    // name during signup, not their personal name):
+    //   1. user_metadata.display_name — explicit per-user opt-in for "what
+    //      should the visitor see?" (UI to set this is on the roadmap)
+    //   2. user_metadata.first_name — if the operator filled in a first name
+    //   3. email username — "matt@conversionsystem.com" → "matt", title-cased
+    //      (this is the friendliest auto-default and beats agency names)
+    //   4. user_metadata.full_name — last resort, since for solo-agencies
+    //      this is often the company brand, not the human's name
+    //   5. null → widget falls back to "Team member"
+    const meta = (auth.data.user.user_metadata ?? {}) as {
+      display_name?: string;
+      first_name?: string;
+      full_name?: string;
+    };
+    const emailUser = auth.data.user.email?.split('@')[0]?.trim() || '';
+    const titledEmailUser = emailUser
+      ? emailUser
+          .split(/[._-]+/)
+          .filter(Boolean)
+          .map((seg) => seg.charAt(0).toUpperCase() + seg.slice(1))
+          .join(' ')
+      : '';
     const agentName =
-      agentMeta.full_name?.trim() ||
-      auth.data.user.email?.split('@')[0] ||
+      meta.display_name?.trim() ||
+      meta.first_name?.trim() ||
+      titledEmailUser ||
+      meta.full_name?.trim() ||
       null;
     const recorded = await recordAgentMessage(supabase, {
       clientId,

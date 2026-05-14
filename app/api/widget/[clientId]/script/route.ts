@@ -234,6 +234,11 @@ export async function GET(
   var AGENT_POLL_INTERVAL_MS = 6000;
   var agentPollTimer = null;
   var agentJoinedAnnounced = false;
+  // Defense-in-depth dedupe. Even with the cursor working, a network
+  // hiccup or a clock skew between client + server could in theory cause
+  // the same agent message id to come back twice. Tracking rendered ids
+  // means at worst the visitor sees one bubble per message id, period.
+  var renderedAgentIds = {};
   // Age gate (cannabis compliance) — strictly OPT-IN per client.
   // Most dispensary websites already have a site-wide 21+ gate, so doubling
   // up inside the widget is redundant and adds an extra click for every
@@ -1030,6 +1035,12 @@ export async function GET(
     messagesEl.appendChild(notice);
   }
   function renderAgentMessage(msg) {
+    // Defense-in-depth: skip if we've already rendered this id. Catches
+    // any duplicate-row scenario the server might emit (cursor precision
+    // bug, retry on transient error, etc.) without spamming the panel.
+    var id = msg && msg.id;
+    if (id && renderedAgentIds[id]) return;
+    if (id) renderedAgentIds[id] = true;
     var name = (msg.agentName || 'Team member').slice(0, 32);
     renderAgentJoinedNotice(name);
     var msgEl = document.createElement('div');
