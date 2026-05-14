@@ -79,7 +79,27 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   waitUntil(
     buildAndDeploy(site, supabase).catch((err: unknown) => {
       const message = err instanceof Error ? err.message : String(err);
-      console.error(`[sites/build] Build failed for site ${siteId}:`, message);
+      const stack = err instanceof Error && err.stack ? err.stack : null;
+      console.error(`[sites/build] Build failed for site ${siteId}:`, message, stack);
+      // 2026-05-14 fix: write a site_deploys row so the editor's failure
+      // banner has SOMETHING to show. Previously a pre-fetch exception
+      // (template assembly error, missing column, network early-fail)
+      // updated site.status='error' but left site_deploys empty, so the
+      // editor showed a generic "Build failed" with no reason.
+      const notes = [
+        message,
+        stack ? `\n--- Stack ---\n${stack.split('\n').slice(0, 8).join('\n')}` : '',
+      ].join('').slice(0, 4000);
+      supabase
+        .from('site_deploys')
+        .insert({
+          site_id: siteId,
+          triggered_by: 'rebuild',
+          status: 'failed',
+          pages_deployed: 0,
+          notes,
+        })
+        .then(() => {}, () => {});
       supabase
         .from('client_sites')
         .update({ status: 'error', updated_at: new Date().toISOString() })
@@ -160,15 +180,24 @@ async function buildAndDeploy(site: any, supabase: any) {
     const now = new Date().toISOString();
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Build failed' }));
+      const responseText = await res.text().catch(() => '');
+      let parsed: { error?: string } | null = null;
+      try { parsed = JSON.parse(responseText); } catch { /* not JSON */ }
+      const summary =
+        parsed?.error ||
+        (responseText.length > 0 ? responseText.slice(0, 500) : '') ||
+        `Provisioner returned HTTP ${res.status} ${res.statusText}`;
+      const fullNotes = `[ai-custom] HTTP ${res.status} ${res.statusText}\n${
+        parsed ? JSON.stringify(parsed, null, 2) : responseText.slice(0, 3000)
+      }`.slice(0, 4000);
       await supabase.from('site_deploys').insert({
         site_id: site.id,
         triggered_by: 'rebuild',
         status: 'failed',
         pages_deployed: 0,
-        notes: (err as { error: string }).error || 'AI-custom build failed',
+        notes: fullNotes,
       });
-      throw new Error((err as { error: string }).error || 'AI-custom build failed');
+      throw new Error(summary);
     }
 
     await supabase.from('site_deploys').insert({
@@ -566,15 +595,28 @@ async function buildAndDeploy(site: any, supabase: any) {
   const deployStatus = res.ok ? 'success' : 'failed';
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Build failed' }));
+    // Capture as much as we can from the provisioner response. JSON body
+    // wins; otherwise fall back to raw text (some failures return plain
+    // text or HTML error pages). Include status code so the editor's
+    // banner can show e.g. "Provisioner returned 502" not "Build failed".
+    const responseText = await res.text().catch(() => '');
+    let parsed: { error?: string; details?: string } | null = null;
+    try { parsed = JSON.parse(responseText); } catch { /* not JSON */ }
+    const summary =
+      parsed?.error ||
+      (responseText.length > 0 ? responseText.slice(0, 500) : '') ||
+      `Provisioner returned HTTP ${res.status} ${res.statusText}`;
+    const fullNotes = `HTTP ${res.status} ${res.statusText}\n${
+      parsed ? JSON.stringify(parsed, null, 2) : responseText.slice(0, 3000)
+    }`.slice(0, 4000);
     await supabase.from('site_deploys').insert({
       site_id: site.id,
       triggered_by: 'rebuild',
       status: 'failed',
       pages_deployed: 0,
-      notes: (err as { error: string }).error || 'Build failed',
+      notes: fullNotes,
     });
-    throw new Error((err as { error: string }).error || 'Build failed');
+    throw new Error(summary);
   }
 
   const now = new Date().toISOString();

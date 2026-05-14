@@ -115,9 +115,18 @@ function renderHead(site: Record<string, any>, page: Record<string, any>): strin
 function renderNavbar(site: Record<string, any>, allPages: Record<string, any>[]): string {
   const name = (site.business_name as string) || 'TrustedNetworx';
   const logoUrl = site.logo_url as string | null;
-  const navLinks = site.nav_links as { label: string; href: string }[] | null;
+  // 2026-05-14 fix: Agency-configured nav_links (with optional dropdown
+  // children) are now honored on desktop too, not just mobile. Previously
+  // the desktop nav was hardcoded to Home/Solutions(dropdown)/About/Contact
+  // which silently ignored every edit the agency made in the Header
+  // builder. Falling back to the legacy hardcoded structure ONLY when
+  // nav_links is unset, so existing sites that haven't customized still
+  // render exactly as before.
+  const navLinks = site.nav_links as
+    | { label: string; href: string; children?: { label: string; href: string }[] }[]
+    | null;
 
-  // Build solutions dropdown items from services or allPages
+  // Build the legacy solutions dropdown items (used as fallback when nav_links is empty).
   const services = (site.services || []) as { name: string; slug: string }[];
   const solutionPages = services.length
     ? services.map(s => ({ label: s.name, href: `/${s.slug}` }))
@@ -129,26 +138,62 @@ function renderNavbar(site: Record<string, any>, allPages: Record<string, any>[]
     ? `<img src="${esc(logoUrl)}" alt="${esc(name)} Logo" class="h-8 w-8" />`
     : SVG.logo;
 
-  // Desktop: always 4 items — Home, Solutions (dropdown), About, Contact
-  const desktopLinks = `<a href="/" class="text-gray-700 hover:text-blue-600">Home</a>
-            <div class="relative" id="solutions-dropdown">
-              <button class="text-gray-700 hover:text-blue-600" onclick="toggleDropdown()" onmouseenter="openDropdown()">Solutions</button>
-              <div id="solutions-menu" class="hidden absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 animate-fadeIn" onmouseleave="closeDropdown()">
+  // Render a single agency-defined link with optional dropdown children.
+  // Uses CSS group-hover for the dropdown so the structure stays the same
+  // whether or not children are present — keeps the JS-driven dropdown
+  // behavior consistent.
+  const renderDesktopEntry = (l: { label: string; href: string; children?: { label: string; href: string }[] }, idx: number): string => {
+    if (!l.children || l.children.length === 0) {
+      return `<a href="${esc(l.href)}" class="text-gray-700 hover:text-blue-600">${esc(l.label)}</a>`;
+    }
+    const id = `nav-dd-${idx}`;
+    const items = l.children.map(c => `<a href="${esc(c.href)}" class="block px-4 py-2 text-gray-700 hover:bg-blue-50">${esc(c.label)}</a>`).join('\n                ');
+    return `<div class="relative group">
+              <button class="text-gray-700 hover:text-blue-600 inline-flex items-center gap-1" id="${id}-btn">
+                ${esc(l.label)}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="hidden group-hover:block absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50">
+                ${items}
+              </div>
+            </div>`;
+  };
+
+  let desktopLinks: string;
+  if (navLinks && navLinks.length > 0) {
+    desktopLinks = navLinks.map((l, i) => renderDesktopEntry(l, i)).join('\n            ');
+  } else {
+    // Legacy hardcoded fallback — same shape as before.
+    desktopLinks = `<a href="/" class="text-gray-700 hover:text-blue-600">Home</a>
+            <div class="relative group">
+              <button class="text-gray-700 hover:text-blue-600 inline-flex items-center gap-1">
+                Solutions
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="hidden group-hover:block absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50">
                 ${solutionPages.map(s => `<a href="${esc(s.href)}" class="block px-4 py-2 text-gray-700 hover:bg-blue-50">${esc(s.label)}</a>`).join('\n                ')}
               </div>
             </div>
             <a href="/about" class="text-gray-700 hover:text-blue-600">About</a>
             <a href="/contact" class="text-gray-700 hover:text-blue-600">Contact</a>`;
+  }
 
-  // Mobile: all links flat (no dropdown)
-  const mobileLinks = navLinks
-    ? navLinks.map(l => `<a href="${esc(l.href)}" class="block px-3 py-2 text-gray-700 hover:bg-blue-50">${esc(l.label)}</a>`).join('\n          ')
+  // Mobile: flatten parents + children into a single list so every link
+  // is reachable on a phone. Indent children under their parent.
+  const flattenedMobileLinks = navLinks
+    ? navLinks.flatMap(l => [
+        `<a href="${esc(l.href)}" class="block px-3 py-2 text-gray-700 hover:bg-blue-50 font-medium">${esc(l.label)}</a>`,
+        ...((l.children || []).map(c =>
+          `<a href="${esc(c.href)}" class="block px-6 py-2 text-sm text-gray-600 hover:bg-blue-50">${esc(c.label)}</a>`,
+        )),
+      ]).join('\n          ')
     : [
         { label: 'Home', href: '/' },
         { label: 'About', href: '/about' },
         ...solutionPages,
         { label: 'Contact', href: '/contact' },
       ].map(l => `<a href="${esc(l.href)}" class="block px-3 py-2 text-gray-700 hover:bg-blue-50">${esc(l.label)}</a>`).join('\n          ');
+  const mobileLinks = flattenedMobileLinks;
 
   return `
   <nav class="bg-white shadow-lg">
@@ -192,6 +237,17 @@ function renderFooter(site: Record<string, any>, allPages: Record<string, any>[]
     ? `<img src="${esc(logoUrl)}" alt="${esc(name)} Logo" class="h-8 w-8" />`
     : SVG.logo;
 
+  // 2026-05-14 fix: agency-configured footer_columns + footer_tagline are
+  // now honored on the TN custom footer. Empty falls back to the legacy
+  // Solutions/Company/Contact auto-fill so existing sites are unchanged.
+  const footerColumns = site.footer_columns as
+    | { title: string; links: { label: string; href: string }[] }[]
+    | null;
+  const footerTagline =
+    (site.footer_tagline as string | null) ||
+    (site.tagline as string | null) ||
+    'Your trusted partner in telecommunications solutions.';
+
   const solutionLinks = services.length
     ? services.map(s => `<li><a href="/${esc(s.slug)}" class="text-gray-400 hover:text-white">${esc(s.name)}</a></li>`).join('\n              ')
     : allPages
@@ -199,17 +255,17 @@ function renderFooter(site: Record<string, any>, allPages: Record<string, any>[]
         .map(p => `<li><a href="${navHref(p.slug as string)}" class="text-gray-400 hover:text-white">${esc(p.title as string)}</a></li>`)
         .join('\n              ');
 
-  return `
-  <footer class="bg-gray-900 text-white mt-auto">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+  // Render either custom columns (agency-defined via Footer Builder) or
+  // the legacy auto-fill columns (Solutions / Company).
+  const middleColumns = footerColumns && footerColumns.length > 0
+    ? footerColumns.map(col => `
         <div>
-          <div class="flex items-center space-x-2 mb-4">
-            ${logoHtml}
-            <h3 class="text-xl font-bold">${esc(name)}</h3>
-          </div>
-          <p class="text-gray-400">${esc(site.tagline as string) || 'Your trusted partner in telecommunications solutions.'}</p>
-        </div>
+          <h4 class="text-lg font-semibold mb-4">${esc(col.title)}</h4>
+          <ul class="space-y-2">
+            ${col.links.map(l => `<li><a href="${esc(l.href)}" class="text-gray-400 hover:text-white">${esc(l.label)}</a></li>`).join('\n              ')}
+          </ul>
+        </div>`).join('')
+    : `
         <div>
           <h4 class="text-lg font-semibold mb-4">Solutions</h4>
           <ul class="space-y-2">
@@ -223,7 +279,20 @@ function renderFooter(site: Record<string, any>, allPages: Record<string, any>[]
             <li><a href="/about" class="text-gray-400 hover:text-white">About Us</a></li>
             <li><a href="/contact" class="text-gray-400 hover:text-white">Contact Us</a></li>
           </ul>
+        </div>`;
+
+  return `
+  <footer class="bg-gray-900 text-white mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center space-x-2 mb-4">
+            ${logoHtml}
+            <h3 class="text-xl font-bold">${esc(name)}</h3>
+          </div>
+          <p class="text-gray-400">${esc(footerTagline)}</p>
         </div>
+        ${middleColumns}
         <div>
           <h4 class="text-lg font-semibold mb-4">Contact</h4>
           <ul class="space-y-2">
