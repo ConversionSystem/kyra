@@ -35,22 +35,29 @@ const ESCALATION_PATTERNS = /\b(refund|complain|cancel|dispute|lawsuit|delivery.
 const FALLBACK_PATTERNS = /\b((408)\s*\)?\s*[-.]?\s*456[-.]?\s*0420|call us|please give us a call|give us a call|our team can help|reach out to our team|please contact)\b/i;
 
 // Brand keywords for the "top brands" insight — same lift as categories,
-// but at the brand level. Kept loose so plural / casing variations match.
-const BRAND_KEYWORDS: Array<{ key: string; pattern: RegExp }> = [
-  { key: 'Stiiizy',         pattern: /\bstiiizy|stiizy|stizy\b/i },
-  { key: 'Raw Garden',      pattern: /\braw\s*garden\b/i },
-  { key: 'Jeeter',          pattern: /\bjeeter\b/i },
-  { key: 'Wyld',            pattern: /\bwyld\b/i },
-  { key: 'Kiva',            pattern: /\bkiva\b/i },
-  { key: 'Camino',          pattern: /\bcamino\b/i },
-  { key: 'Plus Gummies',    pattern: /\bplus\s*gumm/i },
-  { key: 'Heavy Hitters',   pattern: /\bheavy\s*hitters?\b/i },
-  { key: 'Connected',       pattern: /\bconnected\b/i },
-  { key: 'Alien Labs',      pattern: /\balien\s*labs?\b/i },
-  { key: 'Cookies',         pattern: /\bcookies\b/i },
-  { key: 'Papa & Barkley',  pattern: /\bpapa\s*(&|and)?\s*barkley\b/i },
-  { key: 'Select',          pattern: /\bselect\b/i },
-  { key: 'PAX',             pattern: /\bpax\b/i },
+// but at the brand level. Each entry:
+//   - key:     display name shown in the UI chip
+//   - pattern: detection regex (loose enough for casing/typo variations)
+//   - search:  literal substring used by the drill-down endpoint. Must be
+//              something that actually appears in user messages (matters
+//              for stylized spellings like "Stiiizy" — we drill on "stii")
+// Conservative on ambiguous tokens: "Select", "Cookies", and "Connected"
+// are intentionally excluded because they collide with everyday words
+// ("select an option", "are cookies enabled?", "I lost connection") and
+// would inflate brand counts with noise.
+const BRAND_KEYWORDS: Array<{ key: string; pattern: RegExp; search: string }> = [
+  { key: 'Stiiizy',         pattern: /\b(stiiizy|stiizy|stizzy|stizy)\b/i,    search: 'stii' },
+  { key: 'Raw Garden',      pattern: /\braw\s*garden\b/i,                     search: 'raw garden' },
+  { key: 'Jeeter',          pattern: /\bjeeters?\b/i,                         search: 'jeeter' },
+  { key: 'Wyld',            pattern: /\bwyld\b/i,                             search: 'wyld' },
+  { key: 'Kiva',            pattern: /\bkiva\b/i,                             search: 'kiva' },
+  { key: 'Camino',          pattern: /\bcamino\b/i,                           search: 'camino' },
+  { key: 'Plus Gummies',    pattern: /\bplus\s*gumm/i,                        search: 'plus gumm' },
+  { key: 'Heavy Hitters',   pattern: /\bheavy\s*hitters?\b/i,                 search: 'heavy hitter' },
+  { key: 'Alien Labs',      pattern: /\balien\s*labs?\b/i,                    search: 'alien lab' },
+  { key: 'Papa & Barkley',  pattern: /\bpapa\s*(&|and|\+)?\s*barkley\b/i,     search: 'papa' },
+  // PAX is short and collides with names; require a product context word.
+  { key: 'PAX',             pattern: /\bpax\s+(era|pod|battery|vape|3|plus)\b/i, search: 'pax' },
 ];
 
 // Category keywords for the "top categories" insight. Matched against
@@ -211,8 +218,11 @@ export async function GET(
       }
     }
   }
+  // Look up the `search` term so the UI can drill into matching
+  // conversations even when the brand has a stylized spelling.
+  const brandSearchByKey = new Map(BRAND_KEYWORDS.map(b => [b.key, b.search]));
   const topBrands = Array.from(brandHits.entries())
-    .map(([brand, count]) => ({ brand, count }))
+    .map(([brand, count]) => ({ brand, count, search: brandSearchByKey.get(brand) ?? brand.toLowerCase() }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
 
@@ -250,7 +260,14 @@ export async function GET(
     : Math.round((returningSessions / sessionTimes.size) * 100);
 
   // ── Telemetry event aggregations ──────────────────────────────────────
+  // We count two things per event kind:
+  //   - eventCounts   : raw event volume (one row = one event)
+  //   - eventSessions : set of distinct session_ids that fired the event
+  // The funnel uses eventSessions (so a single visitor clicking 5 cards
+  // in one session counts as 1 "Card clicked", not 5) which keeps the
+  // funnel monotonic by construction.
   const eventCounts: Record<string, number> = {};
+  const eventSessions: Record<string, Set<string>> = {};
   const chipClickCounts = new Map<string, number>();
   const cardClickCounts = new Map<string, number>();
   for (const r of eventRows) {
@@ -259,7 +276,12 @@ export async function GET(
     if (idx < 0) continue;
     const eventKind = raw.slice(0, idx);
     const label = raw.slice(idx + 1).trim();
+    const sid = (r as { session_id?: string }).session_id || '';
     eventCounts[eventKind] = (eventCounts[eventKind] ?? 0) + 1;
+    if (sid) {
+      if (!eventSessions[eventKind]) eventSessions[eventKind] = new Set();
+      eventSessions[eventKind].add(sid);
+    }
     if (eventKind === 'chip_click' && label) {
       chipClickCounts.set(label, (chipClickCounts.get(label) ?? 0) + 1);
     }
@@ -267,6 +289,7 @@ export async function GET(
       cardClickCounts.set(label, (cardClickCounts.get(label) ?? 0) + 1);
     }
   }
+  const sessionsFor = (k: string) => eventSessions[k]?.size ?? 0;
   const topChipClicks = Array.from(chipClickCounts.entries())
     .map(([label, count]) => ({ label, count }))
     .sort((a, b) => b.count - a.count)
@@ -277,28 +300,32 @@ export async function GET(
     .slice(0, 8);
 
   // ── Conversion funnel ────────────────────────────────────────────────
-  // Five-stage funnel from widget open → final action. Drop-off rates
-  // computed against the previous stage's count.
+  // Five-stage funnel from widget open → final action, counted as
+  // DISTINCT SESSIONS per stage. This guarantees the funnel is monotonic
+  // (each later stage <= the earlier one) — a single visitor who clicks
+  // five product cards counts once, not five times. Raw event counts are
+  // still exposed separately for CTR + clicks-per-session math.
   //
-  // Funnel stages must be monotonic-ish (each stage shouldn't massively
-  // exceed the previous one), so for the "Cards shown" stage we count
-  // the NUMBER OF cards_shown EVENTS (= conversations that surfaced cards).
-  // The total card count (summed from labels) is still used as the
-  // denominator for card CTR calculations elsewhere.
+  // Fallback: if session_id is missing on event rows (older events before
+  // we wired sessionId through), fall back to raw event count so older
+  // dashboards aren't blank.
   const cardsShownEvents = eventRows
     .filter(r => (r.user_message || '').startsWith('cards_shown:'));
-  const cardsShownEventCount = cardsShownEvents.length;
   const cardsShownTotal = cardsShownEvents.reduce((sum, r) => {
     const n = Number((r.user_message || '').split(':')[1]);
     return Number.isFinite(n) ? sum + n : sum;
   }, 0);
 
+  const stageCount = (kind: string) => {
+    const s = sessionsFor(kind);
+    return s > 0 ? s : (eventCounts[kind] ?? 0);
+  };
   const funnel = [
-    { stage: 'Widget opened',  count: eventCounts.panel_open ?? 0 },
-    { stage: 'First message',  count: eventCounts.first_message_sent ?? 0 },
-    { stage: 'Cards shown',    count: cardsShownEventCount },
-    { stage: 'Card clicked',   count: eventCounts.card_click ?? 0 },
-    { stage: 'CTA chip clicked', count: eventCounts.chip_click ?? 0 },
+    { stage: 'Widget opened',    count: stageCount('panel_open') },
+    { stage: 'First message',    count: stageCount('first_message_sent') },
+    { stage: 'Cards shown',      count: stageCount('cards_shown') },
+    { stage: 'Card clicked',     count: stageCount('card_click') },
+    { stage: 'CTA chip clicked', count: stageCount('chip_click') },
   ];
 
   // ── Cards-to-clicks CTR ───────────────────────────────────────────────

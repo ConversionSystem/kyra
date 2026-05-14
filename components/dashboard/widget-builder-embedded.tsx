@@ -151,7 +151,7 @@ export function WidgetBuilderEmbedded({
     activeNow?: number;
     topSources?: Array<{ page: string; count: number }>;
     // v6 additions (2026-05-14)
-    topBrands?: Array<{ brand: string; count: number }>;
+    topBrands?: Array<{ brand: string; count: number; search?: string }>;
     avgSessionDurationSec?: number;
     returningSessions?: number;
     returningRate?: number;
@@ -1098,7 +1098,7 @@ export function WidgetBuilderEmbedded({
                               <button
                                 key={b.brand}
                                 type="button"
-                                onClick={() => setDrillFilter({ kind: 'query', value: b.brand, title: `Conversations mentioning "${b.brand}"` })}
+                                onClick={() => setDrillFilter({ kind: 'query', value: b.search || b.brand, title: `Conversations mentioning "${b.brand}"` })}
                                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100 transition-colors"
                               >
                                 <span>{b.brand}</span>

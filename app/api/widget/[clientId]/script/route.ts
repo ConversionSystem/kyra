@@ -450,8 +450,24 @@ export async function GET(
   document.head.appendChild(style);
 
   // ── State ───────────────────────────────────────────────────────────────────
+  // sessionId is generated client-side on first script load so EVERY event
+  // (including the very first panel_open) is attributable to a session.
+  // Without this, first-visit telemetry rows had session_id=NULL and the
+  // funnel under-counted "Widget opened" relative to later stages.
+  // The server still echoes its own sessionId on the first chat response;
+  // we adopt the server's value only if we don't already have one stored.
   var sessionId = null;
   try { sessionId = localStorage.getItem(STORAGE_KEY); } catch(e) {}
+  if (!sessionId) {
+    try {
+      if (window.crypto && window.crypto.randomUUID) {
+        sessionId = 'w_' + window.crypto.randomUUID();
+      } else {
+        sessionId = 'w_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+      }
+      localStorage.setItem(STORAGE_KEY, sessionId);
+    } catch(e) { /* private mode → sessionId stays null, telemetry still flows */ }
+  }
   var isOpen = false;
   var isLoading = false;
   var greeted = false;

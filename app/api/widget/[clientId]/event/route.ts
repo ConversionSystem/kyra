@@ -84,9 +84,13 @@ export async function POST(
   // user_message = "<event>:<label>" so aggregations group cleanly.
   // ai_response = the URL (when relevant) for click-through analysis.
   // session_id ties the event to the visitor's conversation for funnel attribution.
-  // Fire-and-forget — never block the chip click on a DB write.
+  //
+  // AWAITED on purpose (was fire-and-forget — caused telemetry loss).
+  // Vercel kills the function the moment we return, and `void promise`
+  // doesn't keep the runtime alive. Worst case the visitor waits ~50ms;
+  // the widget calls this via sendBeacon anyway so there's no UI block.
   const sessionId = (body.sessionId || '').slice(0, 80) || null;
-  void supabase
+  const { error: insertErr } = await supabase
     .from('client_conversations')
     .insert({
       client_id: clientId,
@@ -96,10 +100,13 @@ export async function POST(
       ai_response: url,
       tokens_used: 0,
       session_id: sessionId,
-    })
-    .then(({ error }) => {
-      if (error) console.warn(`[widget/event] insert failed: ${error.message}`);
     });
+  if (insertErr) {
+    console.warn(`[widget/event] insert failed: ${insertErr.message}`);
+    // Don't surface a 500 — the widget UX shouldn't break because
+    // analytics are momentarily down. Return ok:false for visibility.
+    return NextResponse.json({ ok: false, reason: 'insert_failed' }, { status: 200, headers: CORS });
+  }
 
   return NextResponse.json({ ok: true }, { headers: CORS });
 }
