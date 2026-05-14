@@ -150,6 +150,12 @@ export function WidgetBuilderEmbedded({
     todayDeflection?: number;
     activeNow?: number;
     topSources?: Array<{ page: string; count: number }>;
+    // v6 additions (2026-05-14)
+    topBrands?: Array<{ brand: string; count: number }>;
+    avgSessionDurationSec?: number;
+    returningSessions?: number;
+    returningRate?: number;
+    totalSessions?: number;
   } | null>(null);
 
   // Drill-down modal state — click any aggregate row to inspect the
@@ -447,9 +453,9 @@ export function WidgetBuilderEmbedded({
         </div>
 
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          <div className={`grid grid-cols-1 gap-8 ${activeSection === 'appearance' ? 'lg:grid-cols-5' : ''}`}>
             {/* Left: Settings */}
-            <div className="lg:col-span-3 space-y-6">
+            <div className={activeSection === 'appearance' ? 'lg:col-span-3 space-y-6' : 'space-y-6'}>
 
               {/* ── APPEARANCE ── */}
               {activeSection === 'appearance' && (
@@ -983,8 +989,8 @@ export function WidgetBuilderEmbedded({
                         </div>
                       </div>
 
-                      {/* ── Engagement row — 4 stats cards ── */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {/* ── Engagement row — 6 stats cards ── */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                         <div className="p-3 rounded-xl bg-white border border-gray-200">
                           <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Sessions</div>
                           <div className="text-xl font-extrabold text-gray-900">{stats.sessionsCount ?? 0}</div>
@@ -994,6 +1000,25 @@ export function WidgetBuilderEmbedded({
                           <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Msgs / chat</div>
                           <div className="text-xl font-extrabold text-gray-900">{stats.avgMessagesPerConv ?? 0}</div>
                           <p className="text-[10px] text-gray-500 mt-0.5">engagement depth</p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-white border border-gray-200">
+                          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Avg duration</div>
+                          <div className="text-xl font-extrabold text-gray-900">
+                            {(() => {
+                              const s = stats.avgSessionDurationSec ?? 0;
+                              if (s === 0) return '—';
+                              if (s < 60) return `${s}s`;
+                              const m = Math.floor(s / 60);
+                              const r = s % 60;
+                              return r === 0 ? `${m}m` : `${m}m ${r}s`;
+                            })()}
+                          </div>
+                          <p className="text-[10px] text-gray-500 mt-0.5">first → last msg</p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-white border border-gray-200">
+                          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Returning</div>
+                          <div className="text-xl font-extrabold text-gray-900">{stats.returningRate ?? 0}%</div>
+                          <p className="text-[10px] text-gray-500 mt-0.5">{stats.returningSessions ?? 0} multi-day</p>
                         </div>
                         <div className="p-3 rounded-xl bg-white border border-gray-200">
                           <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Card CTR</div>
@@ -1047,17 +1072,42 @@ export function WidgetBuilderEmbedded({
                           <p className="text-sm font-semibold text-gray-700 mb-3">Most-asked categories</p>
                           <div className="flex flex-wrap gap-2">
                             {(stats.topCategories ?? []).map(c => (
-                              <span
+                              <button
                                 key={c.category}
-                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100"
+                                type="button"
+                                onClick={() => setDrillFilter({ kind: 'query', value: c.category, title: `Conversations mentioning "${c.category}"` })}
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 transition-colors"
                               >
                                 <span className="capitalize">{c.category}</span>
                                 <span className="text-indigo-500 font-bold">×{c.count}</span>
-                              </span>
+                              </button>
                             ))}
                           </div>
                           <p className="text-[11px] text-gray-500 mt-3 italic">
-                            Where customer demand is concentrated. Cross-reference with stock to make sure trending categories aren't selling out.
+                            Where customer demand is concentrated. Click any category to inspect the conversations. Cross-reference with stock to make sure trending categories aren't selling out.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* ── Top brands asked about ── */}
+                      {(stats.topBrands ?? []).length > 0 && (
+                        <div className="p-4 rounded-xl bg-white border border-gray-200">
+                          <p className="text-sm font-semibold text-gray-700 mb-3">Most-asked brands</p>
+                          <div className="flex flex-wrap gap-2">
+                            {(stats.topBrands ?? []).map(b => (
+                              <button
+                                key={b.brand}
+                                type="button"
+                                onClick={() => setDrillFilter({ kind: 'query', value: b.brand, title: `Conversations mentioning "${b.brand}"` })}
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100 transition-colors"
+                              >
+                                <span>{b.brand}</span>
+                                <span className="text-purple-500 font-bold">×{b.count}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-gray-500 mt-3 italic">
+                            Brands customers ask for by name. If a brand keeps trending, push it in your promos and quick-reply chips.
                           </p>
                         </div>
                       )}
@@ -1399,7 +1449,8 @@ export function WidgetBuilderEmbedded({
               )}
             </div>
 
-            {/* Right: Live Preview */}
+            {/* Right: Live Preview (Appearance tab only) */}
+            {activeSection === 'appearance' && (
             <div className="lg:col-span-2">
               <div className="sticky top-4">
                 <p className="text-sm font-medium text-gray-500 mb-3 flex items-center gap-2">
@@ -1471,6 +1522,7 @@ export function WidgetBuilderEmbedded({
                 </div>
               </div>
             </div>
+            )}
           </div>
         </CardContent>
       </Card>

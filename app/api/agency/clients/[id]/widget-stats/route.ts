@@ -34,6 +34,25 @@ const ESCALATION_PATTERNS = /\b(refund|complain|cancel|dispute|lawsuit|delivery.
 // answering — measures how often the bot gives up.
 const FALLBACK_PATTERNS = /\b((408)\s*\)?\s*[-.]?\s*456[-.]?\s*0420|call us|please give us a call|give us a call|our team can help|reach out to our team|please contact)\b/i;
 
+// Brand keywords for the "top brands" insight — same lift as categories,
+// but at the brand level. Kept loose so plural / casing variations match.
+const BRAND_KEYWORDS: Array<{ key: string; pattern: RegExp }> = [
+  { key: 'Stiiizy',         pattern: /\bstiiizy|stiizy|stizy\b/i },
+  { key: 'Raw Garden',      pattern: /\braw\s*garden\b/i },
+  { key: 'Jeeter',          pattern: /\bjeeter\b/i },
+  { key: 'Wyld',            pattern: /\bwyld\b/i },
+  { key: 'Kiva',            pattern: /\bkiva\b/i },
+  { key: 'Camino',          pattern: /\bcamino\b/i },
+  { key: 'Plus Gummies',    pattern: /\bplus\s*gumm/i },
+  { key: 'Heavy Hitters',   pattern: /\bheavy\s*hitters?\b/i },
+  { key: 'Connected',       pattern: /\bconnected\b/i },
+  { key: 'Alien Labs',      pattern: /\balien\s*labs?\b/i },
+  { key: 'Cookies',         pattern: /\bcookies\b/i },
+  { key: 'Papa & Barkley',  pattern: /\bpapa\s*(&|and)?\s*barkley\b/i },
+  { key: 'Select',          pattern: /\bselect\b/i },
+  { key: 'PAX',             pattern: /\bpax\b/i },
+];
+
 // Category keywords for the "top categories" insight. Matched against
 // user_message because parseProductIntent runs in the chat route, not here.
 const CATEGORY_KEYWORDS: Array<{ key: string; pattern: RegExp }> = [
@@ -182,6 +201,54 @@ export async function GET(
     .sort((a, b) => b.count - a.count)
     .slice(0, 7);
 
+  // ── Top brands searched ───────────────────────────────────────────────
+  const brandHits = new Map<string, number>();
+  for (const r of rows) {
+    const msg = r.user_message || '';
+    for (const { key, pattern } of BRAND_KEYWORDS) {
+      if (pattern.test(msg)) {
+        brandHits.set(key, (brandHits.get(key) ?? 0) + 1);
+      }
+    }
+  }
+  const topBrands = Array.from(brandHits.entries())
+    .map(([brand, count]) => ({ brand, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+
+  // ── Avg session duration (last message - first message per session) ───
+  // Skip 1-message sessions (no duration). Cap at 60 minutes to drop the
+  // long-tail of sessions that someone left open in a tab.
+  const sessionTimes = new Map<string, { first: number; last: number }>();
+  for (const r of rows) {
+    const sid = (r as { session_id?: string }).session_id;
+    if (!sid) continue;
+    const ts = new Date(r.created_at).getTime();
+    const cur = sessionTimes.get(sid);
+    if (!cur) { sessionTimes.set(sid, { first: ts, last: ts }); continue; }
+    if (ts < cur.first) cur.first = ts;
+    if (ts > cur.last) cur.last = ts;
+  }
+  const sessionDurations = Array.from(sessionTimes.values())
+    .map(({ first, last }) => Math.min(60 * 60 * 1000, last - first))
+    .filter(d => d > 0);
+  const avgSessionDurationMs = sessionDurations.length === 0 ? 0
+    : Math.round(sessionDurations.reduce((a, b) => a + b, 0) / sessionDurations.length);
+  const avgSessionDurationSec = Math.round(avgSessionDurationMs / 1000);
+
+  // ── Returning visitors — sessions that appear on multiple distinct days ─
+  const sessionDays = new Map<string, Set<string>>();
+  for (const r of rows) {
+    const sid = (r as { session_id?: string }).session_id;
+    if (!sid) continue;
+    const day = new Date(r.created_at).toISOString().slice(0, 10);
+    if (!sessionDays.has(sid)) sessionDays.set(sid, new Set());
+    sessionDays.get(sid)!.add(day);
+  }
+  const returningSessions = Array.from(sessionDays.values()).filter(s => s.size > 1).length;
+  const returningRate = sessionTimes.size === 0 ? 0
+    : Math.round((returningSessions / sessionTimes.size) * 100);
+
   // ── Telemetry event aggregations ──────────────────────────────────────
   const eventCounts: Record<string, number> = {};
   const chipClickCounts = new Map<string, number>();
@@ -212,24 +279,30 @@ export async function GET(
   // ── Conversion funnel ────────────────────────────────────────────────
   // Five-stage funnel from widget open → final action. Drop-off rates
   // computed against the previous stage's count.
-  // cards_shown event records the number of cards in `label`, so we sum
-  // those rather than just counting events.
-  const cardsShownTotal = eventRows
-    .filter(r => (r.user_message || '').startsWith('cards_shown:'))
-    .reduce((sum, r) => {
-      const n = Number((r.user_message || '').split(':')[1]);
-      return Number.isFinite(n) ? sum + n : sum;
-    }, 0);
+  //
+  // Funnel stages must be monotonic-ish (each stage shouldn't massively
+  // exceed the previous one), so for the "Cards shown" stage we count
+  // the NUMBER OF cards_shown EVENTS (= conversations that surfaced cards).
+  // The total card count (summed from labels) is still used as the
+  // denominator for card CTR calculations elsewhere.
+  const cardsShownEvents = eventRows
+    .filter(r => (r.user_message || '').startsWith('cards_shown:'));
+  const cardsShownEventCount = cardsShownEvents.length;
+  const cardsShownTotal = cardsShownEvents.reduce((sum, r) => {
+    const n = Number((r.user_message || '').split(':')[1]);
+    return Number.isFinite(n) ? sum + n : sum;
+  }, 0);
 
   const funnel = [
     { stage: 'Widget opened',  count: eventCounts.panel_open ?? 0 },
     { stage: 'First message',  count: eventCounts.first_message_sent ?? 0 },
-    { stage: 'Cards shown',    count: cardsShownTotal },
+    { stage: 'Cards shown',    count: cardsShownEventCount },
     { stage: 'Card clicked',   count: eventCounts.card_click ?? 0 },
     { stage: 'CTA chip clicked', count: eventCounts.chip_click ?? 0 },
   ];
 
   // ── Cards-to-clicks CTR ───────────────────────────────────────────────
+  // CTR uses total cards surfaced (not events) as denominator.
   const cardCTR = cardsShownTotal === 0 ? 0 : Math.round(((eventCounts.card_click ?? 0) / cardsShownTotal) * 100);
 
   // ── Period-over-period comparison (vs previous window of same length) ─
@@ -359,5 +432,11 @@ export async function GET(
     todayDeflection,
     activeNow,
     topSources,
+    // v6 additions (2026-05-14): brands, session duration, returning visitors
+    topBrands,
+    avgSessionDurationSec,
+    returningSessions,
+    returningRate,
+    totalSessions: sessionTimes.size,
   });
 }
