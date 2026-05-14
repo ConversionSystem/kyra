@@ -327,6 +327,14 @@ export async function GET(
     '.kyra-msg.bot .kyra-msg-bubble a:not(.kyra-product-link) { color:' + COLOR + '; text-decoration:underline; }',
     '.kyra-msg.user .kyra-msg-bubble { background:linear-gradient(135deg, ' + COLOR + ', ' + COLOR + 'dd); color:#fff; border-bottom-right-radius:6px; box-shadow:0 2px 8px ' + COLOR + '33; }',
     '.kyra-msg.user .kyra-msg-bubble a { color:#fff; text-decoration:underline; }',
+    /* Agent / human-takeover bubbles. Distinct teal accent + small "Agent"
+       label above the bubble so visitors immediately know the reply is
+       from a person, not the AI. */
+    '.kyra-msg.agent .kyra-msg-avatar { background:linear-gradient(135deg, #0d9488, #14b8a6); color:#fff; }',
+    '.kyra-msg.agent .kyra-msg-bubble { background:#fff; color:#0f172a; border:1.5px solid #99f6e4; border-bottom-left-radius:6px; box-shadow:0 1px 4px rgba(13,148,136,0.12); position:relative; margin-top:14px; }',
+    '.kyra-msg.agent .kyra-msg-bubble:before { content:attr(data-agent-name); position:absolute; top:-16px; left:2px; font-size:11px; font-weight:600; color:#0d9488; letter-spacing:0.02em; }',
+    /* "Team member just joined" inline system notice */
+    '.kyra-agent-joined { align-self:center; max-width:80%; margin:6px auto; padding:6px 14px; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:14px; color:#065f46; font-size:12px; font-weight:600; font-family:system-ui,-apple-system,sans-serif; text-align:center; }',
     '.kyra-msg-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg, ' + COLOR + ', ' + COLOR + 'aa); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; box-shadow:0 2px 6px rgba(0,0,0,0.1); }',
     /* Typing dots — smoother */
     '.kyra-typing { display:flex; align-items:center; gap:5px; padding:12px 16px; }',
@@ -975,6 +983,82 @@ export async function GET(
   }
 
   // ── Toggle ───────────────────────────────────────────────────────────────────
+  // ── Agent takeover polling ────────────────────────────────────────────────
+  // Poll the server every AGENT_POLL_INTERVAL_MS while the panel is open,
+  // pulling any agent-sent messages since our last cursor. New messages
+  // render as teal-bordered "Agent" bubbles; on the FIRST agent message
+  // we drop a "Team member just joined" green pill above to signal the
+  // takeover. Cursor lives in localStorage so panel close/reopen + page
+  // navigation don't re-render the same agent reply twice.
+  function getAgentCursor() {
+    try { return localStorage.getItem(POLL_CURSOR_KEY) || ''; } catch (e) { return ''; }
+  }
+  function setAgentCursor(iso) {
+    if (!iso) return;
+    try { localStorage.setItem(POLL_CURSOR_KEY, iso); } catch (e) {}
+  }
+  function renderAgentJoinedNotice(name) {
+    if (agentJoinedAnnounced) return;
+    agentJoinedAnnounced = true;
+    var notice = document.createElement('div');
+    notice.className = 'kyra-agent-joined';
+    notice.textContent = '👋 ' + (name || 'A team member') + ' just joined the chat';
+    messagesEl.appendChild(notice);
+  }
+  function renderAgentMessage(msg) {
+    var name = (msg.agentName || 'Team member').slice(0, 32);
+    renderAgentJoinedNotice(name);
+    var msgEl = document.createElement('div');
+    msgEl.className = 'kyra-msg agent';
+    var avatarChar = (name.charAt(0) || 'T').toUpperCase();
+    msgEl.innerHTML =
+      '<div class="kyra-msg-avatar">' + escHtml(avatarChar) + '</div>' +
+      '<div class="kyra-msg-bubble" data-agent-name="' + escHtml(name) + '">' +
+        escHtml(msg.message || '').replace(/\\n/g, '<br>') +
+      '</div>';
+    messagesEl.appendChild(msgEl);
+    scrollToBottom();
+    if (!isOpen) {
+      unreadCount++;
+      badge.textContent = unreadCount;
+      badge.style.display = 'flex';
+      try {
+        if (SOUND_ENABLED && !localStorage.getItem('kyra_sound_muted') && CHIME) CHIME.play().catch(function(){});
+      } catch (e) {}
+    }
+  }
+  function pollForAgentMessages() {
+    if (!sessionId) return; // No session yet → nothing to poll for
+    var since = getAgentCursor();
+    var url = API_BASE + '/api/widget/' + CLIENT_ID + '/poll?sessionId=' +
+      encodeURIComponent(sessionId) + (since ? '&since=' + encodeURIComponent(since) : '');
+    fetch(url, { method: 'GET', credentials: 'omit' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        var messages = data.messages || [];
+        for (var i = 0; i < messages.length; i++) {
+          renderAgentMessage(messages[i]);
+        }
+        if (data.cursor) setAgentCursor(data.cursor);
+      })
+      .catch(function () { /* network blip — try again next tick */ });
+  }
+  function startAgentPolling() {
+    if (agentPollTimer) return;
+    // First poll fires immediately so a returning visitor sees the agent's
+    // last message right when the panel opens (catches replies sent while
+    // the panel was closed).
+    pollForAgentMessages();
+    agentPollTimer = setInterval(pollForAgentMessages, AGENT_POLL_INTERVAL_MS);
+  }
+  function stopAgentPolling() {
+    if (agentPollTimer) {
+      clearInterval(agentPollTimer);
+      agentPollTimer = null;
+    }
+  }
+
   function openPanel() {
     isOpen = true;
     if (!trackedPanelOpen) {
@@ -1012,6 +1096,9 @@ export async function GET(
       fetchAndRenderTrending();
     }
     applyMobileLayout();
+    // Start polling for agent (human) replies — fires every AGENT_POLL_INTERVAL_MS
+    // while the panel is open. Idempotent; safe to call on each openPanel.
+    startAgentPolling();
     setTimeout(function() {
       if (inputEl) {
         inputEl.focus();
@@ -1030,6 +1117,11 @@ export async function GET(
     if (window.innerWidth > 600) {
       btn.style.bottom = '24px';
     }
+    // Stop the agent-poll loop. We don't need to keep it running while the
+    // panel is closed — when the visitor reopens the panel, startAgentPolling
+    // fires immediately and catches up via the localStorage cursor. Saves a
+    // request every 6s for the (common) case of an idle widget.
+    stopAgentPolling();
   }
 
   btn.addEventListener('click', function() { isOpen ? closePanel() : openPanel(); });
