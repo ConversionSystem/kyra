@@ -520,6 +520,7 @@ function renderHead(site: Record<string, any>, page: Record<string, any>, schema
   <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css">
   ${renderCSS()}
   ${schemaJson ? `<script type="application/ld+json">${schemaJson}</script>` : ''}
+  ${site.head_code ? `<!-- Agency-defined head code -->\n  ${site.head_code}\n  <!-- /Agency-defined head code -->` : ''}
 </head>`;
 }
 
@@ -1514,6 +1515,10 @@ function wrapPage(site: Record<string, any>, page: Record<string, any>, allPages
     '</main>',
     renderFooter(site),
     renderScripts(site),
+    // 2026-05-14: agency-defined body_code injected just before </body>.
+    site.body_code
+      ? `<!-- Agency-defined body code -->\n${site.body_code}\n<!-- /Agency-defined body code -->`
+      : '',
     '</body>',
     '</html>',
   ].join('\n');

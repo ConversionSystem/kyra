@@ -108,6 +108,7 @@ function renderHead(site: Record<string, any>, page: Record<string, any>): strin
       border: 1px solid rgba(214,234,254,0.2);
     }
   </style>
+  ${site.head_code ? `<!-- Agency-defined head code -->\n  ${site.head_code}\n  <!-- /Agency-defined head code -->` : ''}
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">`;
 }
@@ -361,12 +362,18 @@ function wrapPage(site: Record<string, any>, page: Record<string, any>, allPages
     ? `\n<script src="https://kyra.conversionsystem.com/api/widget/${clientId}/script" defer></script>`
     : '';
 
+  // 2026-05-14: agency-defined body_code injected just before </body>.
+  const bodyCode = site.body_code
+    ? `\n<!-- Agency-defined body code -->\n${site.body_code}\n<!-- /Agency-defined body code -->`
+    : '';
+
   return renderHead(site, page)
     + renderNavbar(site, allPages)
     + bodyContent
     + renderFooter(site, allPages)
     + renderScripts()
     + widgetScript
+    + bodyCode
     + '\n</body>\n</html>';
 }
 
