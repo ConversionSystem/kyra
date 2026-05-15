@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getAgencyForUser } from '@/lib/agency/queries';
 import { getAgencyCredits } from '@/lib/billing/credit-engine';
+import { isAdminAgency } from '@/lib/auth/admin';
 import { BillingPageClient } from './billing-page-client';
 
 export const metadata = { title: 'Billing — Kyra' };
@@ -47,8 +48,12 @@ export default async function AgencyBillingPage({
   const agencySettings = (result.agency.settings ?? {}) as Record<string, unknown>;
   const isSolo = agencySettings.account_type === 'solo';
 
-  // Seed credits for real-time component
+  // Seed credits for real-time component. Admin (platform-owner)
+  // agencies bypass billing entirely — see isAdminAgency() in
+  // lib/auth/admin.ts. We surface that as a flag on the client so the
+  // UI can render "Admin · Unlimited" instead of a stale balance.
   const credits = await getAgencyCredits(result.agency.id).catch(() => ({ balance: 0, lifetimeUsed: 0 }));
+  const isAdmin = await isAdminAgency(result.agency.id);
 
   // Derive checkout status — voice=success takes priority
   const checkoutStatus = voice === 'success' ? 'voice_success'
@@ -68,6 +73,7 @@ export default async function AgencyBillingPage({
       requirePlan={required === 'true' && !isPostCheckout}
       initialCreditsBalance={credits.balance}
       initialCreditsUsed={credits.lifetimeUsed}
+      isAdminAgency={isAdmin}
     />
   );
 }

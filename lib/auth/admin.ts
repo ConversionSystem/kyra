@@ -85,6 +85,72 @@ export function isAdminEmail(email: string | null | undefined): boolean {
   return ADMIN_EMAILS.includes(email.toLowerCase());
 }
 
+// ─── Admin agency identification ───────────────────────────────────────────
+//
+// Some agencies on the platform ARE the platform — they're owned by the
+// Conversion System team (hello@conversionsystem.com, angel@conversionsystem.com).
+// These admin agencies should NEVER be subject to credit billing, plan
+// limits, or paywalled features — they're the owner running the platform
+// for themselves and their own clients (e.g. Purple Lotus).
+//
+// Operator-reported outage 2026-05-15: the ConversionSystem admin agency
+// had its widget go dark for ~hours because requireCredits() blocked
+// every chat after the balance hit 49 (Sonnet 4.6 costs 75 per turn).
+// The agency had no monthly Stripe grant because it shouldn't have one —
+// it's the platform owner, not a paying customer. The credit gate
+// treated it as a regular tenant. This helper lets credit-consuming
+// surfaces short-circuit for admin agencies cleanly.
+//
+// Identification: look up the agency's owner_id → auth.users.email and
+// check against MASTER_EMAILS. This piggy-backs on the existing
+// canonical admin-email source (same env var override path) so there's
+// no new config knob and no separate list to keep in sync.
+//
+// Results are cached in-process for the lifetime of the serverless
+// invocation — agency ownership doesn't change mid-request, and re-
+// reading auth.users on every credit check would add a query to every
+// widget message platform-wide.
+
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+
+const _adminAgencyCache = new Map<string, boolean>();
+
+/**
+ * Returns true if the agency is owned by a MASTER-tier email
+ * (i.e. the platform-owner team). Credit checks, plan limits, and
+ * other paywalls should bypass for these agencies.
+ *
+ * Safe to call from any server context. Returns false on lookup error
+ * (fail-closed — better to wrongly charge a master than wrongly skip
+ * billing for a customer agency).
+ */
+export async function isAdminAgency(agencyId: string | null | undefined): Promise<boolean> {
+  if (!agencyId) return false;
+  const cached = _adminAgencyCache.get(agencyId);
+  if (cached !== undefined) return cached;
+
+  try {
+    const supabase = createServiceClientWithoutCookies();
+    const { data: agency } = await supabase
+      .from('agencies')
+      .select('owner_id')
+      .eq('id', agencyId)
+      .single();
+    if (!agency?.owner_id) {
+      _adminAgencyCache.set(agencyId, false);
+      return false;
+    }
+    const { data: user } = await supabase.auth.admin.getUserById(agency.owner_id as string);
+    const email = user?.user?.email ?? null;
+    const result = isMasterEmail(email);
+    _adminAgencyCache.set(agencyId, result);
+    return result;
+  } catch (err) {
+    console.warn('[isAdminAgency] lookup failed for', agencyId, err);
+    return false;
+  }
+}
+
 // ─── API-route guards ──────────────────────────────────────────────────────
 
 export type AuthGuardSuccess = { ok: true; user: User };

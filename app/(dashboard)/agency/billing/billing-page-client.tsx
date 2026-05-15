@@ -35,6 +35,9 @@ interface Props {
   // Seed values for real-time
   initialCreditsBalance?: number;
   initialCreditsUsed?: number;
+  // Set when the agency is the platform owner — UI shows "Admin · Unlimited"
+  // instead of a stale credit count and hides Manage-Credits / top-up CTAs.
+  isAdminAgency?: boolean;
 }
 
 export function BillingPageClient({
@@ -47,6 +50,7 @@ export function BillingPageClient({
   requirePlan = false,
   initialCreditsBalance = 0,
   initialCreditsUsed = 0,
+  isAdminAgency = false,
 }: Props) {
   const router = useRouter();
   const currentPlan = agency.plan as Plan;
@@ -346,10 +350,10 @@ export function BillingPageClient({
         </div>
 
         {/* Live credits card */}
-        <div className={`rounded-2xl border p-5 flex flex-col justify-between ${lowCreds ? 'border-red-200 bg-red-50/50' : 'border-emerald-100 bg-gradient-to-br from-emerald-50/40 to-white'}`}>
+        <div className={`rounded-2xl border p-5 flex flex-col justify-between ${isAdminAgency ? 'border-violet-200 bg-gradient-to-br from-violet-50/60 to-white' : lowCreds ? 'border-red-200 bg-red-50/50' : 'border-emerald-100 bg-gradient-to-br from-emerald-50/40 to-white'}`}>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Coins className={`h-4 w-4 ${lowCreds ? 'text-red-500' : 'text-emerald-600'}`} />
+              <Coins className={`h-4 w-4 ${isAdminAgency ? 'text-violet-600' : lowCreds ? 'text-red-500' : 'text-emerald-600'}`} />
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Credits</p>
               <span className="ml-auto flex items-center gap-1 text-[10px] text-gray-400">
                 <span className="relative flex h-1.5 w-1.5">
@@ -359,34 +363,51 @@ export function BillingPageClient({
                 live
               </span>
             </div>
-            <p className={`text-4xl font-black mt-1 ${lowCreds ? 'text-red-600' : 'text-gray-900'}`}>
-              {creditsBalance.toLocaleString()}
-            </p>
-            <p className="text-xs text-gray-400 mt-0.5">remaining</p>
+            {isAdminAgency ? (
+              <>
+                <p className="text-4xl font-black mt-1 text-violet-700">∞</p>
+                <p className="text-xs text-violet-700 font-semibold mt-0.5">Platform admin · unlimited</p>
+              </>
+            ) : (
+              <>
+                <p className={`text-4xl font-black mt-1 ${lowCreds ? 'text-red-600' : 'text-gray-900'}`}>
+                  {creditsBalance.toLocaleString()}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">remaining</p>
+              </>
+            )}
           </div>
 
           <div className="mt-4">
-            <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1.5">
-              <TrendingUp className="h-3 w-3" />
-              <span><span className="font-semibold text-gray-700">{creditsUsed.toLocaleString()}</span> used lifetime</span>
-            </div>
-            {/* Burn bar */}
-            {(creditsBalance + creditsUsed) > 0 && (
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${lowCreds ? 'bg-red-400' : 'bg-emerald-400'}`}
-                  style={{ width: `${Math.min(100, (creditsUsed / Math.max(creditsUsed + creditsBalance, 1)) * 100)}%` }}
-                />
-              </div>
-            )}
-            {lowCreds && (
-              <p className="text-[11px] text-red-600 font-semibold mt-1.5">
-                {creditsBalance === 0 ? 'Out of credits' : `Only ${creditsBalance} left`} — top up below
+            {isAdminAgency ? (
+              <p className="text-[11px] text-violet-700/80 leading-relaxed">
+                Platform-owner agency — credit gating is bypassed for all AI surfaces (widget chat, voice, pipeline, etc.). No top-up needed.
               </p>
+            ) : (
+              <>
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1.5">
+                  <TrendingUp className="h-3 w-3" />
+                  <span><span className="font-semibold text-gray-700">{creditsUsed.toLocaleString()}</span> used lifetime</span>
+                </div>
+                {/* Burn bar */}
+                {(creditsBalance + creditsUsed) > 0 && (
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${lowCreds ? 'bg-red-400' : 'bg-emerald-400'}`}
+                      style={{ width: `${Math.min(100, (creditsUsed / Math.max(creditsUsed + creditsBalance, 1)) * 100)}%` }}
+                    />
+                  </div>
+                )}
+                {lowCreds && (
+                  <p className="text-[11px] text-red-600 font-semibold mt-1.5">
+                    {creditsBalance === 0 ? 'Out of credits' : `Only ${creditsBalance} left`} — top up below
+                  </p>
+                )}
+                <Link href="/agency/credits" className="mt-3 block text-center text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg py-1.5 transition">
+                  Manage Credits →
+                </Link>
+              </>
             )}
-            <Link href="/agency/credits" className="mt-3 block text-center text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg py-1.5 transition">
-              Manage Credits →
-            </Link>
           </div>
         </div>
       </div>
