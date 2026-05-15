@@ -9,15 +9,23 @@ interface CreditBadgeProps {
   className?: string;
 }
 
-async function fetchCredits(): Promise<number> {
+interface CreditState {
+  balance: number;
+  isAdminAgency: boolean;
+}
+
+async function fetchCredits(): Promise<CreditState> {
   const res = await fetch('/api/agency/credits');
-  if (!res.ok) return 0;
+  if (!res.ok) return { balance: 0, isAdminAgency: false };
   const data = await res.json();
-  return data.balance ?? 0;
+  return {
+    balance: data.balance ?? 0,
+    isAdminAgency: data.isAdminAgency === true,
+  };
 }
 
 export function CreditBadge({ className = '' }: CreditBadgeProps) {
-  const { data: balance, loading, refetch } = usePolling<number>({
+  const { data, loading, refetch } = usePolling<CreditState>({
     key: 'credits',
     fetcher: fetchCredits,
     intervalMs: 15_000,
@@ -30,7 +38,21 @@ export function CreditBadge({ className = '' }: CreditBadgeProps) {
     return () => window.removeEventListener('kyra:credit-update', handleCreditUpdate);
   }, [refetch]);
 
-  if (loading || balance === null) return null;
+  if (loading || data === null) return null;
+  const { balance, isAdminAgency } = data;
+
+  // Admin (platform-owner) agency — bypass billing entirely.
+  if (isAdminAgency) {
+    return (
+      <Link
+        href="/agency/billing"
+        className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold bg-violet-50 text-violet-700 hover:bg-violet-100 transition-all ${className}`}
+        title="Platform admin — credit billing bypassed"
+      >
+        <Coins className="h-3 w-3" /> ∞ Admin
+      </Link>
+    );
+  }
 
   const isLow = balance < 50;
   const isEmpty = balance <= 0;
@@ -59,13 +81,15 @@ export function CreditBadge({ className = '' }: CreditBadgeProps) {
 }
 
 export function CreditWarningBanner() {
-  const { data: balance } = usePolling<number>({
+  const { data } = usePolling<CreditState>({
     key: 'credits',
     fetcher: fetchCredits,
     intervalMs: 15_000,
   });
 
-  if (balance === null || balance > 0) return null;
+  // Hide entirely when the agency is the platform owner (admin bypass)
+  // or when there's still a balance.
+  if (data === null || data.isAdminAgency || data.balance > 0) return null;
 
   return (
     <div className="bg-red-50 border border-red-200 rounded-lg p-3 mx-4 mb-3 flex items-center gap-3">

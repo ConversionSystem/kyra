@@ -14,6 +14,12 @@
 // ============================================================================
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { isAdminAgency } from '@/lib/auth/admin';
+
+// Sentinel balance returned for admin (platform-owner) agencies. Large
+// enough that downstream "low balance" thresholds never trip, small
+// enough to detect by eye in logs if it ever surfaces unexpectedly.
+const ADMIN_AGENCY_SENTINEL_BALANCE = 999_999_999;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -170,6 +176,16 @@ export async function requireCredits(
     return { allowed: true, balance: 0, cost: 0, shortfall: 0 };
   }
 
+  // Admin (platform-owner) agencies bypass credit billing entirely —
+  // they're the Conversion System team running Kyra on their own clients
+  // (e.g. Purple Lotus). Outage 2026-05-15 traced back to the admin
+  // agency being treated as a paying customer; this short-circuit
+  // prevents the regression at the engine level so every credit-
+  // consuming surface (widget chat, voice, pipeline, etc) is covered.
+  if (await isAdminAgency(agencyId)) {
+    return { allowed: true, balance: ADMIN_AGENCY_SENTINEL_BALANCE, cost: 0, shortfall: 0 };
+  }
+
   const { balance } = await getAgencyCredits(agencyId);
 
   return {
@@ -209,6 +225,18 @@ export async function deductCredits(
   // Free actions — log but don't deduct
   if (totalCost === 0) {
     return { ok: true, newBalance: 0, insufficient: false, lowBalance: false };
+  }
+
+  // Admin (platform-owner) agency bypass — never deduct from the
+  // platform owner. Mirrors the requireCredits short-circuit above so
+  // the two helpers stay in lock-step.
+  if (await isAdminAgency(agencyId)) {
+    return {
+      ok: true,
+      newBalance: ADMIN_AGENCY_SENTINEL_BALANCE,
+      insufficient: false,
+      lowBalance: false,
+    };
   }
 
   try {
