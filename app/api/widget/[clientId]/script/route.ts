@@ -314,18 +314,18 @@ export async function GET(
     /* Backdrop */
     '#kyra-widget-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.35); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); z-index:99997; }',
     /* Panel — modern glass morphism */
-    // Panel sizing — taller + wider for a more spacious feel across all
-    // devices. Width and height use clamp() so the panel grows with the
-    // viewport but never overflows. JS in applyMobileLayout() takes over
-    // on resize for pixel-perfect mobile sizing (visualViewport-aware),
-    // but these CSS values are what the visitor sees on the FIRST paint
-    // before any JS runs — so they need to be sensible defaults.
-    //   Width  : at least 360px, ideally 32vw, never more than 440px
-    //   Height : at least 560px, ideally 80vh, never more than 800px
-    //            (caps tall-monitor cases where 80vh feels excessive)
-    //   max-height keeps a 110px gap from the bottom (button + breathing room)
-    //   max-width keeps a 32px gap on small viewports
-    '#kyra-widget-panel { position:fixed; bottom:104px; ' + (POSITION === 'bottom-left' ? 'left:28px; transform-origin:bottom left;' : 'right:28px; transform-origin:bottom right;') + ' width:clamp(360px, 32vw, 440px); max-width:calc(100vw - 32px); height:clamp(560px, 80vh, 800px); max-height:calc(100vh - 110px); background:#fff; color:#111; border-radius:24px; box-shadow:0 25px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.04); z-index:99998; display:flex; flex-direction:column; overflow:hidden; transition:opacity 0.25s ease, transform 0.25s ease; }',
+    // Panel sizing — calibrated against the Voodoo/Intercom reference
+    // (operator feedback 2026-05-15: prior 800px cap was TOO TALL on
+    // desktop). Three goals:
+    //   1. Spacious enough to comfortably read a multi-message thread
+    //   2. NEVER reach the top half of the viewport on a laptop
+    //   3. Leave visible page chrome above on mobile so the visitor
+    //      knows they're still on the same site
+    // Values that hit all three:
+    //   Width  : clamp(360px, 28vw, 400px)  — narrower, feels chat-like
+    //   Height : clamp(560px, 75vh, 680px)  — 680px cap, was 800
+    //   max-height calc(100vh - 120px)      — 20px more bottom buffer
+    '#kyra-widget-panel { position:fixed; bottom:104px; ' + (POSITION === 'bottom-left' ? 'left:28px; transform-origin:bottom left;' : 'right:28px; transform-origin:bottom right;') + ' width:clamp(360px, 28vw, 400px); max-width:calc(100vw - 32px); height:clamp(560px, 75vh, 680px); max-height:calc(100vh - 120px); background:#fff; color:#111; border-radius:24px; box-shadow:0 25px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.04); z-index:99998; display:flex; flex-direction:column; overflow:hidden; transition:opacity 0.25s ease, transform 0.25s ease; }',
     '#kyra-widget-panel.hidden { opacity:0; transform:translateY(16px) scale(0.96); pointer-events:none; }',
     /* Header — gradient with blur */
     '#kyra-widget-header { background:linear-gradient(135deg, ' + COLOR + ', ' + COLOR + 'cc); padding:18px 20px; display:flex; align-items:center; gap:14px; }',
@@ -1193,28 +1193,24 @@ export async function GET(
   closeBtn.addEventListener('click', closePanel);
 
   // ── Responsive sizing (JS-driven — more reliable than CSS media queries on iOS) ─
-  // Three tiers + viewport-relative math so the widget feels right on
-  // every device the same way. Operator-reported issue 2026-05-15: panel
-  // looked short on mobile, desktop AND tablet — empty space below the
-  // chips on welcome state.
-  //   Mobile (≤600px)  : 92vh, full-width, anchored to keyboard-aware bottom
-  //   Tablet (601-900) : 420px × min(720, vh - 100)
-  //   Desktop (≥901)   : 440px × min(800, vh - 100)
-  // Widths capped by calc(100vw - 32px) so they never overflow narrow desktops.
+  // Calibrated against the Voodoo/Intercom reference 2026-05-15:
+  //   Mobile (≤600px)   : 85vh — tall enough to read threads but leaves
+  //                       visible page chrome above so the visitor knows
+  //                       they're still on the site. (Was 92vh — too
+  //                       close to full-screen.)
+  //   Tablet+Desktop    : 400 × min(680, vh - 120). Single tier — tablet
+  //                       was previously its own tier but with the new
+  //                       calmer 400×680 ceiling there's no need to
+  //                       differentiate; both feel right.
   function applyMobileLayout() {
     var w = window.innerWidth;
     var isMobile = w <= 600;
-    var isTablet = w > 600 && w <= 900;
     if (isMobile) {
-      // Use visualViewport for accurate height (accounts for iOS keyboard
-      // + browser chrome). 92% of the VISIBLE viewport leaves a small
-      // strip showing the page above so the visitor sees they're still
-      // on the same site — bumped from 80% based on operator feedback.
       var vvp = window.visualViewport;
       var vvpHeight = vvp ? vvp.height : window.innerHeight;
       var vvpOffsetTop = vvp ? vvp.offsetTop : 0;
       var bottomOffset = Math.round(window.innerHeight - vvpOffsetTop - vvpHeight);
-      var panelH = Math.round(vvpHeight * 0.92);
+      var panelH = Math.round(vvpHeight * 0.85);
       panel.style.position = 'fixed';
       panel.style.left = '0';
       panel.style.right = '0';
@@ -1230,26 +1226,25 @@ export async function GET(
         btn.style.bottom = '24px';
       }
     } else {
-      // Desktop / tablet — pick width + height per tier, then clamp height
-      // by viewport so we never crowd the top of the screen on a laptop.
-      var width = isTablet ? 420 : 440;
-      var idealH = isTablet ? 720 : 800;
-      var maxByVh = Math.max(560, window.innerHeight - 100);
+      var idealH = 680;
+      // vh - 120 ensures we never reach near the top of the viewport.
+      // Floor at 520 so very-short laptop screens (≤640px) still show a
+      // usable panel rather than a postage stamp.
+      var maxByVh = Math.max(520, window.innerHeight - 120);
       var height = Math.min(idealH, maxByVh);
       panel.style.position = 'fixed';
       panel.style.left = '';
       panel.style.right = POSITION === 'bottom-left' ? '' : '24px';
       panel.style.bottom = '100px';
       panel.style.top = 'auto';
-      panel.style.width = width + 'px';
+      panel.style.width = '400px';
       panel.style.maxWidth = 'calc(100vw - 32px)';
       panel.style.height = height + 'px';
-      panel.style.maxHeight = 'calc(100vh - 100px)';
+      panel.style.maxHeight = 'calc(100vh - 120px)';
       panel.style.borderRadius = '20px';
       btn.style.display = '';
       btn.style.bottom = '24px';
     }
-    // Always scroll messages to bottom when layout changes (keyboard open/close)
     if (isOpen) scrollToBottom();
   }
 
