@@ -42,6 +42,7 @@ import {
 } from '@/lib/chat/lead-capture';
 import { requireCredits } from '@/lib/billing/credit-engine';
 import { getCreditsForModel } from '@/lib/billing/model-credits';
+import { resolveAgencyApiKey } from '@/lib/billing/byok';
 import {
   getDirectLLMClient,
   resolveModel,
@@ -241,15 +242,42 @@ export async function POST(request: NextRequest) {
   // the LLM-error path.
   console.log(`[widget/chat] model=${routedModel} client=${clientId.slice(0, 8)}`);
 
-  // ── Model-aware credit check ──────────────────────────────────────────────
+  // ── BYOK resolution (CLAUDE.md rule: BYOK agencies pay zero platform credits) ─
+  // Resolve the agency's BYOK key BEFORE the credit check. When skipCredits
+  // is true (paid plan + own API key), the visitor's chat never touches
+  // platform credits — so the credit gate must be bypassed.
+  //
+  // Operator report 2026-05-15: Purple Lotus widget was returning
+  // "Thanks for reaching out! Please give us a call for immediate
+  // assistance." to every query — including chips like TODAY'S DEALS
+  // and LOTUS NOW. Root cause: widget chat was ALWAYS running
+  // requireCredits regardless of BYOK status. When the agency's platform
+  // credit balance hit zero, every chat short-circuited to the canned
+  // message. Now BYOK skips the check entirely.
+  const byok = await resolveAgencyApiKey(client.agency_id).catch(() => null);
+  const byokSkipsCredits = byok?.skipCredits === true;
+
+  // ── Model-aware credit check (non-BYOK path only) ─────────────────────────
   const preflightAction = classifyUsage(message.trim());
   const widgetPreflightCost = getCreditsForModel(routedModel);
-  const creditCheck = await requireCredits(client.agency_id, preflightAction, 1, widgetPreflightCost);
-  if (!creditCheck.allowed) {
-    return NextResponse.json(
-      { response: 'Thanks for reaching out! Please give us a call for immediate assistance.', error: 'credits_depleted' },
-      { headers: CORS },
-    );
+  if (!byokSkipsCredits) {
+    const creditCheck = await requireCredits(client.agency_id, preflightAction, 1, widgetPreflightCost);
+    if (!creditCheck.allowed) {
+      // Loud server-side warning so operators can spot this in Vercel
+      // logs the moment it happens. Previously the failure was silent —
+      // visitor saw "please call us" and the operator had no signal.
+      console.warn(
+        `[widget/chat] CREDITS DEPLETED agency=${client.agency_id.slice(0, 8)} ` +
+        `client=${clientId.slice(0, 8)} balance=${creditCheck.balance} ` +
+        `cost=${creditCheck.cost} shortfall=${creditCheck.shortfall} ` +
+        `model=${routedModel}. Widget will return canned fallback until ` +
+        `credits top up OR agency adds BYOK key.`,
+      );
+      return NextResponse.json(
+        { response: 'Thanks for reaching out! Please give us a call for immediate assistance.', error: 'credits_depleted' },
+        { headers: CORS },
+      );
+    }
   }
 
   // Build session ID (persist conversation across messages)
@@ -1198,10 +1226,14 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
             aiResponse,
             sourceUrl: sourceUrl || null,
           });
-          await checkAndDeductCredits(client.agency_id, routedModel, preflightAction, {
-            clientId: client.id,
-            description: `Web chat (${routedModel}, stream): ${message.trim().slice(0, 50)}`,
-          });
+          // BYOK bypass — paid-plan agencies with their own API key
+          // shouldn't be charged platform credits per CLAUDE.md.
+          if (!byokSkipsCredits) {
+            await checkAndDeductCredits(client.agency_id, routedModel, preflightAction, {
+              clientId: client.id,
+              description: `Web chat (${routedModel}, stream): ${message.trim().slice(0, 50)}`,
+            });
+          }
         } catch (err) {
           console.error('[widget/chat] persist error (stream):', err);
         }
@@ -1328,11 +1360,15 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
     sourceUrl: sourceUrl || null,
   });
 
-  // Deduct credit (also awaited to avoid billing gaps)
-  await checkAndDeductCredits(client.agency_id, routedModel, preflightAction, {
-    clientId: client.id,
-    description: `Web chat (${routedModel}): ${message.trim().slice(0, 50)}`,
-  });
+  // Deduct credit (also awaited to avoid billing gaps).
+  // BYOK bypass — paid-plan agencies with their own API key shouldn't be
+  // charged platform credits per CLAUDE.md.
+  if (!byokSkipsCredits) {
+    await checkAndDeductCredits(client.agency_id, routedModel, preflightAction, {
+      clientId: client.id,
+      description: `Web chat (${routedModel}): ${message.trim().slice(0, 50)}`,
+    });
+  }
 
 
 
