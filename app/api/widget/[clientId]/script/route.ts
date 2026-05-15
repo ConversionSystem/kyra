@@ -253,6 +253,15 @@ export async function GET(
   // widget_trending_enabled=false. Default on; gracefully no-ops when the
   // client doesn't have Jane Algolia configured.
   var TRENDING_ENABLED = ${JSON.stringify(cfg.widget_trending_enabled !== false)};
+  // Disclaimer fine-print shown beneath the textarea. Default copy is
+  // cannabis-specific (the most common use case); other industries are
+  // expected to override via container_config.widget_disclaimer.
+  // Set to empty string to hide the disclaimer entirely.
+  var WIDGET_DISCLAIMER = ${JSON.stringify(
+    typeof cfg.widget_disclaimer === 'string'
+      ? cfg.widget_disclaimer
+      : 'AI-generated recommendations. Always consult a budtender for personalized advice.'
+  )};
   // Behavior toggles (previously saved in container_config but unread —
   // wiring fixed 2026-05-12). Each defaults to "on" so existing tenants
   // keep prior behavior; operators can turn off per-client in Settings.
@@ -306,9 +315,11 @@ export async function GET(
     '#kyra-widget-panel, #kyra-widget-panel *, #kyra-widget-btn, #kyra-proactive { font-family:' + WIDGET_FONT_STACK + '; }',
     '*, *::before, *::after { box-sizing:border-box; }',
     /* FAB Button — premium with glow */
-    '#kyra-widget-btn { position:fixed; bottom:28px; ' + (POSITION === 'bottom-left' ? 'left:28px;' : 'right:28px;') + ' width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg, ' + COLOR + ', ' + COLOR + 'dd); border:none; cursor:pointer; box-shadow:0 6px 24px ' + COLOR + '55, 0 2px 8px rgba(0,0,0,0.15); z-index:99999; display:flex; align-items:center; justify-content:center; transition:transform 0.2s ease, box-shadow 0.2s ease; }',
-    '#kyra-widget-btn:hover { transform:scale(1.06); box-shadow:0 8px 32px ' + COLOR + '66, 0 4px 12px rgba(0,0,0,0.2); }',
-    '#kyra-widget-btn svg { width:28px; height:28px; fill:white; transition:transform 0.3s ease; }',
+    // FAB sized down 64→56 (operator feedback 2026-05-15: previous size
+    // felt too big against modern chat widgets like Voodoo/Intercom).
+    '#kyra-widget-btn { position:fixed; bottom:28px; ' + (POSITION === 'bottom-left' ? 'left:28px;' : 'right:28px;') + ' width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg, ' + COLOR + ', ' + COLOR + 'dd); border:none; cursor:pointer; box-shadow:0 6px 20px ' + COLOR + '55, 0 2px 6px rgba(0,0,0,0.15); z-index:99999; display:flex; align-items:center; justify-content:center; transition:transform 0.2s ease, box-shadow 0.2s ease; }',
+    '#kyra-widget-btn:hover { transform:scale(1.06); box-shadow:0 8px 28px ' + COLOR + '66, 0 4px 10px rgba(0,0,0,0.2); }',
+    '#kyra-widget-btn svg { width:24px; height:24px; fill:white; transition:transform 0.3s ease; }',
     /* Badge */
     '#kyra-widget-badge { position:absolute; top:-4px; right:-4px; min-width:20px; height:20px; background:#ef4444; border-radius:10px; display:none; align-items:center; justify-content:center; font-size:11px; color:#fff; font-weight:700; font-family:system-ui,-apple-system,sans-serif; padding:0 5px; border:2px solid #fff; }',
     /* Backdrop */
@@ -325,7 +336,7 @@ export async function GET(
     //   Width  : clamp(360px, 28vw, 400px)  — narrower, feels chat-like
     //   Height : clamp(560px, 75vh, 680px)  — 680px cap, was 800
     //   max-height calc(100vh - 120px)      — 20px more bottom buffer
-    '#kyra-widget-panel { position:fixed; bottom:104px; ' + (POSITION === 'bottom-left' ? 'left:28px; transform-origin:bottom left;' : 'right:28px; transform-origin:bottom right;') + ' width:clamp(360px, 28vw, 400px); max-width:calc(100vw - 32px); height:clamp(560px, 75vh, 680px); max-height:calc(100vh - 120px); background:#fff; color:#111; border-radius:24px; box-shadow:0 25px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.04); z-index:99998; display:flex; flex-direction:column; overflow:hidden; transition:opacity 0.25s ease, transform 0.25s ease; }',
+    '#kyra-widget-panel { position:fixed; bottom:96px; ' + (POSITION === 'bottom-left' ? 'left:28px; transform-origin:bottom left;' : 'right:28px; transform-origin:bottom right;') + ' width:clamp(360px, 28vw, 400px); max-width:calc(100vw - 32px); height:clamp(560px, 75vh, 680px); max-height:calc(100vh - 120px); background:#fff; color:#111; border-radius:24px; box-shadow:0 25px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.04); z-index:99998; display:flex; flex-direction:column; overflow:hidden; transition:opacity 0.25s ease, transform 0.25s ease; }',
     '#kyra-widget-panel.hidden { opacity:0; transform:translateY(16px) scale(0.96); pointer-events:none; }',
     /* Header — gradient with blur */
     '#kyra-widget-header { background:linear-gradient(135deg, ' + COLOR + ', ' + COLOR + 'cc); padding:18px 20px; display:flex; align-items:center; gap:14px; }',
@@ -367,8 +378,19 @@ export async function GET(
     '.kyra-typing span:nth-child(3) { animation-delay:0.3s; }',
     '@keyframes kyra-bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-8px)} }',
     /* Input — pill style */
-    '#kyra-widget-input-area { padding:14px 16px; background:#fff; border-top:1px solid #eef0f4; display:flex; gap:10px; align-items:flex-end; padding-bottom:max(14px, env(safe-area-inset-bottom)); }',
-    '#kyra-widget-input { flex:1; border:1.5px solid #e8eaf0; border-radius:24px; padding:12px 18px; font-size:15px; font-family:system-ui,-apple-system,sans-serif; resize:none; outline:none; max-height:110px; line-height:1.4; color:#1a1a1a; background:#f7f8fa; -webkit-appearance:none; transition:border-color 0.2s, box-shadow 0.2s, background 0.2s; }',
+    // Input area wraps the textarea + send button on the top row and the
+    // disclaimer fine-print below — two-row flex so the disclaimer stays
+    // anchored to the bottom of the panel and never overlaps the bubble.
+    '#kyra-widget-input-area { padding:14px 16px 10px; background:#fff; border-top:1px solid #eef0f4; display:flex; flex-direction:column; gap:6px; padding-bottom:max(10px, env(safe-area-inset-bottom)); }',
+    '#kyra-widget-input-row { display:flex; gap:10px; align-items:flex-end; }',
+    // Taller textarea so the message field doesn't feel cramped on first
+    // type. min-height 56px ≈ 2 visible lines + breathing room. Still
+    // grows up to max-height:120px before scrolling.
+    '#kyra-widget-input { flex:1; border:1.5px solid #e8eaf0; border-radius:20px; padding:14px 18px; font-size:15px; font-family:system-ui,-apple-system,sans-serif; resize:none; outline:none; min-height:56px; max-height:120px; line-height:1.4; color:#1a1a1a; background:#f7f8fa; -webkit-appearance:none; transition:border-color 0.2s, box-shadow 0.2s, background 0.2s; }',
+    // Disclaimer — small, centered, low-contrast. Hardcoded copy for
+    // cannabis dispensaries; non-cannabis tenants get it overridden via
+    // container_config.widget_disclaimer (handled below via WIDGET_DISCLAIMER).
+    '#kyra-widget-disclaimer { font-size:10.5px; line-height:1.35; color:#9ca3af; text-align:center; padding:0 6px; font-family:system-ui,-apple-system,sans-serif; }',
     '#kyra-widget-input:focus { border-color:' + COLOR + '; box-shadow:0 0 0 3px ' + COLOR + '18; background:#fff; }',
     '#kyra-widget-input::placeholder { color:#a0a5b0; }',
     '#kyra-widget-send { width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg, ' + COLOR + ', ' + COLOR + 'cc); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s ease; box-shadow:0 2px 8px ' + COLOR + '33; }',
@@ -389,8 +411,10 @@ export async function GET(
        leaving text invisible (brand-on-brand). Dedicated class fixes it. */
     '.kyra-quick-btn-cta { color:' + COLOR + '; border-color:' + COLOR + '60; font-weight:700; }',
     '.kyra-quick-btn-cta:hover { color:#fff !important; background:' + COLOR + '; border-color:' + COLOR + '; }',
-    /* Product cards — structured grid rendering of live inventory */
-    '.kyra-cards { display:flex; flex-direction:column; gap:10px; padding:4px 16px 8px; }',
+    /* Product cards — structured grid rendering of live inventory.
+       Cards container fades in when added to the DOM (after the streamed
+       text bubble finishes) so the visual order reads naturally. */
+    '.kyra-cards { display:flex; flex-direction:column; gap:10px; padding:8px 16px 8px; animation:kyra-fade-in 0.35s ease; }',
     '.kyra-card { display:flex; gap:12px; background:#fff; border:1px solid #eef0f4; border-radius:16px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04); transition:transform 0.15s, box-shadow 0.15s; font-family:system-ui,-apple-system,"SF Pro Text",sans-serif; position:relative; }',
     '.kyra-card:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.08); border-color:' + COLOR + '40; }',
     /* Out-of-stock overlay — Jane Menu API V1 freshness check (Phase 1b) */
@@ -435,7 +459,7 @@ export async function GET(
     '.kyra-support-link:hover { background:' + COLOR + '; color:#fff; border-color:' + COLOR + '; transform:translateY(-1px); box-shadow:0 2px 6px ' + COLOR + '33; }',
     '.kyra-support-link:before { content:"\u2192"; font-weight:700; font-size:13px; opacity:0.7; }',
     /* Proactive bubble */
-    '#kyra-proactive { position:fixed; bottom:104px; ' + (POSITION === 'bottom-left' ? 'left:28px;' : 'right:28px;') + ' background:#fff; padding:14px 18px; border-radius:20px 20px 6px 20px; box-shadow:0 8px 30px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04); font-size:14px; color:#1a1a1a; font-family:system-ui,-apple-system,sans-serif; max-width:300px; z-index:99996; cursor:pointer; animation:kyra-fade-in 0.35s ease; line-height:1.5; }',
+    '#kyra-proactive { position:fixed; bottom:96px; ' + (POSITION === 'bottom-left' ? 'left:28px;' : 'right:28px;') + ' background:#fff; padding:14px 18px; border-radius:20px 20px 6px 20px; box-shadow:0 8px 30px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04); font-size:14px; color:#1a1a1a; font-family:system-ui,-apple-system,sans-serif; max-width:300px; z-index:99996; cursor:pointer; animation:kyra-fade-in 0.35s ease; line-height:1.5; }',
     '#kyra-proactive .close { position:absolute; top:6px; right:10px; cursor:pointer; color:#b0b5c0; font-size:14px; transition:color 0.15s; }',
     '#kyra-proactive .close:hover { color:#6b7280; }',
     '@keyframes kyra-fade-in { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }',
@@ -574,10 +598,13 @@ export async function GET(
     '</div>',
     '<div id="kyra-widget-messages"></div>',
     '<div id="kyra-widget-input-area">',
-    '  <textarea id="kyra-widget-input" placeholder="Type a message..." rows="1"></textarea>',
-    '  <button id="kyra-widget-send" aria-label="Send">',
-    '    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
-    '  </button>',
+    '  <div id="kyra-widget-input-row">',
+    '    <textarea id="kyra-widget-input" placeholder="Type a message..." rows="1"></textarea>',
+    '    <button id="kyra-widget-send" aria-label="Send">',
+    '      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
+    '    </button>',
+    '  </div>',
+    WIDGET_DISCLAIMER ? '  <div id="kyra-widget-disclaimer">' + escHtml(WIDGET_DISCLAIMER) + '</div>' : '',
     '</div>',
     POWERED_BY ? '<div id="kyra-widget-powered"><a href="https://kyra.conversionsystem.com?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" rel="noopener">⚡ Powered by <strong>Kyra</strong></a></div>' : '',
   ].join('');
@@ -1235,7 +1262,7 @@ export async function GET(
       panel.style.position = 'fixed';
       panel.style.left = '';
       panel.style.right = POSITION === 'bottom-left' ? '' : '24px';
-      panel.style.bottom = '100px';
+      panel.style.bottom = '96px';
       panel.style.top = 'auto';
       panel.style.width = '400px';
       panel.style.maxWidth = 'calc(100vw - 32px)';
@@ -1517,6 +1544,13 @@ export async function GET(
     var botBubbleEl = null;
     var botFullText = '';
     var leadCaptured = false;
+    // Buffers for deferred render of cards / chips / pivot — see the
+    // 'results' / 'chips' / 'pivotAction' switch arms below. Rendered
+    // together AFTER stream completion with a 350ms beat so the visitor
+    // reads the bot's text reply first.
+    var pendingResults = null;
+    var pendingChips = null;
+    var pendingPivot = null;
 
     function ensureBotBubble() {
       if (botMsgEl) return;
@@ -1572,11 +1606,17 @@ export async function GET(
           history.push({ role: 'assistant', content: data.response });
           if (history.length > 20) history = history.slice(-20);
           addMessage('bot', data.response);
-          try { renderCards(data.cards, data.browseMore, data.fallbackNotice); } catch(e) {}
-          try { renderSupportLinks(data.supportLinks); } catch(e) {}
-          if (data.pivotAction && sessionOrderTypeOverride !== data.pivotAction.toChannel) {
-            try { renderPivotAction(data.pivotAction); } catch(e) {}
-          }
+          // 350ms beat between the text bubble and the cards so the
+          // visitor reads the answer FIRST, then sees the cards appear.
+          // Operator feedback 2026-05-15: cards rendered too fast,
+          // forcing visitors to scroll up to read the bot's reply.
+          setTimeout(function() {
+            try { renderCards(data.cards, data.browseMore, data.fallbackNotice); } catch(e) {}
+            try { renderSupportLinks(data.supportLinks); } catch(e) {}
+            if (data.pivotAction && sessionOrderTypeOverride !== data.pivotAction.toChannel) {
+              try { renderPivotAction(data.pivotAction); } catch(e) {}
+            }
+          }, 350);
           if (data.leadCaptured) leadCaptured = true;
         } else {
           addMessage('bot', 'Sorry, something went wrong. Please try again.');
@@ -1641,15 +1681,19 @@ export async function GET(
                 }
                 break;
               case 'results':
-                try { renderCards(payload.cards || [], payload.browseMore || null, payload.fallbackNotice || null); } catch(e) {}
+                // BUFFER (don't render yet) — defer until 'done' so the
+                // visitor reads the streamed bot reply BEFORE the cards
+                // appear. Without this, results frames (which arrive
+                // before any tokens) caused the cards to appear above
+                // the text-in-progress, pushing the bot's reply below
+                // the fold. Operator feedback 2026-05-15.
+                pendingResults = payload;
                 break;
               case 'chips':
-                try { renderSupportLinks(payload.supportLinks); } catch(e) {}
+                pendingChips = payload;
                 break;
               case 'pivotAction':
-                if (sessionOrderTypeOverride !== payload.toChannel) {
-                  try { renderPivotAction(payload); } catch(e) {}
-                }
+                pendingPivot = payload;
                 break;
               case 'token':
                 appendToken(payload.text || '');
@@ -1669,6 +1713,20 @@ export async function GET(
         // Stream may close mid-frame in rare cases (server crashed, network
         // dropped). Make sure the typing indicator is gone either way.
         hideTyping();
+        // Render the buffered cards / chips / pivot AFTER the streamed
+        // text is done. 350ms gives the visitor a visual beat to read
+        // the bot's reply before the cards appear underneath it.
+        setTimeout(function() {
+          if (pendingResults) {
+            try { renderCards(pendingResults.cards || [], pendingResults.browseMore || null, pendingResults.fallbackNotice || null); } catch(e) {}
+          }
+          if (pendingChips) {
+            try { renderSupportLinks(pendingChips.supportLinks); } catch(e) {}
+          }
+          if (pendingPivot && sessionOrderTypeOverride !== pendingPivot.toChannel) {
+            try { renderPivotAction(pendingPivot); } catch(e) {}
+          }
+        }, 350);
       }
     } catch(e) {
       hideTyping();

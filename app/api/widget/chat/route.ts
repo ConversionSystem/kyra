@@ -770,19 +770,19 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
         let onSaleResult = await getOnSaleProducts(janeConfig, {
           storeId: dealStoreId,
           channel: orderType,
-          limit: 6,
+          limit: 3,
         });
         if (onSaleResult.products.length === 0 && orderType) {
           onSaleResult = await getOnSaleProducts(janeConfig, {
             storeId: dealStoreId,
             channel: 'either',
-            limit: 6,
+            limit: 3,
           });
         }
         const dealStoreName =
           configuredStores.find(s => s.id === dealStoreId)?.name || 'this store';
         if (onSaleResult.products.length > 0) {
-          productCards = onSaleResult.products.slice(0, 6).map((p) => ({
+          productCards = onSaleResult.products.slice(0, 3).map((p) => ({
             id: String(p.id),
             name: p.name,
             brand: p.brand,
@@ -938,8 +938,10 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
           const isBrand = !!intent.brand;
           const formatted = formatProductsForAI(results.products, isBrand);
 
-          // Build structured cards for the widget UI (top 4 — LLM chooses which to talk about)
-          productCards = results.products.slice(0, 4).map((p) => ({
+          // Build structured cards for the widget UI (top 3 — operator
+          // requested 2026-05-15 to reduce visual density; LLM picks
+          // which to call out in narration).
+          productCards = results.products.slice(0, 3).map((p) => ({
             id: p.id,
             name: p.name,
             brand: p.brand,
