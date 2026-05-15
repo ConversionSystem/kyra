@@ -46,6 +46,10 @@ export async function GET(
   const fallbackOnly = url.searchParams.get('fallback') === '1';
   const escalationOnly = url.searchParams.get('escalation') === '1';
   const sessionIdParam = (url.searchParams.get('session_id') || '').slice(0, 80);
+  // source: substring match on source_url path — powers the Top Sources
+  // drill-down. e.g. ?source=/products/flower → show conversations that
+  // started on any flower page.
+  const sourceParam = (url.searchParams.get('source') || '').slice(0, 200);
   const windowDays = Math.max(1, Math.min(Number(url.searchParams.get('windowDays')) || 30, 365));
   const limit = Math.max(1, Math.min(Number(url.searchParams.get('limit')) || 20, 100));
 
@@ -85,6 +89,17 @@ export async function GET(
     filtered = pool.filter(r => FALLBACK_PATTERNS.test(r.ai_response || ''));
   } else if (escalationOnly) {
     filtered = pool.filter(r => ESCALATION_PATTERNS.test(r.user_message || ''));
+  } else if (sourceParam) {
+    const needle = sourceParam.toLowerCase();
+    filtered = pool.filter(r => {
+      const src = (r as { source_url?: string }).source_url || '';
+      if (!src) return false;
+      // Normalize source_url to path for cleaner matching (matches the
+      // grouping used by topSources in widget-stats route).
+      let path = src.toLowerCase();
+      try { path = new URL(src).pathname.toLowerCase() || '/'; } catch { /* keep raw */ }
+      return path.includes(needle) || src.toLowerCase().includes(needle);
+    });
   }
 
   const conversations = filtered.slice(0, limit);

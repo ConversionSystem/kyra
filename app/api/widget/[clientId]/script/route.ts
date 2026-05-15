@@ -1099,6 +1099,20 @@ export async function GET(
     if (!trackedPanelOpen) {
       trackedPanelOpen = true;
       trackEvent('panel_open', window.location.pathname || '/', '');
+      // Fire a one-time observability event capturing WHICH detection
+      // mechanism caught the store. Aggregated in the Insights tab so
+      // operators can verify store detection is working without needing
+      // to manually inspect the page. Sources:
+      //   cookie, localStorage:<key>, __NEXT_DATA__,
+      //   __APOLLO_STATE__:<entry>, dom:<selector>, dom:street-regex,
+      //   widget-default (fallback from embed STORE_ID), unresolved (none)
+      try {
+        var detectCtx = readJaneContext();
+        var source = detectCtx.janeStoreSource ||
+          (detectCtx.janeStore ? 'cookie' :
+            (selectedStoreId || STORE_ID) ? 'widget-default' : 'unresolved');
+        trackEvent('store_detected', source, detectCtx.janeStore || '');
+      } catch(e) {}
     }
     panel.classList.remove('hidden');
     btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';

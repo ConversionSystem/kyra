@@ -27,6 +27,22 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
+// Roll up raw `store_detected:<source>` labels (which can be granular
+// like "dom:[data-testid*=store]") into 7 operator-friendly buckets so
+// the Insights card stays readable. Order matters — earliest matching
+// branch wins.
+function bucketStoreSource(label: string): string {
+  if (!label) return 'unresolved';
+  if (label === 'cookie') return 'cookie';
+  if (label === '__NEXT_DATA__') return 'next-data';
+  if (label.startsWith('__APOLLO_STATE__')) return 'apollo';
+  if (label.startsWith('dom:')) return 'dom-scrape';
+  if (label === 'widget-default') return 'widget-default';
+  if (label === 'unresolved') return 'unresolved';
+  // localStorage keys: anything left over is a localStorage hit.
+  return 'localStorage';
+}
+
 // Patterns shared with the chat route's escalation + fallback detection.
 const ESCALATION_PATTERNS = /\b(refund|complain|cancel|dispute|lawsuit|delivery.*late|charged|wrong item|missing|frustrat|broken|talk to (a )?(human|manager|person))\b/i;
 
@@ -58,6 +74,19 @@ const BRAND_KEYWORDS: Array<{ key: string; pattern: RegExp; search: string }> = 
   { key: 'Papa & Barkley',  pattern: /\bpapa\s*(&|and|\+)?\s*barkley\b/i,     search: 'papa' },
   // PAX is short and collides with names; require a product context word.
   { key: 'PAX',             pattern: /\bpax\s+(era|pod|battery|vape|3|plus)\b/i, search: 'pax' },
+  // v7 (2026-05-15): expansion. Each new entry below was validated against
+  // a "context word required if ambiguous" rule so we don't replay the
+  // Select/Cookies/Connected false-positive bug.
+  { key: 'Lowell',          pattern: /\blowell\s*(farms?|herb|smokes?|preroll)?\b/i, search: 'lowell' },
+  { key: 'Old Pal',         pattern: /\bold\s+pal\b/i,                        search: 'old pal' },
+  { key: 'Glass House',     pattern: /\bglass\s*house\b/i,                    search: 'glass house' },
+  { key: 'Pacific Stone',   pattern: /\bpacific\s*stone\b/i,                  search: 'pacific stone' },
+  { key: 'Pure Beauty',     pattern: /\bpure\s+beauty\b/i,                    search: 'pure beauty' },
+  { key: 'Caliva',          pattern: /\bcaliva\b/i,                           search: 'caliva' },
+  { key: 'Cresco',          pattern: /\bcresco\b/i,                           search: 'cresco' },
+  // "Cookies" the brand requires a cannabis-product context word to
+  // avoid colliding with "browser cookies" / "thin mint cookies" etc.
+  { key: 'Cookies',         pattern: /\bcookies\s+(brand|strain|flower|cart|preroll|gelato|gary)\b/i, search: 'cookies' },
 ];
 
 // Category keywords for the "top categories" insight. Matched against
@@ -270,6 +299,11 @@ export async function GET(
   const eventSessions: Record<string, Set<string>> = {};
   const chipClickCounts = new Map<string, number>();
   const cardClickCounts = new Map<string, number>();
+  // Store-detection observability: count which mechanism caught the
+  // selected store per session. Buckets the raw `store_detected:<source>`
+  // labels into operator-friendly categories so the Insights card stays
+  // readable. See `bucketStoreSource` below for the mapping.
+  const storeSourceCounts = new Map<string, number>();
   for (const r of eventRows) {
     const raw = r.user_message || '';
     const idx = raw.indexOf(':');
@@ -288,7 +322,14 @@ export async function GET(
     if (eventKind === 'card_click' && label) {
       cardClickCounts.set(label, (cardClickCounts.get(label) ?? 0) + 1);
     }
+    if (eventKind === 'store_detected' && label) {
+      const bucket = bucketStoreSource(label);
+      storeSourceCounts.set(bucket, (storeSourceCounts.get(bucket) ?? 0) + 1);
+    }
   }
+  const storeDetectionSources = Array.from(storeSourceCounts.entries())
+    .map(([source, count]) => ({ source, count }))
+    .sort((a, b) => b.count - a.count);
   const sessionsFor = (k: string) => eventSessions[k]?.size ?? 0;
   const topChipClicks = Array.from(chipClickCounts.entries())
     .map(([label, count]) => ({ label, count }))
@@ -465,5 +506,7 @@ export async function GET(
     returningSessions,
     returningRate,
     totalSessions: sessionTimes.size,
+    // v7 additions (2026-05-15): store-detection observability
+    storeDetectionSources,
   });
 }

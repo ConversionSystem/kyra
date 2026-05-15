@@ -156,6 +156,8 @@ export function WidgetBuilderEmbedded({
     returningSessions?: number;
     returningRate?: number;
     totalSessions?: number;
+    // v7 additions (2026-05-15)
+    storeDetectionSources?: Array<{ source: string; count: number }>;
   } | null>(null);
 
   // Drill-down modal state — click any aggregate row to inspect the
@@ -164,7 +166,8 @@ export function WidgetBuilderEmbedded({
     | { kind: 'query'; value: string; title: string }
     | { kind: 'fallback'; title: string }
     | { kind: 'escalation'; title: string }
-    | { kind: 'session'; sessionId: string; title: string };
+    | { kind: 'session'; sessionId: string; title: string }
+    | { kind: 'source'; value: string; title: string };
   const [drillFilter, setDrillFilter] = useState<DrillFilter | null>(null);
   const [drillRows, setDrillRows] = useState<Array<{
     user_message: string;
@@ -192,6 +195,7 @@ export function WidgetBuilderEmbedded({
     if (drillFilter.kind === 'fallback')   params.set('fallback', '1');
     if (drillFilter.kind === 'escalation') params.set('escalation', '1');
     if (drillFilter.kind === 'session')    params.set('session_id', drillFilter.sessionId);
+    if (drillFilter.kind === 'source')     params.set('source', drillFilter.value);
     fetch(`/api/agency/clients/${clientId}/widget-stats/conversations?${params}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => { setDrillRows(d?.conversations ?? []); setDrillLoading(false); })
@@ -1112,22 +1116,31 @@ export function WidgetBuilderEmbedded({
                         </div>
                       )}
 
-                      {/* ── Top product cards clicked ── */}
+                      {/* ── Top product cards clicked — clickable drill-down ── */}
                       {(stats.topCardClicks ?? []).length > 0 && (
                         <div className="p-4 rounded-xl bg-white border border-gray-200">
                           <div className="flex items-baseline justify-between mb-3">
                             <p className="text-sm font-semibold text-gray-700">Top product clicks</p>
-                            <span className="text-xs text-gray-500">{stats.totalCardClicks} total</span>
+                            <span className="text-xs text-gray-500">{stats.totalCardClicks} total · tap a row to inspect</span>
                           </div>
                           <ol className="space-y-1.5">
                             {(stats.topCardClicks ?? []).slice(0, 8).map((c, i) => (
-                              <li key={i} className="flex items-center gap-3 text-sm">
-                                <span className="w-5 text-xs text-gray-400 font-mono">{i + 1}.</span>
-                                <span className="flex-1 text-gray-700 truncate" title={c.label}>{c.label}</span>
-                                <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">×{c.count}</span>
+                              <li key={i}>
+                                <button
+                                  type="button"
+                                  onClick={() => setDrillFilter({ kind: 'query', value: c.label, title: `Conversations mentioning "${c.label}"` })}
+                                  className="w-full flex items-center gap-3 text-sm text-left px-1 py-0.5 rounded hover:bg-indigo-50 transition-colors"
+                                >
+                                  <span className="w-5 text-xs text-gray-400 font-mono">{i + 1}.</span>
+                                  <span className="flex-1 text-gray-700 truncate" title={c.label}>{c.label}</span>
+                                  <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">×{c.count}</span>
+                                </button>
                               </li>
                             ))}
                           </ol>
+                          <p className="text-[11px] text-gray-500 mt-3 italic">
+                            Products customers actually opened from the chat. Tap a row to see the conversations where it surfaced.
+                          </p>
                         </div>
                       )}
 
@@ -1214,21 +1227,80 @@ export function WidgetBuilderEmbedded({
                         </div>
                       )}
 
-                      {/* Top source pages — where visitors start their chats */}
+                      {/* Top source pages — clickable drill-down by page */}
                       {(stats.topSources ?? []).length > 0 && (
                         <div className="p-4 rounded-xl bg-white border border-gray-200">
-                          <p className="text-sm font-semibold text-gray-700 mb-3">Top referring pages</p>
+                          <div className="flex items-baseline justify-between mb-3">
+                            <p className="text-sm font-semibold text-gray-700">Top referring pages</p>
+                            <span className="text-xs text-gray-500">tap a row to inspect</span>
+                          </div>
                           <ol className="space-y-1.5">
                             {(stats.topSources ?? []).slice(0, 6).map((s, i) => (
-                              <li key={i} className="flex items-center gap-3 text-sm">
-                                <span className="w-5 text-xs text-gray-400 font-mono">{i + 1}.</span>
-                                <span className="flex-1 text-gray-700 font-mono text-xs truncate" title={s.page}>{s.page}</span>
-                                <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">×{s.count}</span>
+                              <li key={i}>
+                                <button
+                                  type="button"
+                                  onClick={() => setDrillFilter({ kind: 'source', value: s.page, title: `Conversations from "${s.page}"` })}
+                                  className="w-full flex items-center gap-3 text-sm text-left px-1 py-0.5 rounded hover:bg-indigo-50 transition-colors"
+                                >
+                                  <span className="w-5 text-xs text-gray-400 font-mono">{i + 1}.</span>
+                                  <span className="flex-1 text-gray-700 font-mono text-xs truncate" title={s.page}>{s.page}</span>
+                                  <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">×{s.count}</span>
+                                </button>
                               </li>
                             ))}
                           </ol>
                           <p className="text-[11px] text-gray-500 mt-3 italic">
-                            Pages where the widget was opened. High-traffic pages with low engagement may need a more inviting greeting or contextual chips.
+                            Pages where the widget was opened. Tap a row to see exactly what visitors from that page asked. High-traffic pages with low engagement may need a more inviting greeting or contextual chips.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Store-detection paths — operator self-validation */}
+                      {(stats.storeDetectionSources ?? []).length > 0 && (
+                        <div className="p-4 rounded-xl bg-white border border-gray-200">
+                          <p className="text-sm font-semibold text-gray-700 mb-3">Store detection paths</p>
+                          <div className="space-y-2">
+                            {(stats.storeDetectionSources ?? []).map((row) => {
+                              const total = (stats.storeDetectionSources ?? []).reduce((a, b) => a + b.count, 0);
+                              const pct = total === 0 ? 0 : Math.round((row.count / total) * 100);
+                              // Color-code by health: unresolved is bad, widget-default is meh.
+                              const bad = row.source === 'unresolved';
+                              const meh = row.source === 'widget-default';
+                              const labelColor = bad ? 'text-red-700' : meh ? 'text-amber-700' : 'text-gray-700';
+                              const barColor = bad
+                                ? 'from-red-500 to-red-400'
+                                : meh
+                                  ? 'from-amber-500 to-amber-400'
+                                  : 'from-emerald-500 to-emerald-400';
+                              const pretty: Record<string, string> = {
+                                'cookie': 'Cookie (JANE_STORE etc.)',
+                                'localStorage': 'localStorage key',
+                                'next-data': '__NEXT_DATA__ (SSR)',
+                                'apollo': '__APOLLO_STATE__',
+                                'dom-scrape': 'DOM scrape (visible picker)',
+                                'widget-default': 'Widget default (fallback)',
+                                'unresolved': 'Unresolved (no source)',
+                              };
+                              return (
+                                <div key={row.source} className="flex items-center gap-3">
+                                  <span className={`text-xs ${labelColor} w-44 truncate`} title={row.source}>
+                                    {pretty[row.source] || row.source}
+                                  </span>
+                                  <div className="flex-1 h-6 rounded-md bg-gray-100 overflow-hidden">
+                                    <div
+                                      className={`h-full bg-gradient-to-r ${barColor} flex items-center px-2`}
+                                      style={{ width: `${Math.max(3, pct)}%` }}
+                                    >
+                                      <span className="text-[10px] font-bold text-white">{row.count}</span>
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] text-gray-500 w-10 text-right">{pct}%</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <p className="text-[11px] text-gray-500 mt-3 italic">
+                            Which mechanism caught the visitor&apos;s selected store. Green is healthy (cookie / SSR / DOM-scrape). Amber means the widget fell back to its default. Red means we couldn&apos;t detect a store at all — those visitors got generic answers.
                           </p>
                         </div>
                       )}
