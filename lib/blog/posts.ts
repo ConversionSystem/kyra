@@ -11,6 +11,244 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'openclaw-automation-hooks-cron-tasks-triggers-2026',
+    title: 'The Four Ways OpenClaw Automates an AI Worker in 2026: Hooks, Cron, Tasks, and Triggers',
+    description: 'OpenClaw automation in 2026 has four primitives: hooks (event-driven), cron jobs (scheduled), background tasks (durable ledger), and triggers (external signals). Setup commands, a comparison table, anti-patterns, and an FAQ for agency operators.',
+    date: '2026-05-15',
+    readMins: 12,
+    category: 'AI Infrastructure',
+    emoji: '⚙️',
+    content: `
+<p><em>Last updated: May 15, 2026</em></p>
+
+<p><strong>Agentic automation</strong> is the set of gateway mechanisms that fire an AI worker on a schedule, an event, or an external signal instead of a human message. In OpenClaw it splits into four distinct primitives. Hooks react to lifecycle events. Cron jobs run on a clock. Background tasks carry long work across restarts. Triggers and webhooks let the outside world wake the agent. Most agency operators only ever wire up one of the four, then wonder why their AI worker still waits to be spoken to.</p>
+
+<p>This post defines all four, shows how each one is configured in OpenClaw v2026 today, and gives a step-by-step setup for the full set on a single client. It also covers Claude Code Routines, the cloud-native cousin Anthropic put into research preview in April 2026, and the anti-patterns that quietly break automated agents in production. The goal is one clear mental model you can carry into a real client deployment.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>OpenClaw automation has four primitives: hooks (event-driven), cron jobs (scheduled), background tasks (durable ledger), and triggers/webhooks (external signals). They compose; they are not alternatives.</li>
+    <li>Claude Code ships 28 hook event types in 2026, grouped into three cadences: once per session, once per turn, and on every tool call inside the agentic loop.</li>
+    <li>OpenClaw cron runs inside the gateway process, not inside the model. Job definitions persist at <code>~/.openclaw/cron/jobs.json</code> so schedules survive a restart.</li>
+    <li>The OpenClaw 2.26 release in late February 2026 fixed duplicate cron executions, timing drift, blocked parallel jobs, and manual triggers that hung indefinitely.</li>
+    <li>Anthropic opened the Claude Code Routines research preview on April 14, 2026. A routine runs on a cadence, from an API call, or in response to a GitHub event, and survives restarts.</li>
+    <li>The most common failure is not a missing feature. It is a cron job with no idempotency key firing twice and double-charging a client.</li>
+  </ul>
+</div>
+
+<h2>What "agentic automation" actually means in 2026</h2>
+
+<p>A chatbot waits. An AI worker acts. The difference is automation, and in 2026 the word covers four mechanisms that operate on different triggers and different timescales. Treating them as one thing is why so many deployments ship an agent that still does nothing until a human types first.</p>
+
+<p>The four primitives, ordered by how they fire:</p>
+
+<ol>
+  <li><strong>Hooks.</strong> Code that runs at a defined point in the agent lifecycle. A hook fires before a tool call, after compaction, at session start, or on 25 other moments. Hooks shape behavior; they rarely start work on their own.</li>
+  <li><strong>Cron jobs.</strong> Work scheduled on a clock. Every weekday at 8am, every Monday, every 15 minutes. The gateway owns the schedule and wakes the agent when the time comes.</li>
+  <li><strong>Background tasks.</strong> Long or multi-step work enqueued to a durable ledger. The task survives a gateway restart, retries on failure, and reports when done.</li>
+  <li><strong>Triggers and webhooks.</strong> The outside world reaching in. A new email, a submitted form, a CRM status change posts to an endpoint and the agent runs in response.</li>
+</ol>
+
+<p>A production AI worker uses all four. Hooks keep it safe and on-identity. Cron handles the recurring drumbeat. Tasks carry the heavy multi-step jobs. Triggers connect it to real business events. Skip one and you get a specific, predictable failure mode rather than a general "the AI does not work" complaint.</p>
+
+<h2>The four automation types, side by side</h2>
+
+<p>Before the details, the shape of the whole system in one table. This is the part to keep open while you design a client deployment.</p>
+
+<table>
+<thead>
+<tr><th>Type</th><th>Fires on</th><th>Defined in</th><th>Survives restart</th><th>Best for</th></tr>
+</thead>
+<tbody>
+<tr><td>Hooks</td><td>A lifecycle event</td><td>Hook config / settings JSON</td><td>Yes (config on disk)</td><td>Guardrails, identity reinjection, audit logging</td></tr>
+<tr><td>Cron jobs</td><td>A clock schedule</td><td><code>~/.openclaw/cron/jobs.json</code></td><td>Yes (gateway-managed)</td><td>Daily reports, reminders, polling</td></tr>
+<tr><td>Background tasks</td><td>An explicit enqueue</td><td>The task ledger</td><td>Yes (durable ledger)</td><td>Long multi-step work, retries</td></tr>
+<tr><td>Triggers / webhooks</td><td>An external signal</td><td>A registered endpoint or channel</td><td>Yes (endpoint persists)</td><td>Inbox events, form fills, CRM updates</td></tr>
+</tbody>
+</table>
+
+<p>The column that matters most is "fires on." If you can name the trigger for a piece of work, you already know which primitive to reach for. A clock means cron. An event in the agent means a hook. An external system means a webhook. Work too long for one turn means a background task.</p>
+
+<h2>Hooks: event-driven AI that stays on the rails</h2>
+
+<p>A hook is code that runs at a defined point in the agent lifecycle. In Claude Code, the reference implementation most teams know, there are 28 hook event types in 2026. They fall into three cadences.</p>
+
+<ul>
+  <li><strong>Once per session:</strong> events like <code>SessionStart</code>, <code>SessionEnd</code>, and <code>Setup</code>. Used to inject identity, load context, or clean up.</li>
+  <li><strong>Once per turn:</strong> events like <code>UserPromptSubmit</code>, <code>Stop</code>, and <code>StopFailure</code>. Used to validate input or capture the result of a turn.</li>
+  <li><strong>On every tool call:</strong> events like <code>PreToolUse</code>, <code>PostToolUse</code>, <code>PostToolUseFailure</code>, and <code>PreCompact</code>. Used for guardrails and audit.</li>
+</ul>
+
+<p>The single most useful hook in an agency deployment is a <code>PreToolUse</code> guard on shell commands. It inspects the proposed command, and if it matches a destructive pattern it returns a deny decision before anything runs. A minimal Claude Code hook config looks like this.</p>
+
+<pre><code>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "if": "Bash(rm *)", "command": ".claude/hooks/block-rm.sh" }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+
+<p>The second most useful is a post-compaction hook that reinjects the agent identity. When the context window compacts, the original system framing can thin out. A <code>PostCompact</code> hook re-states who the agent is and what it must never do. Without it, long-running workers drift after a few hours.</p>
+
+<p>Hooks rarely start work on their own. They are the seatbelt, not the engine. The engine is cron, tasks, and triggers. The full event reference is published at <a href="https://code.claude.com/docs/en/hooks">code.claude.com/docs/en/hooks</a>.</p>
+
+<h2>Cron jobs: the recurring drumbeat</h2>
+
+<p>A cron job is work scheduled on a clock. In OpenClaw the cron engine runs inside the gateway process, not inside the model. That detail matters. The gateway owns the schedule, wakes the agent at the right time, and cleans up afterward. The model never has to stay awake holding a timer.</p>
+
+<p>Job definitions persist to disk at <code>~/.openclaw/cron/jobs.json</code>. Because the schedule lives in a file the gateway reads at boot, a restart does not lose your jobs. This is the opposite of asking the model to "remember to run something later," which never survives a session.</p>
+
+<p>OpenClaw cron has a real history worth knowing before you trust it with billing-adjacent work. The 2.26 release in late February 2026 fixed a cluster of cron failures: duplicate executions that repeated actions and burned tokens, blocked parallel jobs where one task starved another, manual triggers that hung with no response, and timing drift where schedules slowly slid off the clock. The same release added external secrets management so API keys stop living in plain-text config. The takeaway is not "cron is fragile." It is "run a current version and add an idempotency key."</p>
+
+<h2>Background tasks: durable work that outlives a restart</h2>
+
+<p>Some work does not fit in one turn. Reconciling a month of invoices, drafting 40 follow-up messages, crawling a client site section by section. A background task is the primitive for that. It is enqueued explicitly, written to a durable ledger, and processed independently of the conversation that created it.</p>
+
+<p>The properties that make tasks different from cron are durability and retry. A cron job fires and is gone. A background task has a record. If the gateway restarts mid-run, the ledger still shows the task as in-progress, and the worker picks it back up. If a step fails, the task can retry with backoff rather than vanishing silently.</p>
+
+<p>The mental rule: cron answers "when," tasks answer "how long and how reliably." A nightly summary is cron. A nightly summary that must never be skipped, even across a deploy at 11:58pm, is a background task triggered by cron. The two compose. They are not competitors.</p>
+
+<h2>Triggers and webhooks: letting the business wake the agent</h2>
+
+<p>The first three primitives are internal. Triggers and webhooks connect the agent to the world. The pattern is simple: an external system sends an HTTP POST with a JSON payload to an endpoint the gateway exposes, and the agent runs with that payload as its input.</p>
+
+<p>Common sources in an agency stack:</p>
+
+<ul>
+  <li><strong>Inbox events.</strong> A new email arrives. Connecting a Gmail inbox through Google Pub/Sub gives the agent a real-time signal rather than a polling delay.</li>
+  <li><strong>Form submissions.</strong> A lead fills out a site form. The form provider posts to the webhook and the agent qualifies the lead within seconds.</li>
+  <li><strong>CRM status changes.</strong> A GoHighLevel opportunity moves to "booked." A webhook fires and the agent sends the prep packet.</li>
+</ul>
+
+<p>The webhook is also how OpenClaw reports a finished job outward. In webhook mode, the completed event JSON is POSTed to a URL you control, so a downstream system knows the agent is done. Triggers in, webhooks out. The agent stops being a thing you talk to and becomes a thing wired into the business.</p>
+
+<h2>Set up all four in OpenClaw, step by step</h2>
+
+<p>This is the path most agencies follow when turning a passive agent into an active one. Each step assumes a running gateway and a per-client workspace already in place. The companion <a href="/blog/ai-agent-memory-systems-openclaw-2026">memory systems guide</a> covers that workspace layer.</p>
+
+<p><strong>1. Add a hook guardrail.</strong> Drop a deny rule on destructive shell commands so an autonomous run cannot delete a workspace.</p>
+
+<pre><code>mkdir -p ~/.openclaw/workspaces/acme/.hooks
+cat &gt; ~/.openclaw/workspaces/acme/.hooks/settings.json &lt;&lt; 'EOF'
+{ "PreToolUse": [ { "matcher": "Bash", "if": "Bash(rm -rf *)", "decision": "deny" } ] }
+EOF</code></pre>
+
+<p><strong>2. Create a daily cron job.</strong> Send tomorrow's appointment confirmations every weekday at 8am.</p>
+
+<pre><code>openclaw cron add \\
+  --workspace acme \\
+  --schedule "0 8 * * 1-5" \\
+  --prompt "Pull tomorrow's appointments from GHL and send confirmation SMS."</code></pre>
+
+<p><strong>3. Confirm the schedule persisted.</strong> The job should now be on disk, not just in memory.</p>
+
+<pre><code>openclaw cron list --workspace acme
+cat ~/.openclaw/cron/jobs.json</code></pre>
+
+<p><strong>4. Promote a long job to a background task.</strong> A weekly billing reconciliation must not be skipped if a deploy lands mid-run.</p>
+
+<pre><code>openclaw task enqueue \\
+  --workspace acme \\
+  --name weekly-reconcile \\
+  --idempotency-key reconcile-2026-W20 \\
+  --prompt "Reconcile last week's invoices against Stripe. Report mismatches only."</code></pre>
+
+<p><strong>5. Register a webhook trigger.</strong> Let a new GHL lead wake the agent immediately.</p>
+
+<pre><code>openclaw webhook add \\
+  --workspace acme \\
+  --path /hooks/ghl-new-lead \\
+  --prompt "A new lead arrived. Qualify it, then book or route to a human."</code></pre>
+
+<p><strong>6. Restart and verify the full set.</strong></p>
+
+<pre><code>openclaw gateway restart
+openclaw automation status acme</code></pre>
+
+<p>The status command prints every hook, cron job, task, and webhook attached to the workspace, with the last fire time for each. If a cron job has never fired or a webhook has never been hit, that is your first place to look when an automation seems dead. The <a href="/blog/openclaw-session-keys-explained-2026">session keys guide</a> explains how each of these stays isolated per client when you run more than one.</p>
+
+<h2>Claude Code Routines: the cloud-native cousin</h2>
+
+<p>OpenClaw runs automation on your own gateway. Anthropic shipped a managed version of the same idea. On April 14, 2026, it opened the research preview of Claude Code Routines. You configure a routine once with a prompt, a repository, and connectors. After that the routine runs on its own.</p>
+
+<p>A routine fires three ways, which map almost exactly onto the OpenClaw primitives:</p>
+
+<ul>
+  <li><strong>On a fixed cadence.</strong> The cron equivalent.</li>
+  <li><strong>From an API call.</strong> The background-task-enqueue equivalent.</li>
+  <li><strong>In response to a GitHub event.</strong> The webhook-trigger equivalent.</li>
+</ul>
+
+<p>Routines survive restarts, terminal closures, and overnight runs. They behave as persistent autonomous agents rather than one-off commands, which is the same durability promise OpenClaw makes for tasks. The choice between them is the usual self-hosted versus managed trade-off, not a difference in the automation model. The <a href="/blog/what-is-openclaw-ai-gateway-explained">OpenClaw gateway explainer</a> covers the self-hosted side of that decision in depth.</p>
+
+<h2>Automation anti-patterns that quietly break agents</h2>
+
+<p>Five failure modes show up again and again in agency deployments. Each one has a fix more boring than its cause.</p>
+
+<p><strong>1. No idempotency key on money-adjacent cron.</strong> The job fires twice after a restart and a client gets billed twice. Fix: every cron job that writes or charges carries a unique key the handler checks before acting.</p>
+
+<p><strong>2. Webhook with no auth.</strong> An open endpoint that runs the agent is an open endpoint anyone can run the agent. Fix: require a shared secret header and reject payloads without it.</p>
+
+<p><strong>3. Cron used where a task belongs.</strong> A long job scheduled by cron is killed mid-run by the next deploy. Fix: cron triggers a background task, the task does the work.</p>
+
+<p><strong>4. Hooks that block silently.</strong> A <code>PreToolUse</code> deny with no logged reason looks like the agent being lazy. Fix: every deny writes a one-line reason to an audit file.</p>
+
+<p><strong>5. Polling instead of triggering.</strong> A cron job every minute checking for new email, when a webhook would deliver it instantly. Fix: prefer a push trigger; reserve polling for systems with no webhook.</p>
+
+<h2>When OpenClaw automation is not for you</h2>
+
+<p>Automation is wrong for a few specific cases. Worth naming so nobody force-fits it.</p>
+
+<ul>
+  <li><strong>Pure request-response chat.</strong> A widget that only answers questions when asked needs none of this. Adding cron and webhooks is overhead for a job that has no trigger but the user.</li>
+  <li><strong>One-shot scripts.</strong> If a task runs once and never again, a plain script in your own scheduler is simpler than wiring a durable task ledger.</li>
+  <li><strong>Hard real-time control loops.</strong> Sub-100ms actuation belongs in dedicated control software, not a gateway-scheduled agent measured in seconds.</li>
+  <li><strong>Teams that cannot run a current version.</strong> If you are pinned to a pre-2.26 build for unrelated reasons, the old cron bugs are real. Fix the version constraint before you depend on the schedule.</li>
+</ul>
+
+<p>For everything in between, the recurring reports, the lead reactions, the overnight reconciliations, the guardrails, the four primitives are the 2026 default. The cost to wire all four for one client is an afternoon. The cost of skipping them is an "AI worker" that is really just a chatbot with a longer system prompt.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>What is the difference between a hook and a trigger in OpenClaw?</h3>
+
+<p>A hook fires on an internal lifecycle event, like before a tool call or after compaction, and usually shapes behavior rather than starting work. A trigger fires on an external signal, like an inbound webhook, and starts a fresh run. Hooks are the seatbelt; triggers are one of the engines.</p>
+
+<h3>Where does OpenClaw store cron jobs, and do they survive a restart?</h3>
+
+<p>Cron job definitions persist at <code>~/.openclaw/cron/jobs.json</code>. The cron engine runs inside the gateway process and reads that file at boot, so schedules survive a gateway or host restart. This is why you should never ask the model to "remember" to run something later; that state lives in a session and is gone after a restart.</p>
+
+<h3>How many hook event types are there in 2026?</h3>
+
+<p>Claude Code documents 28 hook event types in 2026, spanning session, turn, and tool-call cadences. They include <code>SessionStart</code>, <code>UserPromptSubmit</code>, <code>PreToolUse</code>, <code>PostToolUse</code>, <code>PreCompact</code>, <code>PostCompact</code>, and <code>SubagentStop</code>, among others. The full list is in the official hooks reference.</p>
+
+<h3>Should I use a cron job or a background task for a nightly report?</h3>
+
+<p>Use both. Cron answers "when" and a background task answers "how reliably." For a report that is nice to have, a bare cron job is fine. For a report that must never be skipped, even across a midnight deploy, have cron enqueue a durable task with an idempotency key so it cannot run twice or vanish.</p>
+
+<h3>What changed for cron in the OpenClaw 2.26 release?</h3>
+
+<p>The 2.26 release in late February 2026 fixed duplicate cron executions, blocked parallel jobs, manual triggers that hung with no response, and timing drift in long-running schedules. It also added external secrets management so API keys are no longer stored in plain-text config. If you depend on cron, run 2.26 or newer.</p>
+
+<h3>Are Claude Code Routines the same as OpenClaw automation?</h3>
+
+<p>They share the model, not the host. Routines, in research preview since April 14, 2026, run on a cadence, from an API call, or on a GitHub event, and survive restarts. OpenClaw runs the same three patterns on your own gateway. The decision is self-hosted versus managed, not a difference in how automation works.</p>
+
+<h2>Pulling the four together</h2>
+
+<p>An AI worker that earns its name has all four primitives wired. Hooks keep it safe and on-identity. Cron gives it a recurring drumbeat. Background tasks carry the heavy, must-not-fail work across restarts. Triggers and webhooks connect it to the real events of the business it serves. None of this is exotic infrastructure. It is the boring discipline of treating an agent like a long-running service, with idempotency keys and audit logs, rather than a clever prompt.</p>
+
+<p>If you want the four primitives wired per client without building the gateway, idempotency, and webhook plumbing yourself, <a href="/solo">Kyra</a> ships them as the default and isolates them per client. The same architecture is open source under OpenClaw if you would rather run it yourself: the automation docs live at <a href="https://docs.openclaw.ai/automation/cron-jobs">docs.openclaw.ai/automation/cron-jobs</a>, the source and release notes are on <a href="https://github.com/openclaw/openclaw">GitHub</a>, and Anthropic's official hook event reference is at <a href="https://code.claude.com/docs/en/hooks">code.claude.com/docs/en/hooks</a>. For a vertical example of these automations in production, see <a href="/ai-for/hvac">AI for HVAC</a> and <a href="/ai-for/property-management">AI for property management</a>.</p>
+`,
+  },
+  {
     slug: 'ai-agent-memory-systems-openclaw-2026',
     title: 'AI Agent Memory Systems in 2026: How OpenClaw Workspaces, SOUL.md, and Context Compaction Actually Work',
     description: 'AI agent memory in 2026 is three layers: workspace files like SOUL.md and MEMORY.md, runtime context with Sonnet 4.6 compaction, and Anthropic’s memory tool for long-term storage. Step-by-step setup, comparison tables, anti-patterns, and FAQ for agency operators.',
