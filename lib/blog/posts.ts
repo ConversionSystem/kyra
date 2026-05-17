@@ -11,6 +11,175 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'openclaw-automation-hooks-cron-tasks-2026',
+    title: 'OpenClaw Automation in 2026: The Four Ways an AI Worker Runs Without You (Hooks, Cron, Tasks, Standing Orders)',
+    description: 'OpenClaw automation in 2026 runs on four mechanisms: event-driven hooks, scheduled cron jobs, durable background tasks, and standing orders. This guide explains when to use each, with real CLI commands, a comparison table, an agency example, and an honest list of when not to automate.',
+    date: '2026-05-17',
+    readMins: 14,
+    category: 'AI Infrastructure',
+    emoji: '⚙️',
+    content: `
+<p><em>Last updated: May 17, 2026</em></p>
+
+<p><strong>OpenClaw automation</strong> is the set of built-in mechanisms that let a self-hosted AI worker act without a human typing a message. It covers four distinct tools: event-driven hooks, scheduled cron jobs, durable background tasks, and standing orders. Each one fires at a different moment, runs in a different place, and fails in a different way. Treating them as a single "automation" feature is the reason most agency-deployed AI workers either do nothing on their own or quietly fire the same job twice.</p>
+
+<p>This guide explains what each of the four does, when to reach for it, and the exact commands to wire it up. It reflects the automation stack that shipped in OpenClaw 2.26 on February 26, 2026, and the Task Brain control panel added in the 2026.3.31 beta. The aim is a mental model you can take into a paying client deployment, not a tour of every flag.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>OpenClaw has four automation types, not one: hooks (event-driven), cron jobs (clock-driven), background tasks (durable long-running work), and standing orders (persistent intent that shapes every run).</li>
+    <li>The cron engine runs inside the Gateway process, not inside the model. Job definitions persist at ~/.openclaw/cron/jobs.json and runtime state at ~/.openclaw/cron/jobs-state.json, so a restart does not lose schedules.</li>
+    <li>Hooks fire on lifecycle events such as PreToolUse, PostToolUse, SessionStart, and Stop. A PreToolUse hook that exits with code 2 cancels the tool call before it runs. PostToolUse hooks are feedback-only and cannot block.</li>
+    <li>OpenClaw 2.26 extended safety timeouts so long-running sessions are no longer killed at 10 minutes, and added queue-drain reliability so jobs do not silently vanish after a restart.</li>
+    <li>The right pattern is layered: a standing order sets the rules, cron schedules the routine work, hooks enforce guardrails on every action, and background tasks carry the long jobs.</li>
+    <li>Automation is the wrong tool when the work needs human judgment on every instance, when the action is irreversible, or when you cannot yet describe success in one sentence.</li>
+  </ul>
+</div>
+
+<h2>What OpenClaw automation actually means in 2026</h2>
+
+<p>An AI worker that only answers when spoken to is a chatbot. The thing that turns it into a worker is automation: the ability to start work on a clock, react to an event, or carry a long job across restarts. OpenClaw treats that as four separate primitives because they solve four separate problems.</p>
+
+<p>The confusion is understandable. All four make the agent "do something by itself." But the moment you run them for a real client, the differences matter. A cron job that should have been a hook fires on a stale clock. A hook that should have been a background task blocks a user reply for ninety seconds. Picking the wrong primitive is the most common automation bug in agency deployments, and it never shows up in a demo.</p>
+
+<p>Here is the one-line test for each. Use a hook when the trigger is "something just happened." Use cron when the trigger is "it is now this time." Use a background task when the work is "this will take a while and must survive a restart." Use a standing order when the instruction is "always do it this way, on every run." Most production AI workers use all four at once.</p>
+
+<h2>The four automation types at a glance</h2>
+
+<p>Before the detail, the shape of the whole system. This table is the mental model. Everything below is an expansion of one row.</p>
+
+<table>
+<thead>
+<tr><th>Mechanism</th><th>Trigger</th><th>Runs where</th><th>Persists where</th><th>Best for</th></tr>
+</thead>
+<tbody>
+<tr><td>Hooks</td><td>A lifecycle event (tool call, session start, stop)</td><td>Gateway, synchronous to the event</td><td>Config file (hooks block)</td><td>Guardrails, validation, notifications, blocking unsafe actions</td></tr>
+<tr><td>Cron jobs</td><td>A clock or interval</td><td>Gateway cron engine, separate from the model</td><td>~/.openclaw/cron/jobs.json</td><td>Daily briefings, follow-up sweeps, scheduled reports</td></tr>
+<tr><td>Background tasks</td><td>The agent or a job spawns one</td><td>Task Brain layer, its own session</td><td>Task ledger (jobs-state.json)</td><td>Long research, multi-step work that must survive a restart</td></tr>
+<tr><td>Standing orders</td><td>Every run, implicitly</td><td>Injected into the system prompt</td><td>Workspace files (AGENTS.md and similar)</td><td>Persistent rules: tone, escalation policy, do-not-touch lists</td></tr>
+</tbody>
+</table>
+
+<p>Notice the persistence column. Three of the four survive a process restart because their state lives on disk, not in the model context. That single design choice is why OpenClaw automation holds up on a server that reboots, where a notebook-style agent loop would lose everything.</p>
+
+<h2>Hooks: guardrails that fire on events</h2>
+
+<p>A hook is a handler that runs when a specific lifecycle event fires. It is the only automation type that can stop the agent mid-action. That makes hooks the right tool for safety and for reacting to "something just happened" the instant it happens.</p>
+
+<p>OpenClaw fires hooks on events including <code>PreToolUse</code>, <code>PostToolUse</code>, <code>SessionStart</code>, and <code>Stop</code>. The two tool events do most of the work in real deployments:</p>
+
+<ul>
+  <li><strong>PreToolUse</strong> fires before any tool call. If the hook exits with code 2, the tool call is cancelled and never runs. This is how you stop an agent from emailing a client list or deleting a file.</li>
+  <li><strong>PostToolUse</strong> fires after the tool has already run. It cannot block, because the action is done. Exit codes are ignored for blocking; the hook is feedback-only. Use it for logging, alerts, and "the agent just did X, tell the team."</li>
+  <li><strong>SessionStart</strong> fires when a new session opens. Use it to inject fresh context, like today's open tickets, before the first message.</li>
+  <li><strong>Stop</strong> fires when a run ends. Use it for cleanup and end-of-run notifications.</li>
+</ul>
+
+<p>Hooks are configured in a hooks block in the agent config, with a matcher and a command handler. The mental rule: a hook should be fast and deterministic. If your handler needs to think, call a model, or run for a minute, it is not a hook. It is a background task that a hook starts.</p>
+
+<p>One 2026 quality-of-life change worth noting: Claude Code added a terminal-sequence field to hook output so a hook can raise a desktop notification or bell without a controlling terminal. For agency operators running headless on a VPS, that means a hook can actually reach a human on call. For the full event list and exit-code semantics, the <a href="https://docs.openclaw.ai/automation/hooks" target="_blank" rel="noopener">OpenClaw hooks documentation</a> is the source of truth, and the <a href="https://code.claude.com/docs/en/hooks" target="_blank" rel="noopener">Claude Code hooks reference</a> covers the matching config surface.</p>
+
+<h2>Cron jobs: work that runs on a clock</h2>
+
+<p>A cron job is a scheduled instruction the Gateway runs at a fixed time or interval, with no human present. This is the workhorse of agency automation: the 7am briefing, the hourly lead sweep, the Monday report.</p>
+
+<p>The architecture detail that matters: the cron engine runs inside the Gateway process, not inside the model. The Gateway owns the whole lifecycle, including waking the agent, running the job, and cleaning up afterward. Job definitions live at <code>~/.openclaw/cron/jobs.json</code> and runtime execution state at <code>~/.openclaw/cron/jobs-state.json</code>. Because both are on disk, a server reboot does not drop your schedule. OpenClaw 2.26 specifically hardened this path with queue-drain reliability so jobs do not silently fail to resume after a restart.</p>
+
+<h3>Step by step: a daily client briefing job</h3>
+
+<p>Here is a real cron job an agency would run for a client. It posts a morning summary to the client's channel every weekday at 7am Eastern.</p>
+
+<pre><code>openclaw cron add \\
+  --name "Client morning briefing" \\
+  --cron "0 7 * * 1-5" \\
+  --tz "America/New_York" \\
+  --session isolated \\
+  --message "Summarize new leads, open tickets, and today's calendar. Keep it under 150 words." \\
+  --announce</code></pre>
+
+<p>Each flag earns its place:</p>
+
+<ol>
+  <li><strong>--cron "0 7 * * 1-5"</strong> uses a standard five-field expression: minute, hour, day of month, month, day of week. This reads as 7:00, Monday through Friday.</li>
+  <li><strong>--tz "America/New_York"</strong> pins the schedule to the client's timezone, not the server's. Skip this and your 7am briefing arrives at 2am after the next daylight-saving shift.</li>
+  <li><strong>--session isolated</strong> runs the job in a fresh context with no prior conversation. Use <code>--session main</code> only when the job genuinely needs the running conversation history.</li>
+  <li><strong>--message</strong> is the instruction. Treat it like a prompt: specific, bounded, with a length cap so the output stays usable.</li>
+  <li><strong>--announce</strong> delivers the result to the configured channel instead of leaving it in a log nobody reads.</li>
+</ol>
+
+<p>For one-off and interval jobs, swap <code>--cron</code> for <code>--at</code> (a single future time) or <code>--every</code> (a fixed interval). The full flag set and scheduling semantics are documented in the <a href="https://docs.openclaw.ai/automation/cron-jobs" target="_blank" rel="noopener">OpenClaw scheduled tasks reference</a>. The single most common production mistake here is omitting <code>--tz</code>, so make it a checklist item on every client.</p>
+
+<h2>Background tasks: durable work that outlives a session</h2>
+
+<p>A background task is long-running work the agent hands off to a separate session so the conversation is not blocked while it runs. This is the answer to "the agent freezes for two minutes whenever it does the big research job."</p>
+
+<p>The 2026.3.31 beta introduced the Task Brain control panel, a unified task-management layer and the most significant structural change since OpenClaw's original heartbeat design. Task Brain gives long jobs their own ledger so you can see what is running, what is queued, and what failed, instead of guessing from logs.</p>
+
+<p>The behavior change that made this usable in production: OpenClaw 2.26 extended the safety timeout so long-running sessions are no longer killed at the old 10-minute ceiling, and improved the stop command so cancelling one task clears its backlog without touching other sessions. Before that, any research job longer than ten minutes was a coin flip. After it, a background task is a primitive you can sell.</p>
+
+<p>The rule for choosing a background task over a cron job: cron answers "when," a background task answers "this is long." They compose. A cron job can start a background task; the cron job returns immediately, and the long work continues in its own session and survives a restart because its state is on the ledger, not in a context window. If you want the deeper picture of how sessions and context interact here, our explainer on <a href="/blog/ai-agent-memory-systems-openclaw-2026">AI agent memory systems</a> covers why durable state has to live outside the model window.</p>
+
+<h2>Standing orders and webhook triggers: intent and external events</h2>
+
+<p>The fourth type is the one people forget because it has no command. A standing order is a persistent instruction that shapes every run without being re-issued. It lives in the workspace, not in a scheduler. "Never contact a lead flagged do-not-disturb." "Escalate any refund over 500 dollars to a human." "Match the client's brand voice." Those are standing orders, and OpenClaw injects them into the system prompt on every session.</p>
+
+<p>Standing orders matter for automation because the other three types are blind without them. A cron job that sends follow-ups will happily message a do-not-disturb lead unless a standing order says otherwise. The standing order is the policy layer; cron, hooks, and tasks are the execution layer.</p>
+
+<p>Closely related are webhook triggers: an external system posts to a URL and the agent runs. This is the bridge between OpenClaw and the rest of an agency stack, the same role a CRM webhook plays. It is also where the ecosystem is converging. Anthropic shipped Routines for Claude Code in May 2026, where each routine gets its own endpoint and auth token and can be triggered by an API call or run on an hourly, nightly, or weekly cadence. The Model Context Protocol roadmap, published March 9, 2026, is iterating on an experimental Tasks primitive with retry semantics and expiry policies. The pattern across all three is the same: durable, triggerable, schedulable work is becoming a first-class part of every serious agent runtime, not a bolt-on.</p>
+
+<h2>Wiring all four together: a real agency example</h2>
+
+<p>Theory is cheap. Here is how the four types compose for a single client, a home-services company running an AI worker for inbound leads.</p>
+
+<ul>
+  <li><strong>Standing order</strong> (workspace): never quote a price without a job photo; escalate anything over 2,000 dollars to the owner; match the company's plain, friendly tone.</li>
+  <li><strong>Hook</strong> (PreToolUse): before the agent sends any SMS, validate the number is not on the suppression list. Exit code 2 if it is. This runs on every single send, with no exceptions.</li>
+  <li><strong>Cron job</strong> (weekdays 8am): sweep yesterday's unconverted leads and send one follow-up each. Isolated session, announced to the team channel.</li>
+  <li><strong>Background task</strong>: when a lead asks for a detailed multi-room estimate, the agent spawns a background task to assemble it. The chat stays responsive; the estimate arrives minutes later and survives a server reboot mid-build.</li>
+</ul>
+
+<p>No single primitive delivers that client outcome. The standing order keeps it safe, the hook keeps it compliant, cron keeps it punctual, and the background task keeps it responsive. That layering is the actual product. If you are mapping this to a specific vertical, the breakdown on the <a href="/ai-for/home-services">AI worker for home-services</a> page walks through the same pattern with industry-specific copy, and the <a href="/blog/openclaw-session-keys-explained-2026">session keys explainer</a> shows how this stays isolated when you run it for many clients on one Gateway.</p>
+
+<h2>When OpenClaw automation isn't for you</h2>
+
+<p>Automation is not free. Every scheduled job and every hook is a thing that can fire wrong at 3am while you sleep. Be honest about when not to reach for it.</p>
+
+<ul>
+  <li><strong>The work needs human judgment on every instance.</strong> If a person must look at each case before action, automation just adds a layer that fires before the human is ready. Keep it manual until the judgment is rule-shaped.</li>
+  <li><strong>The action is irreversible and high-stakes.</strong> Sending money, deleting client data, posting publicly. Automate the draft, not the send. A hook can prepare it; a human should release it.</li>
+  <li><strong>You cannot describe success in one sentence.</strong> If you cannot write the cron job's success criteria in a single clear line, the agent cannot either. Vague instructions produce confidently wrong automated output, at scale, unattended.</li>
+  <li><strong>Volume is too low to matter.</strong> A task that happens twice a month is not worth the failure surface of a scheduled job. Do it by hand and spend the automation budget where volume is real.</li>
+</ul>
+
+<p>The honest framing: automation multiplies whatever you point it at. Point it at a clear, bounded, repeatable job and it multiplies output. Point it at a fuzzy one and it multiplies mistakes.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>What is the difference between a hook and a cron job in OpenClaw?</h3>
+<p>A hook is event-driven: it fires the moment a lifecycle event happens, such as a tool call or session start, and it can block that action. A cron job is clock-driven: it runs at a scheduled time or interval with no event and no human present. Use a hook for "react to this now," and cron for "do this at this time."</p>
+
+<h3>Do OpenClaw cron jobs survive a server restart?</h3>
+<p>Yes. The cron engine runs in the Gateway process and persists job definitions at ~/.openclaw/cron/jobs.json and runtime state at ~/.openclaw/cron/jobs-state.json. OpenClaw 2.26 added queue-drain reliability so jobs resume cleanly after a restart instead of silently failing.</p>
+
+<h3>Why did my long-running automated task get killed?</h3>
+<p>Before OpenClaw 2.26, sessions were terminated at a 10-minute safety ceiling, which killed long research jobs. Version 2.26 extended that timeout so long-running sessions are no longer cut off at 10 minutes. If you are on an older build, upgrade, or move the long work into a background task on the Task Brain ledger.</p>
+
+<h3>Can a cron job start a background task?</h3>
+<p>Yes, and this is the recommended pattern for long scheduled work. The cron job fires on time and returns immediately; it spawns a background task that carries the long work in its own session. The cron job stays fast and the durable work survives a restart because its state is on the ledger.</p>
+
+<h3>How do I stop an AI worker from taking an unsafe action automatically?</h3>
+<p>Use a PreToolUse hook. It runs before the tool call, and if it exits with code 2 the call is cancelled and never executes. Pair it with a standing order that states the policy in plain language, so the rule is enforced both by the model's instructions and by a deterministic gate.</p>
+
+<h3>Is OpenClaw automation the same as Claude Code Routines?</h3>
+<p>They are different implementations of the same idea. OpenClaw exposes hooks, cron, background tasks, and standing orders inside a self-hosted Gateway. Anthropic's Routines, shipped for Claude Code in May 2026, give each routine its own endpoint, auth token, and a schedule or trigger. The concepts map closely; the difference is where the runtime lives and who controls it.</p>
+
+<p>If you want this four-layer automation pattern running for real clients without standing up the Gateway, the cron engine, and the hook config yourself, that is what Kyra does. Kyra deploys per-client OpenClaw AI workers with the standing orders, hooks, scheduled jobs, and durable tasks already wired, so an agency ships the outcome instead of the infrastructure. You can see how a single operator runs the whole thing on the <a href="/solo">solo operator</a> page, and the <a href="/blog/what-is-openclaw-ai-gateway-explained">OpenClaw gateway explainer</a> covers the layer underneath all of this.</p>
+
+<p>The technology itself is open and worth learning regardless of how you deploy it. Start with the <a href="https://docs.openclaw.ai/automation/cron-jobs" target="_blank" rel="noopener">OpenClaw scheduled tasks docs</a> and the <a href="https://docs.openclaw.ai/automation/hooks" target="_blank" rel="noopener">hooks documentation</a>, read the source on <a href="https://github.com/openclaw/openclaw" target="_blank" rel="noopener">the OpenClaw GitHub repository</a>, and follow where the wider ecosystem is heading via the <a href="https://blog.modelcontextprotocol.io/posts/2026-mcp-roadmap/" target="_blank" rel="noopener">2026 Model Context Protocol roadmap</a> and Anthropic's writeup on <a href="https://www.anthropic.com/news/enabling-claude-code-to-work-more-autonomously" target="_blank" rel="noopener">enabling Claude Code to work more autonomously</a>. Automation is no longer a feature you bolt on. In 2026 it is the part of the AI worker that does the work.</p>
+`,
+  },
+  {
     slug: 'ai-agent-memory-systems-openclaw-2026',
     title: 'AI Agent Memory Systems in 2026: How OpenClaw Workspaces, SOUL.md, and Context Compaction Actually Work',
     description: 'AI agent memory in 2026 is three layers: workspace files like SOUL.md and MEMORY.md, runtime context with Sonnet 4.6 compaction, and Anthropic’s memory tool for long-term storage. Step-by-step setup, comparison tables, anti-patterns, and FAQ for agency operators.',
