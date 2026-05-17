@@ -2101,6 +2101,8 @@ openclaw mcp list my-first-agent</code></pre>
 
 <p>The moment your client adds their GHL token, the AI starts monitoring their conversations and responding automatically. Setup takes about 10 minutes. The AI goes live immediately.</p>
 
+<p>The token-based connection also means you keep full operational control. Unlike OAuth marketplace apps that require GHL review and can be revoked platform-wide, a Private Integration Token is a credential you generate inside the sub-account and manage on your own timeline. If a client needs a token rotated, you do it in two minutes without any third-party approval. That independence matters as your client book grows past five or ten accounts, where platform-level changes to OAuth apps can affect every deployment at once.</p>
+
 <h2>The Pricing Model That Works</h2>
 
 <p>Most agencies bill their AI workers as a retainer:</p>
@@ -2310,11 +2312,11 @@ openclaw mcp list my-first-agent</code></pre>
 
 <blockquote>
 <p><strong>Patient:</strong> Hi, I need a cleaning. How much does it cost?</p>
-<p><strong>Kyra AI:</strong> Hi! 😊 A routine cleaning is $150, or fully covered with most insurance. We're accepting new patients — want to book?</p>
+<p><strong>AI Worker:</strong> Hi! 😊 A routine cleaning is $150, or fully covered with most insurance. We're accepting new patients — want to book?</p>
 <p><strong>Patient:</strong> Yes! Do you have anything this week?</p>
-<p><strong>Kyra AI:</strong> Tuesday at 2pm or Thursday at 10am. Which works? And which insurance do you have?</p>
+<p><strong>AI Worker:</strong> Tuesday at 2pm or Thursday at 10am. Which works? And which insurance do you have?</p>
 <p><strong>Patient:</strong> Tuesday works. I have Delta Dental.</p>
-<p><strong>Kyra AI:</strong> ✅ Reserved! Tuesday 2pm, Smile Dental. With Delta Dental you're fully covered. Confirmation text coming tomorrow morning!</p>
+<p><strong>AI Worker:</strong> ✅ Reserved! Tuesday 2pm, Smile Dental. With Delta Dental you're fully covered. Confirmation text coming tomorrow morning!</p>
 </blockquote>
 
 <p>This conversation happened at 9:30pm. Without the AI, that patient sends a text to a closed practice and books elsewhere in the morning. With the AI, they're booked before they go to sleep.</p>
@@ -2749,6 +2751,8 @@ openclaw mcp list my-first-agent</code></pre>
 </ul>
 
 <p>This works across all 7 GHL channels: SMS, WhatsApp, Instagram, Facebook, Live Chat, Email, and Google My Business.</p>
+
+<p>The GHL Private Integration Token requires no marketplace listing, no OAuth review, and no dependency on a third-party developer account. The agency generates the token directly in the client's GHL settings, pastes it into the AI worker dashboard, and the connection is live within 60 seconds. Token permissions are scoped to conversations, contacts, and pipelines — the three surfaces the AI actually touches. No broader account access is granted, which keeps the security scope tight for regulated clients.</p>
 
 <h2>What GHL Channels Does the AI Worker Cover?</h2>
 
