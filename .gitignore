@@ -66,3 +66,8 @@ kyra-router/
 .env.secrets
 .env.fc
 .claude/
+
+# gstack per-machine generated artifacts
+.claude/skills/gstack/node_modules/
+.claude/skills/gstack/.agents/
+.claude/skills/gstack/browse/dist/
