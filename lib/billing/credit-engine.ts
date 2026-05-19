@@ -324,7 +324,56 @@ export async function addCredits(
   stripePaymentIntentId?: string,
 ): Promise<number> {
   const supabase = createServiceClientWithoutCookies();
+  const idempotencyKey = stripePaymentIntentId || null;
 
+  // ── Ledger-first idempotency ───────────────────────────────────────────────
+  // The credit_transactions row is the durable source of truth. For grant
+  // rows carrying a stripe_payment_intent_id, the partial unique index
+  // credit_transactions_grant_idempotency_uniq (migration 20260519001) is the
+  // single concurrency gate. Insert the ledger row FIRST and only apply the
+  // balance delta if that insert succeeds.
+  //
+  // The old order (balance updated first, then a fire-and-forget insert that
+  // swallowed its error) double-counted the balance under concurrent grants
+  // for the same key while the unique index silently rejected the duplicate
+  // row — an over-credit with no audit trail. Ledger-first inverts the only
+  // unsafe failure: a crash between the two statements now under-counts by
+  // one grant (recoverable by reconciling balance against the ledger), which
+  // is the safe direction on a money path. (A fully single-statement atomic
+  // version needs a Postgres RPC + its own migration — tracked in TODOS.md.)
+  const { error: txErr } = await supabase.from('credit_transactions').insert({
+    agency_id: agencyId,
+    amount,
+    type,
+    description,
+    stripe_payment_intent_id: idempotencyKey,
+  });
+
+  if (txErr) {
+    const currentBalance = async (): Promise<number> => {
+      const { data } = await supabase
+        .from('agency_credits')
+        .select('balance')
+        .eq('agency_id', agencyId)
+        .single();
+      return data?.balance ?? 0;
+    };
+    // 23505 = unique_violation: this exact grant already landed (concurrent
+    // webhook delivery or a retry of the same invoice). Idempotent no-op —
+    // never re-apply the balance delta.
+    if (txErr.code === '23505') {
+      console.log(
+        `[credit-engine] addCredits idempotent skip — duplicate grant ${idempotencyKey} for ${agencyId}`,
+      );
+      return currentBalance();
+    }
+    // Any other insert failure is a real error. Do NOT mutate the balance
+    // (mutating it was the bug) and do NOT swallow the error.
+    console.error('[credit-engine] addCredits ledger insert failed:', txErr);
+    return currentBalance();
+  }
+
+  // Ledger row committed exactly once → safe to apply the balance delta.
   await supabase
     .from('agency_credits')
     .upsert({ agency_id: agencyId }, { onConflict: 'agency_id' });
@@ -350,14 +399,6 @@ export async function addCredits(
     .eq('agency_id', agencyId)
     .select('balance')
     .single();
-
-  await supabase.from('credit_transactions').insert({
-    agency_id: agencyId,
-    amount,
-    type,
-    description,
-    stripe_payment_intent_id: stripePaymentIntentId || null,
-  }).then(() => {}, () => {});
 
   return updated?.balance ?? newBalance;
 }

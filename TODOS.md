@@ -6,19 +6,24 @@ reliability review (autoplan + /ship adversarial).
 
 ## Billing / Credit Engine
 
-### Make `addCredits` insert-first / atomic (gates the invoice.paid alias)
-**Priority:** P1
-**Context:** `lib/billing/credit-engine.ts` `addCredits()` increments
-`agency_credits.balance` BEFORE the `credit_transactions` INSERT, and that
-INSERT swallows its error (`.then(() => {}, () => {})`). The new unique index
-(`supabase/migrations/20260519001_...`) therefore prevents a duplicate audit
-row but NOT the balance double-increment under a concurrent grant. Until
-`addCredits` inserts the constrained row first, detects 23505, and applies the
-balance delta only on success (ideally one RPC/transaction), aliasing
-`invoice.paid` onto the live Stripe route is NOT safe. This is the real
-precondition for that alias. Pre-existing platform-wide behavior; deliberately
-not folded into the reliability PR. Surfaced by /ship adversarial review.
-**Depends on / blocked by:** migration 20260519001 applied first.
+### Fully-atomic `addCredits` via Postgres RPC (close the crash-window)
+**Priority:** P2 (was P1 — the dangerous part is now fixed)
+**Context:** DONE in branch `fix/addcredits-atomic`: `addCredits()` now
+inserts the `credit_transactions` ledger row FIRST and only applies the
+balance delta on success; a 23505 unique violation is an idempotent no-op
+(no balance mutation), and non-23505 insert errors no longer silently
+credit. This removes the guaranteed double-grant. **Remaining residual:** a
+process crash between the ledger insert and the balance update under-counts
+by exactly one grant (recoverable by reconciling balance vs ledger; safe
+direction). Closing that fully needs a single-statement Postgres RPC
+(`SECURITY DEFINER` fn doing insert+balance in one transaction) — its own
+migration. Lower priority now: the over-credit footgun is gone; this only
+hardens a rare crash window.
+**invoice.paid alias readiness:** now gated only on (a) migration
+20260519001 applied to prod, and (b) `fix/addcredits-atomic` shipped — both
+in flight. The RPC-atomic version above is a nice-to-have, not a blocker
+for the alias (insert-first + the unique index already make the alias
+safe against the concurrent-double-grant).
 
 ### E2 — `getAgencyCredits` must distinguish DB error from true zero
 **Priority:** P2
