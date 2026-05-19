@@ -158,6 +158,15 @@ export function WidgetBuilderEmbedded({
     totalSessions?: number;
     // v7 additions (2026-05-15)
     storeDetectionSources?: Array<{ source: string; count: number }>;
+    // v8 additions (2026-05-18): LLM provider reliability — surfaces the
+    // silent-failure class behind the May 18 outage so the operator sees
+    // a key going bad on the dashboard, not by using the widget themselves.
+    aiUnavailableCount?: number;
+    aiUnavailableBreakdown?: Array<{ reason: string; count: number }>;
+    latestAiUnavailableAt?: string | null;
+    latestAiUnavailableReason?: string | null;
+    llmFailoverCount?: number;
+    llmFailoverBreakdown?: Array<{ reason: string; count: number }>;
   } | null>(null);
 
   // Drill-down modal state — click any aggregate row to inspect the
@@ -1252,6 +1261,91 @@ export function WidgetBuilderEmbedded({
                           <p className="text-[11px] text-gray-500 mt-3 italic">
                             Pages where the widget was opened. Tap a row to see exactly what visitors from that page asked. High-traffic pages with low engagement may need a more inviting greeting or contextual chips.
                           </p>
+                        </div>
+                      )}
+
+                      {/* LLM reliability — surfaces silent-failure class from the
+                          2026-05-18 outage. Renders ONLY when something has gone
+                          wrong (count > 0); a healthy widget shows nothing here. */}
+                      {(stats.aiUnavailableCount ?? 0) > 0 && (
+                        <div className="p-4 rounded-xl bg-red-50 border border-red-200">
+                          <div className="flex items-start justify-between mb-3 gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-red-800">⚠ AI unavailable</p>
+                              <p className="text-[11px] text-red-700/80 mt-0.5">
+                                The bot couldn&apos;t reach an LLM and returned a canned reply. Visitors see no answer.
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-2xl font-extrabold text-red-900 leading-none">{stats.aiUnavailableCount}</p>
+                              <p className="text-[10px] text-red-700/70 mt-1">in last {stats.windowDays ?? 30}d</p>
+                            </div>
+                          </div>
+                          {(stats.aiUnavailableBreakdown ?? []).length > 0 && (
+                            <div className="space-y-1.5 mb-2">
+                              {(stats.aiUnavailableBreakdown ?? []).slice(0, 5).map((row) => {
+                                const total = (stats.aiUnavailableBreakdown ?? []).reduce((a, b) => a + b.count, 0);
+                                const pct = total === 0 ? 0 : Math.round((row.count / total) * 100);
+                                const pretty: Record<string, string> = {
+                                  'auth_user_not_found': 'Auth: user not found (key revoked)',
+                                  'auth_invalid_key': 'Auth: invalid API key',
+                                  'timeout': 'Timeout (>25s)',
+                                  'rate_limit': 'Rate limit (429)',
+                                  'model_not_found': 'Model not found',
+                                  'quota_exceeded': 'Provider quota exceeded',
+                                  'upstream_5xx': 'Upstream 5xx',
+                                  'other': 'Other / unclassified',
+                                  'unknown': 'Unknown',
+                                };
+                                return (
+                                  <div key={row.reason} className="flex items-center gap-3 text-xs">
+                                    <span className="text-red-900 w-52 truncate" title={row.reason}>
+                                      {pretty[row.reason] || row.reason}
+                                    </span>
+                                    <div className="flex-1 h-5 rounded bg-red-100 overflow-hidden">
+                                      <div className="h-full bg-gradient-to-r from-red-500 to-red-400 flex items-center px-1.5" style={{ width: `${Math.max(3, pct)}%` }}>
+                                        <span className="text-[10px] font-bold text-white">{row.count}</span>
+                                      </div>
+                                    </div>
+                                    <span className="text-[10px] text-red-700/70 w-10 text-right">{pct}%</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {stats.latestAiUnavailableAt && (
+                            <p className="text-[11px] text-red-800/90 mt-2">
+                              Most recent: <strong>{new Date(stats.latestAiUnavailableAt).toLocaleString()}</strong>
+                              {stats.latestAiUnavailableReason ? ` · ${stats.latestAiUnavailableReason}` : ''}
+                            </p>
+                          )}
+                          <p className="text-[11px] text-red-700/80 mt-2 italic">
+                            Check <code className="bg-red-100 px-1 rounded">/api/health/llm</code> (admin) or your LLM provider key rotation. If reason is <em>auth_*</em>, the API key is dead — re-add it via <code className="bg-red-100 px-1 rounded">printf &apos;…&apos; | vercel env add</code> (never <code className="bg-red-100 px-1 rounded">echo</code>, it appends a literal <code>\n</code>).
+                          </p>
+                        </div>
+                      )}
+
+                      {/* LLM failover (recovered) — yellow because service was preserved,
+                          but the primary key is bad and needs rotation. */}
+                      {(stats.llmFailoverCount ?? 0) > 0 && (
+                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+                          <div className="flex items-start justify-between mb-2 gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-amber-800">⚡ LLM failover fired</p>
+                              <p className="text-[11px] text-amber-700/80 mt-0.5">
+                                Primary provider rejected auth; fallback handled the request. Service is fine — rotate the primary key.
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-2xl font-extrabold text-amber-900 leading-none">{stats.llmFailoverCount}</p>
+                              <p className="text-[10px] text-amber-700/70 mt-1">in last {stats.windowDays ?? 30}d</p>
+                            </div>
+                          </div>
+                          {(stats.llmFailoverBreakdown ?? []).length > 0 && (
+                            <p className="text-[11px] text-amber-800/90">
+                              By reason: {(stats.llmFailoverBreakdown ?? []).map(r => `${r.reason} (${r.count})`).join(' · ')}
+                            </p>
+                          )}
                         </div>
                       )}
 
