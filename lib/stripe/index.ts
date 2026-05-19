@@ -17,10 +17,6 @@ export {
   syncConnectAccountStatus,
   createClientInvoice,
 } from './connect';
-export {
-  verifyStripeWebhook,
-  handleInvoicePaid,
-  handleSubscriptionUpdated,
-  handleSubscriptionDeleted,
-  handleConnectAccountUpdated,
-} from './webhooks';
+// Webhook handling lives in the PRIMARY route app/api/webhooks/stripe/route.ts.
+// The old ./webhooks duplicate (which granted no credits) was deleted
+// 2026-05-19; these re-exports had zero importers.

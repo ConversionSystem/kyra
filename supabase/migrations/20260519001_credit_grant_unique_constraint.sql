@@ -1,0 +1,75 @@
+-- 20260519001_credit_grant_unique_constraint.sql
+--
+-- H3 (autoplan Eng review): grantPlanCreditsOnce() in
+-- app/api/webhooks/stripe/route.ts dedupes monthly credit grants with a
+-- check-then-insert (SELECT existing grant by stripe_payment_intent_id, then
+-- addCredits -> INSERT). That is NOT atomic. If invoice.paid is ever aliased
+-- onto the live route, Stripe delivers invoice.payment_succeeded AND
+-- invoice.paid for the same invoice near-simultaneously; under concurrent
+-- serverless execution both events can pass the SELECT.
+--
+-- ⚠️ WHAT THIS INDEX DOES AND DOES NOT DO — READ BEFORE ALIASING invoice.paid
+--
+-- This partial unique index prevents a duplicate credit_transactions AUDIT
+-- ROW. It does NOT, by itself, prevent the balance from being
+-- double-incremented. addCredits() (lib/billing/credit-engine.ts) applies
+-- the agency_credits.balance delta BEFORE the credit_transactions INSERT,
+-- and that INSERT's error is swallowed (`.then(() => {}, () => {})`). So on
+-- a racing second event the balance is already double-incremented and the
+-- 23505 unique violation is discarded silently — leaving an over-credited
+-- balance with NO audit row (worse than today, because grantPlanCreditsOnce's
+-- own SELECT-by-payment-intent dedupe then can't see the missing row either).
+--
+-- Therefore: aliasing invoice.paid is NOT safe just because this index is
+-- live. It is safe only after addCredits() is made insert-first /
+-- transactional (insert the constrained row, detect 23505, and apply the
+-- balance delta ONLY on a successful insert — ideally one RPC/transaction).
+-- That addCredits change is pre-existing platform-wide behavior and is
+-- tracked as the gating follow-up for the alias, NOT shipped in this PR.
+-- This PR does NOT alias invoice.paid; the live route still handles only
+-- invoice.payment_succeeded, so no new double-grant path is introduced.
+--
+-- This index is still worth shipping now: it is the necessary precondition,
+-- it prevents duplicate audit rows on ordinary Stripe retries, and it
+-- documents the real gate accurately.
+--
+-- ── HOW TO APPLY (migrations are NOT auto-applied — CLAUDE.md) ──────────────
+-- Run in the Supabase SQL editor. Step 1 FIRST — if it returns any rows,
+-- reconcile the duplicate grants before creating the index or step 2 fails.
+
+-- Step 1 — pre-flight: detect any existing duplicate grants.
+-- Expect ZERO rows. Each row = an agency that was double-granted; reverse the
+-- extra credit_transactions + adjust agency_credits before proceeding.
+--
+--   SELECT agency_id, type, stripe_payment_intent_id, COUNT(*)
+--   FROM credit_transactions
+--   WHERE stripe_payment_intent_id IS NOT NULL
+--   GROUP BY agency_id, type, stripe_payment_intent_id
+--   HAVING COUNT(*) > 1;
+
+-- Step 2 — create the index. CONCURRENTLY = no write lock on
+-- credit_transactions (billing keeps flowing during creation). Cannot run
+-- inside a transaction block; run this statement on its own.
+--
+-- NOTE: `IF NOT EXISTS` is intentionally OMITTED. If a prior CONCURRENTLY
+-- attempt failed midway, Postgres leaves an INVALID index of this name;
+-- `IF NOT EXISTS` would then silently skip creation and report success
+-- while the planner ignores the invalid index (zero protection, no signal).
+-- Bare CREATE makes a leftover-name collision loud instead of silent.
+CREATE UNIQUE INDEX CONCURRENTLY
+  credit_transactions_grant_idempotency_uniq
+  ON credit_transactions (agency_id, type, stripe_payment_intent_id)
+  WHERE stripe_payment_intent_id IS NOT NULL;
+
+-- Step 3 — MANDATORY post-verification. The index is only doing its job if
+-- it is VALID. Must return one row with indisvalid = t.
+--
+--   SELECT c.relname, i.indisvalid
+--   FROM pg_class c
+--   JOIN pg_index i ON i.indexrelid = c.oid
+--   WHERE c.relname = 'credit_transactions_grant_idempotency_uniq';
+--
+-- If indisvalid = f (or step 2 errored "is duplicated"): step 1's pre-flight
+-- was skipped or new dupes landed mid-creation. Drop the invalid index
+-- (DROP INDEX CONCURRENTLY credit_transactions_grant_idempotency_uniq;),
+-- reconcile duplicates via step 1, then re-run step 2.

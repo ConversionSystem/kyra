@@ -399,7 +399,7 @@ Individuals who outgrow Pro and want to offer AI to clients → natural upgrade 
 | Automated client invoicing via Stripe Connect | P0 | 6h | ✅ Done | `createClientSubscription()` with per-client recurring billing on connected accounts |
 | Application fee (Kyra's cut per transaction) | P0 | 2h | ✅ Done | 10% `application_fee_percent` on all subscriptions |
 | Revenue dashboard: MRR, client payments, payout schedule | P1 | 6h | ✅ Done | Billing dashboard: gross MRR, platform fee, net revenue, billing history table |
-| Stripe webhook handlers (invoice.paid, sub updates, account.updated) | P0 | 4h | ✅ Done | `lib/stripe/webhooks.ts`: 4 event handlers + signature verification |
+| Stripe webhook handlers (invoice.payment_succeeded, sub updates, checkout) | P0 | 4h | ✅ Done | `app/api/webhooks/stripe/route.ts` (PRIMARY, registered): handlers + signature verification. The old duplicate `lib/stripe/webhooks.ts` + `/api/stripe/webhooks` route were deleted 2026-05-19 (granted no credits — a loaded gun). |
 | Agency subscription management (create, upgrade, cancel, status) | P0 | 4h | ✅ Done | `lib/stripe/subscriptions.ts`: full plan lifecycle |
 | Subscription cancellation + billing amount changes | P1 | 3h | ✅ Done | `cancelClientSubscription()`, `updateClientBillingAmount()` with prorations |
 | One-time invoices for manual billing | P2 | 2h | ✅ Done | `createClientInvoice()` with application fee |
@@ -408,7 +408,7 @@ Individuals who outgrow Pro and want to offer AI to clients → natural upgrade 
 | White-label: settings stored (logo, colors, domain, company name) | P1 | 2h | ✅ Done | `AgencySettings` type + settings form in `/agency/settings` |
 | **Create Stripe products/prices in Stripe Dashboard** | P0 | 30min | ⬜ TODO | Need price IDs for starter/pro/scale + per_client |
 | **Set Stripe env vars on Vercel** | P0 | 15min | ⬜ TODO | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, 4 price IDs |
-| **Configure Stripe webhook endpoint** | P0 | 15min | ⬜ TODO | Point to `kyra.conversionsystem.com/api/stripe/webhooks` |
+| **Configure Stripe webhook endpoint** | P0 | 15min | ⬜ TODO | Point to `kyra.conversionsystem.com/api/webhooks/stripe` (the PRIMARY route — webhook ID `we_1TCcvQDr3LPJOIaMuaY1zJhG`). NOT `/api/stripe/webhooks` (deleted; granted no monthly credits). |
 | **End-to-end billing test** | P0 | 2h | ⬜ TODO | Full flow: agency signup → Connect → activate client billing |
 | White-label: apply settings to chat UI + login page | P1 | 4h | ⬜ TODO | Settings are stored but not rendered into UI yet |
 | White-label: custom subdomain (CNAME + Vercel domains API) | P1 | 4h | ⬜ TODO | |

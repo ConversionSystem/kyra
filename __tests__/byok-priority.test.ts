@@ -12,8 +12,31 @@
  * source of truth. These tests pin the canonical order + verify the
  * resolver actually iterates it.
  */
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { BYOK_PROVIDER_PRIORITY, type BYOKProvider } from '@/lib/billing/byok';
+
+// Supabase mock — scripts the next agencies `.single()` (api_keys, plan).
+const sb = vi.hoisted(() => ({ agencies: [] as Array<{ data: unknown; error: unknown }> }));
+vi.mock('@/lib/supabase/server', () => {
+  const makeClient = () => ({
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: async () => {
+            const r = sb.agencies.shift();
+            if (!r) throw new Error('test: no scripted agencies result');
+            return r;
+          },
+        }),
+      }),
+    }),
+  });
+  return {
+    createServiceClientWithoutCookies: () => makeClient(),
+    createServiceClient: async () => makeClient(),
+    createClient: async () => makeClient(),
+  };
+});
 
 describe('BYOK_PROVIDER_PRIORITY — canonical order', () => {
   test('is exactly 4 providers', () => {
@@ -119,5 +142,75 @@ describe('Simulated resolver (walks the priority constant)', () => {
       selected_models: 'some-json-blob' as unknown as string,
     });
     expect(pick?.provider).toBe('anthropic');
+  });
+});
+
+describe('byokShouldSkipCredits — F2b fail-safe', () => {
+  beforeEach(async () => {
+    sb.agencies.length = 0;
+    const { __resetByokSkipEvidenceForTests } = await import('@/lib/billing/byok');
+    __resetByokSkipEvidenceForTests();
+  });
+
+  test('paid plan + BYOK → skip credits (true)', async () => {
+    const { byokShouldSkipCredits } = await import('@/lib/billing/byok');
+    sb.agencies.push({ data: { api_keys: { anthropic: 'sk-ant' }, plan: 'pro' }, error: null });
+    expect(await byokShouldSkipCredits('a1')).toBe(true);
+  });
+
+  test("plan 'beta' is paid (pins PAID_PLANS vs header-comment drift)", async () => {
+    const { byokShouldSkipCredits } = await import('@/lib/billing/byok');
+    sb.agencies.push({ data: { api_keys: { anthropic: 'sk-ant' }, plan: 'beta' }, error: null });
+    expect(await byokShouldSkipCredits('a1')).toBe(true);
+  });
+
+  test('free plan + BYOK → do NOT skip (false)', async () => {
+    const { byokShouldSkipCredits } = await import('@/lib/billing/byok');
+    sb.agencies.push({ data: { api_keys: { anthropic: 'sk-ant' }, plan: 'free' }, error: null });
+    expect(await byokShouldSkipCredits('a1')).toBe(false);
+  });
+
+  test('no BYOK configured → do NOT skip (false)', async () => {
+    const { byokShouldSkipCredits } = await import('@/lib/billing/byok');
+    sb.agencies.push({ data: { api_keys: {}, plan: 'pro' }, error: null });
+    expect(await byokShouldSkipCredits('a1')).toBe(false);
+  });
+
+  test('lookup FAILED + no prior evidence → do NOT skip (fail toward gating)', async () => {
+    const { byokShouldSkipCredits } = await import('@/lib/billing/byok');
+    sb.agencies.push({ data: null, error: { message: 'pool exhausted' } });
+    expect(await byokShouldSkipCredits('a1')).toBe(false);
+  });
+
+  test('lookup FAILED + prior paid+BYOK evidence → skip (F2b: do not bill them)', async () => {
+    const { byokShouldSkipCredits } = await import('@/lib/billing/byok');
+    // First a healthy resolve proves the agency is paid+BYOK (records evidence).
+    sb.agencies.push({ data: { api_keys: { anthropic: 'sk-ant' }, plan: 'scale' }, error: null });
+    expect(await byokShouldSkipCredits('a1')).toBe(true);
+    // Now a DB blip. Pre-fix this billed the paid BYOK agency → canned reply.
+    sb.agencies.push({ data: null, error: { message: 'timeout' } });
+    expect(await byokShouldSkipCredits('a1')).toBe(true);
+  });
+
+  test('blip with {data:null, error:null} also counts as lookup-failed (the .single() contract)', async () => {
+    const { byokShouldSkipCredits } = await import('@/lib/billing/byok');
+    sb.agencies.push({ data: { api_keys: { openrouter: 'sk-or' }, plan: 'pro' }, error: null });
+    expect(await byokShouldSkipCredits('a1')).toBe(true); // evidence recorded
+    // .single() blip that returns NO error — the case `!!error && !agency` missed.
+    sb.agencies.push({ data: null, error: null });
+    expect(await byokShouldSkipCredits('a1')).toBe(true); // evidence still protects
+  });
+
+  test('paid→free downgrade invalidates stale evidence (no permanent bypass)', async () => {
+    const { byokShouldSkipCredits } = await import('@/lib/billing/byok');
+    // Was paid+BYOK — evidence recorded.
+    sb.agencies.push({ data: { api_keys: { anthropic: 'sk-ant' }, plan: 'pro' }, error: null });
+    expect(await byokShouldSkipCredits('a1')).toBe(true);
+    // Downgraded to free — confirmed not-skip read must DROP the evidence.
+    sb.agencies.push({ data: { api_keys: { anthropic: 'sk-ant' }, plan: 'free' }, error: null });
+    expect(await byokShouldSkipCredits('a1')).toBe(false);
+    // Subsequent DB blip must NOT resurrect the bypass for the now-free agency.
+    sb.agencies.push({ data: null, error: null });
+    expect(await byokShouldSkipCredits('a1')).toBe(false);
   });
 });

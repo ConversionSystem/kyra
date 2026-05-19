@@ -42,7 +42,7 @@ import {
 } from '@/lib/chat/lead-capture';
 import { requireCredits } from '@/lib/billing/credit-engine';
 import { getCreditsForModel } from '@/lib/billing/model-credits';
-import { resolveAgencyApiKey } from '@/lib/billing/byok';
+import { byokShouldSkipCredits } from '@/lib/billing/byok';
 import {
   getDirectLLMClient,
   resolveModel,
@@ -254,8 +254,11 @@ export async function POST(request: NextRequest) {
   // requireCredits regardless of BYOK status. When the agency's platform
   // credit balance hit zero, every chat short-circuited to the canned
   // message. Now BYOK skips the check entirely.
-  const byok = await resolveAgencyApiKey(client.agency_id).catch(() => null);
-  const byokSkipsCredits = byok?.skipCredits === true;
+  // F2b: a DB blip while resolving BYOK must NOT silently bill a paid BYOK
+  // agency. byokShouldSkipCredits distinguishes "confirmed not BYOK" from
+  // "could not check" and only skips on a failed lookup when we have
+  // independent prior evidence the agency is paid+BYOK.
+  const byokSkipsCredits = await byokShouldSkipCredits(client.agency_id);
 
   // ── Model-aware credit check (non-BYOK path only) ─────────────────────────
   const preflightAction = classifyUsage(message.trim());

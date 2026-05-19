@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.3.1] - 2026-05-19
+
+### Fixed
+
+- **Widget no longer goes dark after a transient billing lookup.** The
+  platform-owner credit-bypass and the paid-BYOK credit skip no longer get
+  poisoned by a momentary database hiccup, so the chat widget keeps
+  answering instead of returning the "please call us" canned message.
+- **Platform-owner agencies stay un-billed even under load.** The
+  admin-agency check now caches only confirmed results, retries safely
+  instead of stampeding the auth service on a cold start, and a
+  downgraded paid+BYOK agency can no longer keep skipping the credit gate.
+
+### Removed
+
+- **Deleted the disabled duplicate Stripe webhook route**
+  (`/api/stripe/webhooks`) and its orphaned handler library. It granted no
+  monthly credits; the strategy doc that pointed operators at it has been
+  corrected to the live route (`/api/webhooks/stripe`).
+
+### Added
+
+- Regression test suite for the credit gate (admin cache-poisoning,
+  BYOK fail-safe) and a DB migration adding a unique index that prevents
+  duplicate Stripe credit-grant audit rows.
+
 ## [0.3.0] - 2026-02-09
 
 ### Added — Phase 2B: OpenClaw Gateway Integration
