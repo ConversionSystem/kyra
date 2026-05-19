@@ -304,6 +304,15 @@ export async function GET(
   // labels into operator-friendly categories so the Insights card stays
   // readable. See `bucketStoreSource` below for the mapping.
   const storeSourceCounts = new Map<string, number>();
+  // LLM-reliability observability (added after the 2026-05-18 outage where
+  // both provider keys died and the widget went silent for hours):
+  //   ai_unavailable:<reason> — full LLM failure (visitor got canned reply)
+  //   llm_failover:<reason>   — primary failed, fallback recovered (no UX impact)
+  // Both are bucketed by reason so the Insights card shows what's breaking.
+  const aiUnavailableReasons = new Map<string, number>();
+  const llmFailoverReasons = new Map<string, number>();
+  let latestAiUnavailableAt: string | null = null;
+  let latestAiUnavailableReason: string | null = null;
   for (const r of eventRows) {
     const raw = r.user_message || '';
     const idx = raw.indexOf(':');
@@ -326,7 +335,29 @@ export async function GET(
       const bucket = bucketStoreSource(label);
       storeSourceCounts.set(bucket, (storeSourceCounts.get(bucket) ?? 0) + 1);
     }
+    if (eventKind === 'ai_unavailable') {
+      const reason = label || 'unknown';
+      aiUnavailableReasons.set(reason, (aiUnavailableReasons.get(reason) ?? 0) + 1);
+      // Track the most recent occurrence so the UI card can say WHEN this
+      // last happened — the difference between "happened once Tuesday" and
+      // "happening right now" is huge for triage.
+      const ts = (r as { created_at?: string }).created_at;
+      if (ts && (!latestAiUnavailableAt || ts > latestAiUnavailableAt)) {
+        latestAiUnavailableAt = ts;
+        latestAiUnavailableReason = reason;
+      }
+    }
+    if (eventKind === 'llm_failover') {
+      const reason = label || 'unknown';
+      llmFailoverReasons.set(reason, (llmFailoverReasons.get(reason) ?? 0) + 1);
+    }
   }
+  const aiUnavailableBreakdown = Array.from(aiUnavailableReasons.entries())
+    .map(([reason, count]) => ({ reason, count }))
+    .sort((a, b) => b.count - a.count);
+  const llmFailoverBreakdown = Array.from(llmFailoverReasons.entries())
+    .map(([reason, count]) => ({ reason, count }))
+    .sort((a, b) => b.count - a.count);
   const storeDetectionSources = Array.from(storeSourceCounts.entries())
     .map(([source, count]) => ({ source, count }))
     .sort((a, b) => b.count - a.count);
@@ -508,5 +539,13 @@ export async function GET(
     totalSessions: sessionTimes.size,
     // v7 additions (2026-05-15): store-detection observability
     storeDetectionSources,
+    // v8 additions (2026-05-18): LLM provider reliability — added after the
+    // 2026-05-18 outage where both keys silently failed for hours.
+    aiUnavailableCount: eventCounts.ai_unavailable ?? 0,
+    aiUnavailableBreakdown,
+    latestAiUnavailableAt,
+    latestAiUnavailableReason,
+    llmFailoverCount: eventCounts.llm_failover ?? 0,
+    llmFailoverBreakdown,
   });
 }

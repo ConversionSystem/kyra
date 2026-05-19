@@ -44,10 +44,10 @@ import { requireCredits } from '@/lib/billing/credit-engine';
 import { getCreditsForModel } from '@/lib/billing/model-credits';
 import { byokShouldSkipCredits } from '@/lib/billing/byok';
 import {
-  getDirectLLMClient,
   resolveModel,
   checkAndDeductCredits,
   saveConversation,
+  createChatCompletionWithFailover,
 } from '@/lib/chat/core';
 import { isRateLimited } from '@/lib/rate-limit';
 import { classifyUsage } from '@/lib/billing/classify-usage';
@@ -285,6 +285,58 @@ export async function POST(request: NextRequest) {
 
   // Build session ID (persist conversation across messages)
   const resolvedSessionId = sessionId || `web:${clientId.slice(0, 8)}:${Date.now()}`;
+
+  // ── Widget-event telemetry (used by Insights aggregations) ───────────────
+  // Inserts a synthetic conversation row with channel='widget_event' so the
+  // existing widget-stats route's eventCounts aggregation picks it up. The
+  // 2026-05-18 outage taught us that "the bot is broken" can be invisible
+  // for hours when the only signal is a polite canned reply; this is the
+  // mechanism that makes silent failures show up on the Insights dashboard.
+  //
+  // ALWAYS AWAITED — fire-and-forget DB writes on Vercel serverless lose
+  // data when the function returns (CLAUDE.md rule). The widget UX cost of
+  // one extra small insert is ~30ms; well worth the operator visibility.
+  //
+  // Capture agency_id into a const so TS narrowing of `client` survives the
+  // closure boundary — without this, TS treats `client.agency_id` inside
+  // recordWidgetEvent as possibly-null even though we returned earlier on
+  // !client. This is a TS quirk, not a real null risk.
+  const agencyIdForTelemetry = client.agency_id;
+  async function recordWidgetEvent(event: string, label: string): Promise<void> {
+    try {
+      await supabase.from('client_conversations').insert({
+        client_id: clientId,
+        agency_id: agencyIdForTelemetry,
+        channel: 'widget_event',
+        user_message: `${event}:${label}`.slice(0, 200),
+        ai_response: '',
+        tokens_used: 0,
+        session_id: resolvedSessionId,
+      });
+    } catch (err) {
+      console.warn('[widget/chat] telemetry insert failed:', err instanceof Error ? err.message : err);
+    }
+  }
+
+  /**
+   * Classify an LLM failure into a short, stable label suitable for the
+   * Insights aggregator. Keep the label set small so the dashboard can group
+   * cleanly — buckets, not free text.
+   */
+  function classifyLLMFailure(err: unknown): string {
+    if (err instanceof Error) {
+      if (err.name === 'AbortError' || err.name === 'TimeoutError') return 'timeout';
+    }
+    const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+    if (!msg) return 'unknown';
+    if (msg.includes('user not found')) return 'auth_user_not_found';
+    if (msg.includes('incorrect api key') || msg.includes('invalid api key') || msg.includes('invalid_api_key')) return 'auth_invalid_key';
+    if (msg.includes('rate') || msg.includes('429')) return 'rate_limit';
+    if (msg.includes('model') && (msg.includes('not found') || msg.includes('does not exist'))) return 'model_not_found';
+    if (msg.includes('insufficient') && msg.includes('quota')) return 'quota_exceeded';
+    if (msg.includes('5')) return 'upstream_5xx';
+    return 'other';
+  }
 
   // ── Agent-takeover gate ──────────────────────────────────────────────────
   // If a human agent has replied via the Inbox in the last 15 min for this
@@ -1169,16 +1221,25 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
         if (pivotAction) sendFrame('pivotAction', pivotAction);
 
         // 2. Stream LLM tokens
+        // Resilient call: tries OpenRouter, transparently falls back to
+        // OpenAI on auth errors (revoked key etc.) so a key rotation isn't
+        // a full outage. See lib/chat/core.ts:createChatCompletionWithFailover.
         let aiResponse = '';
         try {
-          const llm = getDirectLLMClient();
-          const completion = await llm.chat.completions.create({
+          const { completion, meta } = await createChatCompletionWithFailover({
             model: routedModel,
             messages: llmMessages,
             stream: true,
-          }, { signal: AbortSignal.timeout(25000) });
+            signal: AbortSignal.timeout(25000),
+          });
 
-          for await (const chunk of completion) {
+          if (meta.failedOver) {
+            // Non-blocking telemetry: service was preserved, but the primary
+            // key is dead — operator needs to know.
+            void recordWidgetEvent('llm_failover', meta.failoverReason || 'unknown');
+          }
+
+          for await (const chunk of completion as AsyncIterable<{ choices?: Array<{ delta?: { content?: string | null } }> }>) {
             const delta = chunk.choices?.[0]?.delta?.content || '';
             if (delta) {
               aiResponse += delta;
@@ -1187,13 +1248,17 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
           }
         } catch (err: unknown) {
           const errMsg = err instanceof Error ? err.message : String(err);
-          if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError')) {
+          const reason = classifyLLMFailure(err);
+          if (reason === 'timeout') {
             console.error(`[widget/chat] LLM timeout (stream) for client ${clientId}`);
             sendFrame('error', { message: "Thanks for your message! Our team is a bit busy right now. We'll get back to you shortly." });
           } else {
-            console.error(`[widget/chat] LLM error (stream) for ${clientId} (model=${routedModel}): ${errMsg}`);
+            console.error(`[widget/chat] LLM error (stream) for ${clientId} (model=${routedModel}, reason=${reason}): ${errMsg}`);
             sendFrame('error', { message: 'Thanks for your message! Our team will get back to you shortly.' });
           }
+          // Telemetry: BOTH primary and fallback failed (the helper only
+          // throws on terminal failure). This is the dashboard signal.
+          await recordWidgetEvent('ai_unavailable', reason);
           sendFrame('done', { sessionId: resolvedSessionId });
           controller.close();
           return;
@@ -1306,10 +1371,11 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
   // ── Call LLM directly (bypasses OpenClaw gateway + agency persona) ─────────
   // Widget visitors are CUSTOMERS — they should talk to a business-specific assistant,
   // NOT the agency's OpenClaw container which has SOUL.md / CEO persona.
+  // Resilient call: tries OpenRouter, falls back to OpenAI on auth errors
+  // (revoked key etc.) so a credential rotation isn't a full outage.
   let aiResponse = '';
   try {
-    const llm = getDirectLLMClient();
-    const chatRes = await llm.chat.completions.create({
+    const { completion: chatRes, meta } = await createChatCompletionWithFailover({
       model: routedModel,
       messages: [
         { role: 'system', content: systemPrompt + storeContext + productContext },
@@ -1318,7 +1384,13 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
         ...(Array.isArray(history) ? (history as Array<{role: 'user'|'assistant', content: string}>).slice(-10) : []),
         { role: 'user', content: safeMessage },
       ],
-    }, { signal: AbortSignal.timeout(25000) });
+      signal: AbortSignal.timeout(25000),
+    });
+
+    if (meta.failedOver) {
+      void recordWidgetEvent('llm_failover', meta.failoverReason || 'unknown');
+    }
+
     aiResponse = chatRes.choices[0]?.message?.content || '';
 
     // ── Output scan — catch prompt leaks ──────────────────────────────────
@@ -1329,14 +1401,17 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
     }
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);
-    if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError')) {
+    const reason = classifyLLMFailure(err);
+    if (reason === 'timeout') {
       console.error(`[widget/chat] LLM timeout for client ${clientId}`);
+      await recordWidgetEvent('ai_unavailable', 'timeout');
       return NextResponse.json(
         { response: "Thanks for your message! Our team is a bit busy right now. We'll get back to you shortly.", sessionId: resolvedSessionId },
         { headers: CORS },
       );
     }
-    console.error(`[widget/chat] LLM error for ${clientId} (model=${routedModel}): ${errMsg}`);
+    console.error(`[widget/chat] LLM error for ${clientId} (model=${routedModel}, reason=${reason}): ${errMsg}`);
+    await recordWidgetEvent('ai_unavailable', reason);
     return NextResponse.json(
       { response: "Thanks for your message! Our team will get back to you shortly.", error: 'ai_unavailable' },
       { headers: CORS },
