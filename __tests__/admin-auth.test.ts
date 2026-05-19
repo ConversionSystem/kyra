@@ -10,7 +10,51 @@
  *   - isMasterEmail / isAdminEmail with null/undefined/empty inputs
  *   - ADMIN is a superset of MASTER (master ⊂ admin)
  */
-import { describe, test, expect, afterEach, beforeEach } from 'vitest';
+import { describe, test, expect, afterEach, beforeEach, vi } from 'vitest';
+
+// ── Supabase service-client mock harness ────────────────────────────────────
+// No DB-path test harness existed before this. Each test scripts the result
+// of the next `.single()` (the agencies read) and the next
+// `auth.admin.getUserById()`. Results are FIFO queues so a test can model a
+// failed first call followed by a healthy second call — the exact shape of
+// the 2026-05 cache-poisoning outage.
+const sb = vi.hoisted(() => ({
+  agencies: [] as Array<{ data: unknown; error: unknown }>,
+  users: [] as Array<{ data: unknown; error: unknown } | Error>,
+  agenciesConsumed: 0,
+}));
+
+vi.mock('@/lib/supabase/server', () => {
+  const makeClient = () => ({
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: async () => {
+            sb.agenciesConsumed++;
+            const r = sb.agencies.shift();
+            if (!r) throw new Error('test: no scripted agencies result');
+            return r;
+          },
+        }),
+      }),
+    }),
+    auth: {
+      admin: {
+        getUserById: async () => {
+          const r = sb.users.shift();
+          if (r instanceof Error) throw r;
+          if (!r) throw new Error('test: no scripted getUserById result');
+          return r;
+        },
+      },
+    },
+  });
+  return {
+    createServiceClientWithoutCookies: () => makeClient(),
+    createServiceClient: async () => makeClient(),
+    createClient: async () => makeClient(),
+  };
+});
 
 describe('lib/auth/admin — canonical email allowlists', () => {
   const originalMaster = process.env.MASTER_EMAILS;
@@ -121,5 +165,89 @@ describe('lib/auth/admin — canonical email allowlists', () => {
       // But not master
       expect(mod.isMasterEmail('webblex10@gmail.com')).toBe(false);
     });
+  });
+});
+
+describe('isAdminAgency — cache-poisoning regression (2026-05 outage)', () => {
+  const MASTER = { data: { user: { email: 'hello@conversionsystem.com' } }, error: null };
+  const NONMASTER = { data: { user: { email: 'tenant@example.com' } }, error: null };
+
+  beforeEach(async () => {
+    sb.agencies.length = 0;
+    sb.users.length = 0;
+    sb.agenciesConsumed = 0;
+    const { __resetAdminAgencyCacheForTests } = await import('@/lib/auth/admin');
+    __resetAdminAgencyCacheForTests();
+  });
+
+  test('THE regression: agencies null read then real master row → 2nd call is true', async () => {
+    const { isAdminAgency } = await import('@/lib/auth/admin');
+    // 1st call: transient/zero-row read. .single() returns {data:null} (no throw).
+    sb.agencies.push({ data: null, error: null });
+    expect(await isAdminAgency('agency-1')).toBe(false); // uncached false
+
+    // 2nd call: the read recovers and the agency IS the platform owner.
+    sb.agencies.push({ data: { owner_id: 'owner-1' }, error: null });
+    sb.users.push(MASTER);
+    // Pre-fix code returned the poisoned cached `false` here → the outage.
+    expect(await isAdminAgency('agency-1')).toBe(true);
+  });
+
+  test('A1 variant: getUserById throws first, recovers → 2nd call is true', async () => {
+    const { isAdminAgency } = await import('@/lib/auth/admin');
+    sb.agencies.push({ data: { owner_id: 'owner-1' }, error: null });
+    sb.users.push(new Error('auth API blip'));
+    expect(await isAdminAgency('agency-1')).toBe(false); // uncached, not poisoned
+
+    sb.agencies.push({ data: { owner_id: 'owner-1' }, error: null });
+    sb.users.push(MASTER);
+    expect(await isAdminAgency('agency-1')).toBe(true);
+  });
+
+  test('agencies read error (not null) is also uncached', async () => {
+    const { isAdminAgency } = await import('@/lib/auth/admin');
+    sb.agencies.push({ data: null, error: { message: 'pool exhausted' } });
+    expect(await isAdminAgency('agency-1')).toBe(false);
+    sb.agencies.push({ data: { owner_id: 'o' }, error: null });
+    sb.users.push(MASTER);
+    expect(await isAdminAgency('agency-1')).toBe(true);
+  });
+
+  test('confirmed positive is cached forever (no re-query)', async () => {
+    const { isAdminAgency } = await import('@/lib/auth/admin');
+    sb.agencies.push({ data: { owner_id: 'owner-1' }, error: null });
+    sb.users.push(MASTER);
+    expect(await isAdminAgency('agency-1')).toBe(true);
+    const consumedAfterFirst = sb.agenciesConsumed;
+    // No scripted results queued — a re-query would throw. Cached → no query.
+    expect(await isAdminAgency('agency-1')).toBe(true);
+    expect(sb.agenciesConsumed).toBe(consumedAfterFirst);
+  });
+
+  test('confirmed negative is cached briefly (backpressure, no re-query)', async () => {
+    const { isAdminAgency } = await import('@/lib/auth/admin');
+    sb.agencies.push({ data: { owner_id: 'owner-2' }, error: null });
+    sb.users.push(NONMASTER);
+    expect(await isAdminAgency('agency-2')).toBe(false);
+    const consumed = sb.agenciesConsumed;
+    expect(await isAdminAgency('agency-2')).toBe(false); // served from TTL cache
+    expect(sb.agenciesConsumed).toBe(consumed);
+  });
+
+  test('E1: concurrent calls coalesce into ONE lookup (no thundering herd)', async () => {
+    const { isAdminAgency } = await import('@/lib/auth/admin');
+    // Exactly ONE scripted pair. If the calls did not coalesce, calls 2..5
+    // would shift undefined and throw → rejected promises.
+    sb.agencies.push({ data: { owner_id: 'owner-1' }, error: null });
+    sb.users.push(MASTER);
+    const results = await Promise.all([
+      isAdminAgency('agency-1'),
+      isAdminAgency('agency-1'),
+      isAdminAgency('agency-1'),
+      isAdminAgency('agency-1'),
+      isAdminAgency('agency-1'),
+    ]);
+    expect(results).toEqual([true, true, true, true, true]);
+    expect(sb.agenciesConsumed).toBe(1);
   });
 });

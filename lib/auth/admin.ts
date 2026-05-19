@@ -106,14 +106,121 @@ export function isAdminEmail(email: string | null | undefined): boolean {
 // canonical admin-email source (same env var override path) so there's
 // no new config knob and no separate list to keep in sync.
 //
-// Results are cached in-process for the lifetime of the serverless
-// invocation — agency ownership doesn't change mid-request, and re-
-// reading auth.users on every credit check would add a query to every
-// widget message platform-wide.
+// Caching invariant (post-2026-05 outage hardening):
+//
+//   ONLY a CONFIRMED result is ever cached.
+//
+// The 2026-05-15 outage and its #515 recurrence both came from caching a
+// `false` that was actually "we failed to find out". `.single()` returns
+// {data:null} WITHOUT throwing on zero rows or some transient errors, so a
+// blip looked identical to "not an admin" and got cached for the serverless
+// instance lifetime — billing the platform owner until the instance recycled.
+//
+// Three structures, each with a precise meaning:
+//   _adminPositive       — agencies CONFIRMED master-owned. Cached forever
+//                           (ownership is stable for the process lifetime).
+//   _adminNegativeUntil  — agencies CONFIRMED non-master (both reads
+//                           succeeded, email simply isn't master). Cached
+//                           with a short TTL: backpressure for the 99%
+//                           non-admin case without poisoning on a transient.
+//   _adminInflight       — coalesces concurrent lookups for the same agency
+//                           so a cold-instance burst makes ONE auth call,
+//                           not N (removes the thundering-herd failure mode
+//                           that a naive "never cache false" would create).
+//
+// A null/empty/error read is NEVER cached — it returns an uncached `false`
+// (fail-closed for billing) and self-heals on the next call.
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
-const _adminAgencyCache = new Map<string, boolean>();
+const NEGATIVE_TTL_MS = 30_000;
+// Hard cap on the negative-cache map. The widget chat endpoint is
+// unauthenticated and agency_id is request-influenced; expired entries are
+// only evicted on re-access, so without a cap a long-lived instance seeing
+// many distinct real agencies leaks memory. 5k confirmed-negative agencies
+// is far more than any real instance needs within a 30s TTL window.
+const NEGATIVE_MAX = 5_000;
+
+const _adminPositive = new Set<string>();
+const _adminNegativeUntil = new Map<string, number>();
+const _adminInflight = new Map<string, Promise<boolean>>();
+
+/** Record a confirmed-negative with TTL, sweeping/capping the map first. */
+function setNegative(agencyId: string): void {
+  if (_adminNegativeUntil.size >= NEGATIVE_MAX) {
+    const now = Date.now();
+    for (const [k, exp] of _adminNegativeUntil) {
+      if (exp <= now) _adminNegativeUntil.delete(k);
+    }
+    // Still over cap after sweeping live entries — evict oldest (Map keeps
+    // insertion order) until back under the limit.
+    while (_adminNegativeUntil.size >= NEGATIVE_MAX) {
+      const oldest = _adminNegativeUntil.keys().next().value;
+      if (oldest === undefined) break;
+      _adminNegativeUntil.delete(oldest);
+    }
+  }
+  _adminNegativeUntil.set(agencyId, Date.now() + NEGATIVE_TTL_MS);
+}
+
+/** Test seam — reset all in-process admin-agency caches. */
+export function __resetAdminAgencyCacheForTests(): void {
+  _adminPositive.clear();
+  _adminNegativeUntil.clear();
+  _adminInflight.clear();
+}
+
+async function resolveIsAdminAgency(agencyId: string): Promise<boolean> {
+  try {
+    const supabase = createServiceClientWithoutCookies();
+
+    const { data: agency, error: agencyErr } = await supabase
+      .from('agencies')
+      .select('owner_id')
+      .eq('id', agencyId)
+      .single();
+
+    // Cannot distinguish "no such agency" from a transient blip here, and
+    // .single() does NOT throw on either. Never cache this — return an
+    // uncached false so the next request re-checks.
+    if (agencyErr || !agency?.owner_id) {
+      console.warn(
+        '[isAdminAgency] agencies read returned no row — uncached false:',
+        agencyId,
+        agencyErr ?? '(null data)',
+      );
+      return false;
+    }
+
+    const { data: user, error: userErr } =
+      await supabase.auth.admin.getUserById(agency.owner_id as string);
+
+    // Same hazard as above on the Auth side — a transient getUserById
+    // failure must NOT be cached as "not an admin" (this is the A1 path
+    // the first fix missed).
+    if (userErr || !user?.user) {
+      console.warn(
+        '[isAdminAgency] getUserById failed — uncached false:',
+        agencyId,
+        userErr ?? '(null user)',
+      );
+      return false;
+    }
+
+    const isMaster = isMasterEmail(user.user.email ?? null);
+    if (isMaster) {
+      _adminPositive.add(agencyId);
+    } else {
+      // Both reads succeeded and the email is genuinely not master —
+      // a CONFIRMED negative. Safe to cache, but only briefly and capped.
+      setNegative(agencyId);
+    }
+    return isMaster;
+  } catch (err) {
+    console.warn('[isAdminAgency] lookup threw — uncached false:', agencyId, err);
+    return false;
+  }
+}
 
 /**
  * Returns true if the agency is owned by a MASTER-tier email
@@ -122,32 +229,30 @@ const _adminAgencyCache = new Map<string, boolean>();
  *
  * Safe to call from any server context. Returns false on lookup error
  * (fail-closed — better to wrongly charge a master than wrongly skip
- * billing for a customer agency).
+ * billing for a customer agency), and crucially does NOT cache that
+ * false. See the caching invariant above.
  */
 export async function isAdminAgency(agencyId: string | null | undefined): Promise<boolean> {
   if (!agencyId) return false;
-  const cached = _adminAgencyCache.get(agencyId);
-  if (cached !== undefined) return cached;
 
+  if (_adminPositive.has(agencyId)) return true;
+
+  const negUntil = _adminNegativeUntil.get(agencyId);
+  if (negUntil !== undefined) {
+    if (negUntil > Date.now()) return false;
+    _adminNegativeUntil.delete(agencyId);
+  }
+
+  // Coalesce concurrent lookups for the same agency — one auth call, not N.
+  const inflight = _adminInflight.get(agencyId);
+  if (inflight) return inflight;
+
+  const p = resolveIsAdminAgency(agencyId);
+  _adminInflight.set(agencyId, p);
   try {
-    const supabase = createServiceClientWithoutCookies();
-    const { data: agency } = await supabase
-      .from('agencies')
-      .select('owner_id')
-      .eq('id', agencyId)
-      .single();
-    if (!agency?.owner_id) {
-      _adminAgencyCache.set(agencyId, false);
-      return false;
-    }
-    const { data: user } = await supabase.auth.admin.getUserById(agency.owner_id as string);
-    const email = user?.user?.email ?? null;
-    const result = isMasterEmail(email);
-    _adminAgencyCache.set(agencyId, result);
-    return result;
-  } catch (err) {
-    console.warn('[isAdminAgency] lookup failed for', agencyId, err);
-    return false;
+    return await p;
+  } finally {
+    _adminInflight.delete(agencyId);
   }
 }
 
