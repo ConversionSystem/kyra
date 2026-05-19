@@ -52,6 +52,12 @@ export interface ResolvedKey {
   model: string;
   isByok: boolean;       // true = using agency's own API key
   skipCredits: boolean;  // true = do NOT deduct platform credits (paid BYOK only)
+  // true ONLY when the agencies row could not be read (transient DB error).
+  // Distinguishes "we checked, this agency has no BYOK" (skipCredits=false,
+  // lookupFailed=false) from "we could not check" (skipCredits=false,
+  // lookupFailed=true). The widget credit gate MUST treat these differently
+  // or a DB blip silently bills a paid BYOK agency (F2b).
+  lookupFailed: boolean;
 }
 
 const PAID_PLANS = new Set(['starter', 'pro', 'scale', 'solo_pro', 'beta']);
@@ -76,6 +82,15 @@ export async function resolveAgencyApiKey(
     .eq('id', agencyId)
     .single();
 
+  // No row means we genuinely could not determine BYOK status — NOT that
+  // the agency has no key. .single() returns {data:null} WITHOUT a
+  // populated error on zero rows / some transient blips (the same
+  // contract lib/auth/admin.ts hardens against). Keying off `error`
+  // alone would miss the {data:null,error:null} blip and silently bill a
+  // paid BYOK agency — the exact F2b outage. Any missing row →
+  // could-not-confirm; the caller falls back to evidence.
+  const lookupFailed = !agency;
+
   const keys = (agency?.api_keys as Record<string, unknown>) || {};
   const selectedModels = (keys.selected_models as Record<string, string>) || {};
   const isPaidPlan = PAID_PLANS.has(agency?.plan ?? '');
@@ -88,6 +103,7 @@ export async function resolveAgencyApiKey(
       model: selectedModels[preferredProvider] || getDefaultModel(preferredProvider),
       isByok: true,
       skipCredits: isPaidPlan,
+      lookupFailed: false,
     };
   }
 
@@ -101,11 +117,12 @@ export async function resolveAgencyApiKey(
         model: selectedModels[provider] || getDefaultModel(provider),
         isByok: true,
         skipCredits: isPaidPlan,
+        lookupFailed: false,
       };
     }
   }
 
-  // No BYOK configured — fall back to platform key.
+  // No BYOK configured (or the lookup failed) — fall back to platform key.
   const platformKey = process.env.OPENAI_API_KEY || '';
   return {
     apiKey: platformKey,
@@ -113,7 +130,65 @@ export async function resolveAgencyApiKey(
     model: 'gpt-4o',
     isByok: false,
     skipCredits: false,
+    lookupFailed,
   };
+}
+
+// ─── Credit-gate decision (F2b fail-safe) ───────────────────────────────────
+//
+// Agencies CONFIRMED paid+BYOK at least once this process. A transient DB
+// error must not let a never-confirmed agency skip the credit gate (that
+// would be a free-AI hole), but it also must not bill an agency we have
+// already proven is paid+BYOK (that is the F2b outage). This in-process set
+// is that independent evidence.
+const _byokSkipConfirmed = new Set<string>();
+
+/** Test seam — reset the paid+BYOK evidence set. */
+export function __resetByokSkipEvidenceForTests(): void {
+  _byokSkipConfirmed.clear();
+}
+
+/**
+ * Should the platform credit gate be skipped for this agency?
+ *
+ *   confirmed paid+BYOK      → true  (and remember it)
+ *   confirmed NOT BYOK       → false (gate applies — correct)
+ *   lookup failed (DB blip)  → true ONLY if we have independent prior
+ *                              evidence this agency is paid+BYOK; else
+ *                              false (fail toward gating, never toward
+ *                              free AI for an unknown agency)
+ *
+ * Unlike agency ownership (immutable), plan+BYOK status is MUTABLE: an
+ * agency can downgrade (cancel Stripe) or pull its API key. Stale
+ * positive evidence would let a now-free agency skip the gate on every
+ * DB blip for the instance lifetime. So a confirmed not-skip read
+ * actively INVALIDATES the evidence — the cache self-heals on the first
+ * contradicting successful read.
+ *
+ * This is the single decision point the widget credit gate must use
+ * instead of reading `resolved.skipCredits` directly.
+ */
+export async function byokShouldSkipCredits(agencyId: string): Promise<boolean> {
+  let resolved: ResolvedKey;
+  try {
+    resolved = await resolveAgencyApiKey(agencyId);
+  } catch {
+    // resolver itself threw (e.g. service client init) — treat as a
+    // failed lookup: skip only with prior positive evidence.
+    return _byokSkipConfirmed.has(agencyId);
+  }
+
+  if (resolved.skipCredits) {
+    _byokSkipConfirmed.add(agencyId);
+    return true;
+  }
+  if (resolved.lookupFailed) {
+    return _byokSkipConfirmed.has(agencyId);
+  }
+  // Confirmed NOT paid+BYOK right now — drop any stale evidence so a
+  // downgraded agency cannot keep skipping the gate on future blips.
+  _byokSkipConfirmed.delete(agencyId);
+  return false;
 }
 
 function getDefaultModel(provider: string): string {
