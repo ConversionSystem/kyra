@@ -351,7 +351,13 @@ export async function GET(
     '#kyra-widget-header .close-btn { background:rgba(255,255,255,0.12); border:none; cursor:pointer; color:#fff; font-size:18px; line-height:1; padding:6px; border-radius:50%; width:34px; height:34px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background 0.15s; }',
     '#kyra-widget-header .close-btn:hover { background:rgba(255,255,255,0.22); }',
     /* Messages */
-    '#kyra-widget-messages { flex:1; overflow-y:auto; padding:20px 16px; display:flex; flex-direction:column; gap:10px; background:linear-gradient(180deg, #f7f8fa 0%, #f0f1f5 100%); -webkit-overflow-scrolling:touch; }',
+    // overscroll-behavior:contain stops scroll-chaining: when the visitor
+    // hits the top or bottom of the conversation on mobile, the host page
+    // doesn't pull-to-refresh or scroll behind the sheet. -webkit-overflow-
+    // scrolling:touch keeps iOS momentum scrolling smooth. overscroll-
+    // behavior-y:contain is the y-axis-specific form some older Androids
+    // honor when the generic property is ignored.
+    '#kyra-widget-messages { flex:1; overflow-y:auto; padding:20px 16px; display:flex; flex-direction:column; gap:10px; background:linear-gradient(180deg, #f7f8fa 0%, #f0f1f5 100%); -webkit-overflow-scrolling:touch; overscroll-behavior:contain; overscroll-behavior-y:contain; }',
     '.kyra-msg { display:flex; align-items:flex-end; gap:8px; max-width:85%; animation:kyra-msg-in 0.25s ease; }',
     '.kyra-msg.user { margin-left:auto; flex-direction:row-reverse; }',
     '@keyframes kyra-msg-in { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }',
@@ -502,6 +508,48 @@ export async function GET(
     '.kyra-trending-card .rating .star { color:#f59e0b; font-size:11px; line-height:1; }',
     '.kyra-trending-card .rating .score { color:#1f2937; font-weight:700; }',
     '.kyra-trending-card .price { font-weight:700; font-size:12px; color:#111827; }',
+    // ── Mobile full-screen sheet (≤600px) ───────────────────────────────────
+    // Operator feedback 2026-05-20: prior 0.85 × visualViewport math left a
+    // 15% gray strip above the panel and collapsed the chat area to ~150px
+    // when the iOS keyboard opened. Industry standard (Voodoo, Intercom,
+    // Drift, ManyChat) on mobile is a full-screen sheet — panel covers the
+    // visible viewport edge-to-edge.
+    //
+    // CSS owns the FIRST PAINT (before applyMobileLayout JS runs). The JS
+    // afterward refines for visualViewport accuracy on keyboard open/close,
+    // but these defaults guarantee no flash of "small panel" even if JS
+    // execution is delayed (slow third-party host page, blocking script).
+    //
+    // 100dvh is the modern dynamic viewport unit — auto-resizes when the
+    // mobile browser chrome shows/hides AND when the keyboard opens.
+    // Fallback chain: 100dvh → 100vh (older Safari/Chrome). The two height
+    // declarations rely on the cascade: if 100dvh is unsupported, the
+    // parser drops it and 100vh wins. Order matters here.
+    //
+    // !important is required because the desktop rule above uses
+    // clamp(...) values that would otherwise win specificity.
+    '@media (max-width: 600px) {',
+    '  #kyra-widget-panel {',
+    '    position: fixed !important;',
+    '    left: 0 !important; right: 0 !important;',
+    '    bottom: 0 !important; top: 0 !important;',
+    '    width: 100% !important; max-width: 100% !important;',
+    '    height: 100vh !important;',
+    '    height: 100dvh !important;',
+    '    max-height: 100dvh !important;',
+    '    border-radius: 16px 16px 0 0 !important;',
+    '  }',
+    // Tuck the header padding under the iOS notch / status bar on iPhone X+
+    // devices. env(safe-area-inset-top) resolves to ~47px on Pro models, 0
+    // on older devices and Android.
+    '  #kyra-widget-header { padding-top: max(18px, env(safe-area-inset-top)) !important; }',
+    // When the panel is full-screen, hiding the FAB at all times on mobile
+    // (open or closed) is fine because the close X in the header handles
+    // dismissal. The JS layout function still sets btn.style.display
+    // explicitly for the closed state, so this rule only matters during
+    // the brief pre-JS first paint.
+    '  #kyra-widget-btn.kyra-fab-hidden { display: none !important; }',
+    '}',
   ].join('');
   document.head.appendChild(style);
 
@@ -1132,6 +1180,58 @@ export async function GET(
     }
   }
 
+  // ── Body scroll lock (mobile only) ──────────────────────────────────────
+  // Why: when the panel is full-screen on mobile, the visitor scrolls the
+  // CONVERSATION. Without a lock, iOS scroll-chaining bubbles up to the
+  // host page — every time you reach the top or bottom of the chat, the
+  // page below scrolls instead. Combined with overscroll-behavior:contain
+  // on the messages list this gives a buttery, app-like feel.
+  //
+  // iOS-safe pattern (the naive "body.style.overflow=hidden" loses your
+  // scroll position when you close the widget):
+  //   - On lock: snapshot the host's existing style props + window.scrollY,
+  //     then position:fixed body with top:-scrollY to visually preserve
+  //     where you were while disabling scroll.
+  //   - On unlock: restore the snapshotted style props EXACTLY (don't
+  //     clobber the host's prior fixed positioning if it had one) and
+  //     scrollTo the saved Y so the page is exactly where it was.
+  //
+  // Idempotent: lockBodyScroll() while already locked is a no-op. Same for
+  // unlockBodyScroll() while already unlocked.
+  var _scrollLockState = null;
+  function lockBodyScroll() {
+    if (_scrollLockState) return;
+    var b = document.body;
+    _scrollLockState = {
+      position: b.style.position,
+      top: b.style.top,
+      left: b.style.left,
+      right: b.style.right,
+      width: b.style.width,
+      overflow: b.style.overflow,
+      scrollY: window.scrollY || window.pageYOffset || 0,
+    };
+    b.style.position = 'fixed';
+    b.style.top = '-' + _scrollLockState.scrollY + 'px';
+    b.style.left = '0';
+    b.style.right = '0';
+    b.style.width = '100%';
+    b.style.overflow = 'hidden';
+  }
+  function unlockBodyScroll() {
+    if (!_scrollLockState) return;
+    var s = _scrollLockState;
+    var b = document.body;
+    b.style.position = s.position;
+    b.style.top = s.top;
+    b.style.left = s.left;
+    b.style.right = s.right;
+    b.style.width = s.width;
+    b.style.overflow = s.overflow;
+    window.scrollTo(0, s.scrollY);
+    _scrollLockState = null;
+  }
+
   function openPanel() {
     isOpen = true;
     if (!trackedPanelOpen) {
@@ -1156,9 +1256,12 @@ export async function GET(
     btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
     var isMobile = window.innerWidth <= 600;
     if (isMobile) {
-      // On mobile: hide the button (close is in the header), show backdrop
+      // On mobile: hide the button (close is in the header), show backdrop,
+      // and scroll-lock the host page so scrolling inside the conversation
+      // doesn't bubble out to the page beneath the sheet.
       btn.style.display = 'none';
       backdrop.style.display = 'block';
+      lockBodyScroll();
     }
     unreadCount = 0;
     badge.style.display = 'none';
@@ -1196,6 +1299,10 @@ export async function GET(
 
   function closePanel() {
     isOpen = false;
+    // Restore host-page scrolling BEFORE swapping panel state. unlockBody
+    // -Scroll is a no-op on desktop (was never locked) so the call is
+    // unconditional — keeps the open/close paths symmetric and idempotent.
+    unlockBodyScroll();
     panel.classList.add('hidden');
     btn.style.display = '';
     backdrop.style.display = 'none';
@@ -1233,11 +1340,20 @@ export async function GET(
     var w = window.innerWidth;
     var isMobile = w <= 600;
     if (isMobile) {
+      // Full-screen sheet (operator decision 2026-05-20, Option A): match
+      // Voodoo/Intercom/Drift industry pattern. Panel = the entire visible
+      // viewport — no 0.85 multiplier, no gray strip above. When the iOS
+      // keyboard opens, visualViewport.height shrinks; the input stays
+      // pinned to the bottom of the panel (which is glued to the top of
+      // the keyboard) and the messages list resizes naturally above.
+      //
+      // visualViewport.offsetTop matters on iOS when the page is scrolled
+      // and the URL bar is showing — without that offset compensation the
+      // panel could end up positioned BEHIND the URL bar.
       var vvp = window.visualViewport;
       var vvpHeight = vvp ? vvp.height : window.innerHeight;
       var vvpOffsetTop = vvp ? vvp.offsetTop : 0;
       var bottomOffset = Math.round(window.innerHeight - vvpOffsetTop - vvpHeight);
-      var panelH = Math.round(vvpHeight * 0.85);
       panel.style.position = 'fixed';
       panel.style.left = '0';
       panel.style.right = '0';
@@ -1245,12 +1361,17 @@ export async function GET(
       panel.style.top = 'auto';
       panel.style.width = '100%';
       panel.style.maxWidth = '100%';
-      panel.style.height = panelH + 'px';
-      panel.style.maxHeight = panelH + 'px';
-      panel.style.borderRadius = '20px 20px 0 0';
+      panel.style.height = vvpHeight + 'px';
+      panel.style.maxHeight = vvpHeight + 'px';
+      // Subtle 16px sheet curve on the top corners (true sheet pattern;
+      // 0 felt harsh, 20px+ felt like a window).
+      panel.style.borderRadius = '16px 16px 0 0';
       if (!isOpen) {
         btn.style.display = '';
         btn.style.bottom = '24px';
+      } else {
+        // Panel is open → FAB is redundant (close X is in the header).
+        btn.style.display = 'none';
       }
     } else {
       var idealH = 680;
