@@ -392,7 +392,18 @@ export async function GET(
     // Taller textarea so the message field doesn't feel cramped on first
     // type. min-height 56px ≈ 2 visible lines + breathing room. Still
     // grows up to max-height:120px before scrolling.
-    '#kyra-widget-input { flex:1; border:1.5px solid #e8eaf0; border-radius:20px; padding:14px 18px; font-size:15px; font-family:system-ui,-apple-system,sans-serif; resize:none; outline:none; min-height:56px; max-height:120px; line-height:1.4; color:#1a1a1a; background:#f7f8fa; -webkit-appearance:none; transition:border-color 0.2s, box-shadow 0.2s, background 0.2s; }',
+    // CRITICAL — font-size MUST be ≥ 16px on mobile. iOS Safari auto-zooms
+    // when a text input has font-size < 16px on focus. The zoom shifts the
+    // viewport so the cursor position becomes visually off-screen (inside a
+    // position:fixed panel, iOS gets confused about which way to scroll to
+    // bring the input back into view). Operator-reported 2026-05-20: "I
+    // don't see anything what I'm writing on mobile, text box disappears."
+    // Root cause was font-size:15px on this element. Industry standard:
+    // every mobile chat widget (Intercom, Voodoo, ManyChat, Tidio) sets
+    // input font-size to 16px specifically to defeat this auto-zoom.
+    // touch-action:manipulation also disables iOS double-tap zoom which
+    // can fire unintentionally on the input.
+    '#kyra-widget-input { flex:1; border:1.5px solid #e8eaf0; border-radius:20px; padding:14px 18px; font-size:16px; font-family:system-ui,-apple-system,sans-serif; resize:none; outline:none; min-height:56px; max-height:120px; line-height:1.4; color:#1a1a1a; background:#f7f8fa; -webkit-appearance:none; -webkit-text-size-adjust:100%; touch-action:manipulation; transition:border-color 0.2s, box-shadow 0.2s, background 0.2s; }',
     // Disclaimer — small, centered, low-contrast. Hardcoded copy for
     // cannabis dispensaries; non-cannabis tenants get it overridden via
     // container_config.widget_disclaimer (handled below via WIDGET_DISCLAIMER).
@@ -567,6 +578,12 @@ export async function GET(
     // explicitly for the closed state, so this rule only matters during
     // the brief pre-JS first paint.
     '  #kyra-widget-btn.kyra-fab-hidden { display: none !important; }',
+    // !important on input font-size in case the host page has a CSS reset
+    // that would override 16px down to something smaller. The widget
+    // embeds on third-party sites where any tag selector for textarea
+    // could win specificity against #kyra-widget-input. 16px is the
+    // bright-line iOS Safari auto-zoom threshold.
+    '  #kyra-widget-input { font-size: 16px !important; }',
     '}',
     // ── Tablet first-paint (601-900px) ──────────────────────────────────────
     // Mirrors the mobile-rule discipline: layout properties get !important
