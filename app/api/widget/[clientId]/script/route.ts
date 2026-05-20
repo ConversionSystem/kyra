@@ -568,6 +568,27 @@ export async function GET(
     // the brief pre-JS first paint.
     '  #kyra-widget-btn.kyra-fab-hidden { display: none !important; }',
     '}',
+    // ── Tablet first-paint (601-900px) ──────────────────────────────────────
+    // Mirrors the mobile-rule discipline: layout properties get !important
+    // (they need to override the desktop clamp() rule above), but height /
+    // max-height stay NON-important so the JS inline values win on
+    // visualViewport reflow (iPad on-screen keyboard). Width 480px with the
+    // standard 32px viewport-edge clearance, anchored bottom-right.
+    //
+    // Bug history this guards against: 2026-05-20 PR #523 — height with
+    // !important locked the panel at the largest viewport, the iOS keyboard
+    // then covered the input. Same lesson applied here so tablet doesn't
+    // re-introduce that class of bug for iPad users.
+    '@media (min-width: 601px) and (max-width: 900px) {',
+    '  #kyra-widget-panel {',
+    '    width: 480px !important;',
+    '    max-width: calc(100vw - 32px) !important;',
+    '    height: min(800px, calc(100vh - 60px));',  // JS overrides on resize
+    '    max-height: calc(100vh - 60px);',
+    '    bottom: 96px;',
+    '    border-radius: 20px !important;',
+    '  }',
+    '}',
   ].join('');
   document.head.appendChild(style);
 
@@ -1357,6 +1378,13 @@ export async function GET(
   function applyMobileLayout() {
     var w = window.innerWidth;
     var isMobile = w <= 600;
+    // Tablet tier (601-900px) — covers iPad portrait (768), iPad mini (768),
+    // iPad Pro 11 (834), Galaxy Z Fold unfolded (768-884). Sized between
+    // mobile sheet and desktop floating panel: comfortable middle-ground
+    // that respects the form factor (full-screen would feel heavy on a
+    // tablet; 400×680 looked tiny). Bottom-right anchored to stay visually
+    // continuous with the FAB.
+    var isTablet = !isMobile && w <= 900;
     if (isMobile) {
       // Full-screen sheet (operator decision 2026-05-20, Option A): match
       // Voodoo/Intercom/Drift industry pattern. Panel = the entire visible
@@ -1391,11 +1419,35 @@ export async function GET(
         // Panel is open → FAB is redundant (close X is in the header).
         btn.style.display = 'none';
       }
+    } else if (isTablet) {
+      // Tablet — comfortable middle ground. 480 wide gives more room to
+      // breathe than the 400px desktop panel without feeling like a
+      // sheet. Height ceiling 800px so on iPad portrait (1024 tall) we
+      // get a substantial chat surface, capped by vh-60 on shorter
+      // tablets / split-screen states. Bottom-right anchor matches the
+      // FAB origin so the panel visually animates out of the chat
+      // button.
+      var tabletIdealH = 800;
+      var tabletMaxByVh = Math.max(560, window.innerHeight - 60);
+      var tabletHeight = Math.min(tabletIdealH, tabletMaxByVh);
+      panel.style.position = 'fixed';
+      panel.style.left = '';
+      panel.style.right = POSITION === 'bottom-left' ? '' : '24px';
+      panel.style.bottom = '96px';
+      panel.style.top = 'auto';
+      panel.style.width = '480px';
+      panel.style.maxWidth = 'calc(100vw - 32px)';
+      panel.style.height = tabletHeight + 'px';
+      panel.style.maxHeight = 'calc(100vh - 60px)';
+      panel.style.borderRadius = '20px';
+      btn.style.display = '';
+      btn.style.bottom = '24px';
     } else {
-      var idealH = 680;
+      // Desktop — 400 × min(680, vh-120) bottom-right.
       // vh - 120 ensures we never reach near the top of the viewport.
       // Floor at 520 so very-short laptop screens (≤640px) still show a
       // usable panel rather than a postage stamp.
+      var idealH = 680;
       var maxByVh = Math.max(520, window.innerHeight - 120);
       var height = Math.min(idealH, maxByVh);
       panel.style.position = 'fixed';
