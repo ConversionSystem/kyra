@@ -526,17 +526,35 @@ export async function GET(
     // declarations rely on the cascade: if 100dvh is unsupported, the
     // parser drops it and 100vh wins. Order matters here.
     //
-    // !important is required because the desktop rule above uses
-    // clamp(...) values that would otherwise win specificity.
+    // !important is required for the LAYOUT properties because the desktop
+    // rule above uses clamp(...) values that would otherwise win specificity.
+    //
+    // CRITICAL — height/max-height MUST NOT use !important here.
+    // applyMobileLayout sets panel.style.height = visualViewport.height + px
+    // (inline) on every visualViewport.resize so the panel shrinks when the
+    // iOS keyboard opens. Inline styles WITHOUT !important lose to
+    // stylesheet rules WITH !important — so an !important height here would
+    // pin the panel at the largest viewport size and the keyboard would
+    // cover the input. Verified live 2026-05-20: stylesheet 100dvh !important
+    // wins over inline height=380px, panel stays full screen, input vanishes.
+    // The CSS height: 100dvh is the first-paint fallback ONLY; the JS owns
+    // the accurate keyboard-aware height.
     '@media (max-width: 600px) {',
     '  #kyra-widget-panel {',
     '    position: fixed !important;',
     '    left: 0 !important; right: 0 !important;',
-    '    bottom: 0 !important; top: 0 !important;',
     '    width: 100% !important; max-width: 100% !important;',
-    '    height: 100vh !important;',
-    '    height: 100dvh !important;',
-    '    max-height: 100dvh !important;',
+    // top, bottom, height, max-height are JS-owned (visualViewport-aware
+    // for keyboard reflow). CSS provides first-paint fallbacks WITHOUT
+    // !important so inline JS values win as soon as applyMobileLayout
+    // runs. !important on any of these locks the panel at the largest
+    // viewport size and the iOS keyboard then covers the input — verified
+    // 2026-05-20.
+    '    bottom: 0;',
+    '    top: auto;',
+    '    height: 100vh;',
+    '    height: 100dvh;',
+    '    max-height: 100dvh;',
     '    border-radius: 16px 16px 0 0 !important;',
     '  }',
     // Tuck the header padding under the iOS notch / status bar on iPhone X+
