@@ -589,6 +589,32 @@ export async function GET(
     '    border-radius: 20px !important;',
     '  }',
     '}',
+    // ── Keyboard-open compact chrome (mobile only) ──────────────────────────
+    // Why: iPhone with on-screen keyboard collapses visualViewport.height to
+    // ~380px. After header (~80px) + input area (~80px) + disclaimer (~30px)
+    // = 190px of chrome, the chat area is ~190px — room for ~1 short
+    // message. Operator-reported 2026-05-20: "text box hide when typing on
+    // mobile. terrible user experience."
+    //
+    // Fix: when JS detects the keyboard is open (visualViewport.height shrank
+    // relative to innerHeight), the panel gets a .kyra-kb-open class. These
+    // rules compact the chrome to give back ~70px to the chat area:
+    //   - header padding 18px → 10px (saves ~16px)
+    //   - avatar 44px → 32px (saves ~12px height + visual weight)
+    //   - title font 16 → 15
+    //   - disclaimer hidden (saves ~30px) — visitor already knows it's AI
+    //   - input area: trim padding (saves ~8px)
+    // Same pattern Intercom + Voodoo use on mobile keyboard-open states.
+    //
+    // Class toggle lives on the panel (not body) so these rules ONLY apply
+    // to the widget, never bleed into the host page.
+    '#kyra-widget-panel.kyra-kb-open #kyra-widget-header { padding: 10px 16px !important; gap: 10px; }',
+    '#kyra-widget-panel.kyra-kb-open #kyra-widget-header .avatar { width: 32px; height: 32px; font-size: 16px; border-width: 1.5px; }',
+    '#kyra-widget-panel.kyra-kb-open #kyra-widget-header .title { font-size: 15px; }',
+    '#kyra-widget-panel.kyra-kb-open #kyra-widget-header .subtitle { font-size: 11px; }',
+    '#kyra-widget-panel.kyra-kb-open #kyra-widget-disclaimer { display: none; }',
+    '#kyra-widget-panel.kyra-kb-open #kyra-widget-input-area { padding: 8px 12px 6px; padding-bottom: max(6px, env(safe-area-inset-bottom)); }',
+    '#kyra-widget-panel.kyra-kb-open #kyra-widget-messages { padding: 12px 14px; }',
   ].join('');
   document.head.appendChild(style);
 
@@ -1412,6 +1438,17 @@ export async function GET(
       // Subtle 16px sheet curve on the top corners (true sheet pattern;
       // 0 felt harsh, 20px+ felt like a window).
       panel.style.borderRadius = '16px 16px 0 0';
+      // Keyboard-open detection: visualViewport.height shrinks dramatically
+      // when the on-screen keyboard opens (e.g. 852→380 on iPhone 14 Pro).
+      // Threshold 0.75 catches all real keyboards (every mobile keyboard
+      // takes at least 30% of the screen) while ignoring URL-bar-collapse
+      // noise (which shifts vvp by 5-10% at most). When true, .kyra-kb-open
+      // CSS compacts the header + hides the disclaimer to recover ~70px
+      // for the chat area. Without this, only ~190px of chat is visible
+      // above the keyboard — room for one message.
+      var kbOpen = vvpHeight < window.innerHeight * 0.75;
+      if (kbOpen) panel.classList.add('kyra-kb-open');
+      else panel.classList.remove('kyra-kb-open');
       if (!isOpen) {
         btn.style.display = '';
         btn.style.bottom = '24px';
@@ -1420,6 +1457,10 @@ export async function GET(
         btn.style.display = 'none';
       }
     } else if (isTablet) {
+      // No keyboard-open compact mode on tablet/desktop — those tiers have
+      // enough room. Strip the class if we'd applied it previously (e.g. on
+      // an orientation change from phone to tablet).
+      panel.classList.remove('kyra-kb-open');
       // Tablet — comfortable middle ground. 480 wide gives more room to
       // breathe than the 400px desktop panel without feeling like a
       // sheet. Height ceiling 800px so on iPad portrait (1024 tall) we
@@ -1449,6 +1490,7 @@ export async function GET(
       btn.style.display = '';
       btn.style.bottom = '24px';
     } else {
+      panel.classList.remove('kyra-kb-open');
       // Desktop — 400 × min(680, vh-120) bottom-right.
       // vh - 120 ensures we never reach near the top of the viewport.
       // Floor at 520 so very-short laptop screens (≤640px) still show a
