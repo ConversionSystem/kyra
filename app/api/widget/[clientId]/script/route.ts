@@ -583,8 +583,8 @@ export async function GET(
     '  #kyra-widget-panel {',
     '    width: 480px !important;',
     '    max-width: calc(100vw - 32px) !important;',
-    '    height: min(800px, calc(100vh - 60px));',  // JS overrides on resize
-    '    max-height: calc(100vh - 60px);',
+    '    height: min(800px, calc(100vh - 120px));',  // JS overrides on resize
+    '    max-height: calc(100vh - 120px);',
     '    bottom: 96px;',
     '    border-radius: 20px !important;',
     '  }',
@@ -1423,12 +1423,18 @@ export async function GET(
       // Tablet — comfortable middle ground. 480 wide gives more room to
       // breathe than the 400px desktop panel without feeling like a
       // sheet. Height ceiling 800px so on iPad portrait (1024 tall) we
-      // get a substantial chat surface, capped by vh-60 on shorter
-      // tablets / split-screen states. Bottom-right anchor matches the
-      // FAB origin so the panel visually animates out of the chat
-      // button.
+      // get a substantial chat surface; floor at 560 so short tablets
+      // / split-screen states still show a usable panel. Bottom-right
+      // anchor matches the FAB origin so the panel visually animates
+      // out of the chat button.
+      //
+      // The vh-120 floor accounts for bottom:96px (FAB clearance) +
+      // 24px top breathing room — the same math the desktop tier uses,
+      // protecting edge cases like Galaxy Z Fold unfolded (884px tall)
+      // where the panel would otherwise overflow the top of the
+      // viewport. Verified live QA 2026-05-20.
       var tabletIdealH = 800;
-      var tabletMaxByVh = Math.max(560, window.innerHeight - 60);
+      var tabletMaxByVh = Math.max(560, window.innerHeight - 120);
       var tabletHeight = Math.min(tabletIdealH, tabletMaxByVh);
       panel.style.position = 'fixed';
       panel.style.left = '';
@@ -1438,7 +1444,7 @@ export async function GET(
       panel.style.width = '480px';
       panel.style.maxWidth = 'calc(100vw - 32px)';
       panel.style.height = tabletHeight + 'px';
-      panel.style.maxHeight = 'calc(100vh - 60px)';
+      panel.style.maxHeight = 'calc(100vh - 120px)';
       panel.style.borderRadius = '20px';
       btn.style.display = '';
       btn.style.bottom = '24px';
