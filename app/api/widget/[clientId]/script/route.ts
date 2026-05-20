@@ -1263,54 +1263,52 @@ export async function GET(
   }
 
   // ── Body scroll lock (mobile only) ──────────────────────────────────────
-  // Why: when the panel is full-screen on mobile, the visitor scrolls the
-  // CONVERSATION. Without a lock, iOS scroll-chaining bubbles up to the
-  // host page — every time you reach the top or bottom of the chat, the
-  // page below scrolls instead. Combined with overscroll-behavior:contain
-  // on the messages list this gives a buttery, app-like feel.
+  // CHANGED 2026-05-20 — REMOVED position:fixed body pattern.
   //
-  // iOS-safe pattern (the naive "body.style.overflow=hidden" loses your
-  // scroll position when you close the widget):
-  //   - On lock: snapshot the host's existing style props + window.scrollY,
-  //     then position:fixed body with top:-scrollY to visually preserve
-  //     where you were while disabling scroll.
-  //   - On unlock: restore the snapshotted style props EXACTLY (don't
-  //     clobber the host's prior fixed positioning if it had one) and
-  //     scrollTo the saved Y so the page is exactly where it was.
+  // Background: the iOS-safe "snapshot scrollY, set body to position:fixed
+  // top:-scrollY" pattern is the most common scroll-lock approach but it
+  // has a fatal interaction with iOS Safari + textarea + on-screen
+  // keyboard: when a textarea inside a position:fixed body receives focus
+  // and the keyboard opens, iOS gets confused about the layout viewport
+  // and the typed characters fail to render in the textarea. Operator-
+  // reported 2026-05-20 with screenshots — user types but no characters
+  // appear, despite font-size:16 being correct. Voodoo/Intercom don't
+  // use this pattern; they use overflow:hidden on html + body, which is
+  // less invasive and doesn't break textarea rendering.
   //
-  // Idempotent: lockBodyScroll() while already locked is a no-op. Same for
-  // unlockBodyScroll() while already unlocked.
+  // New approach — overflow:hidden + touch-action:none on documentElement
+  // and body. Does not move scrollY (so no need to snapshot/restore),
+  // doesn't break position:fixed children, doesn't interfere with
+  // textarea focus. Trade-off: the visible scroll position MAY shift
+  // slightly when the lock applies (depending on whether the host page
+  // has scroll bars). In practice on iOS Safari this is invisible
+  // because mobile Safari hides scrollbars by default. The host
+  // overscroll-behavior on the chat list still prevents scroll-chaining.
   var _scrollLockState = null;
   function lockBodyScroll() {
     if (_scrollLockState) return;
+    var html = document.documentElement;
     var b = document.body;
     _scrollLockState = {
-      position: b.style.position,
-      top: b.style.top,
-      left: b.style.left,
-      right: b.style.right,
-      width: b.style.width,
-      overflow: b.style.overflow,
-      scrollY: window.scrollY || window.pageYOffset || 0,
+      htmlOverflow: html.style.overflow,
+      htmlTouchAction: html.style.touchAction,
+      bodyOverflow: b.style.overflow,
+      bodyTouchAction: b.style.touchAction,
     };
-    b.style.position = 'fixed';
-    b.style.top = '-' + _scrollLockState.scrollY + 'px';
-    b.style.left = '0';
-    b.style.right = '0';
-    b.style.width = '100%';
+    html.style.overflow = 'hidden';
+    html.style.touchAction = 'none';
     b.style.overflow = 'hidden';
+    b.style.touchAction = 'none';
   }
   function unlockBodyScroll() {
     if (!_scrollLockState) return;
     var s = _scrollLockState;
+    var html = document.documentElement;
     var b = document.body;
-    b.style.position = s.position;
-    b.style.top = s.top;
-    b.style.left = s.left;
-    b.style.right = s.right;
-    b.style.width = s.width;
-    b.style.overflow = s.overflow;
-    window.scrollTo(0, s.scrollY);
+    html.style.overflow = s.htmlOverflow;
+    html.style.touchAction = s.htmlTouchAction;
+    b.style.overflow = s.bodyOverflow;
+    b.style.touchAction = s.bodyTouchAction;
     _scrollLockState = null;
   }
 
